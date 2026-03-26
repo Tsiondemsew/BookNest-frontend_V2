@@ -3,6 +3,8 @@ import { getLocale, getMessages } from 'next-intl/server';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import { QueryProvider } from '@/components/providers/QueryProvider';
 import { OfflineNotification } from '@/components/OfflineNotification';
+import { SyncStatus } from '@/components/SyncStatus';
+import { ToastContainer } from '@/components/ToastContainer';
 import '@/styles/globals.css';
 
 export const metadata = {
@@ -35,6 +37,8 @@ export default async function RootLayout({
           <QueryProvider>
             <AuthProvider>{children}</AuthProvider>
             <OfflineNotification />
+            <SyncStatus />
+            <ToastContainer />
           </QueryProvider>
         </NextIntlClientProvider>
       </body>
