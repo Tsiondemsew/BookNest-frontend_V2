@@ -1,6 +1,8 @@
 import { NextIntlClientProvider } from 'next-intl';
 import { notFound } from 'next/navigation';
 import { locales } from '@/i18n';
+import AuthHydrator from '@/components/AuthHydrator';
+import ReactQueryProvider from '@/components/ReactQueryProvider';
 
 export default async function LocaleLayout({
   children,
@@ -17,7 +19,10 @@ export default async function LocaleLayout({
 
   return (
     <NextIntlClientProvider messages={messages}>
-      {children}
+      <ReactQueryProvider>
+        <AuthHydrator />
+        {children}
+      </ReactQueryProvider>
     </NextIntlClientProvider>
   );
 }

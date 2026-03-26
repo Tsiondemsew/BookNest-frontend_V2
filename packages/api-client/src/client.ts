@@ -28,6 +28,8 @@ export class HttpClient {
 
     const config: RequestInit = {
       ...options,
+      // Needed for cross-origin API cookies (e.g. HttpOnly session cookies).
+      credentials: options.credentials ?? 'include',
       headers,
     };
 
