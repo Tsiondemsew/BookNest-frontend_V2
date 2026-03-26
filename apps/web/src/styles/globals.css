@@ -1,15 +1,41 @@
 @import 'tailwindcss';
 
 @theme inline {
-  --color-background: #ffffff;
-  --color-foreground: #000000;
-  --color-primary: #2563eb;
-  --color-secondary: #64748b;
-  --color-accent: #dc2626;
-  --color-muted: #f1f5f9;
-  --color-border: #e2e8f0;
+  /* Light mode - Warm Parchment for PWA */
+  --color-background: #faf8f6;
+  --color-foreground: #1c1917;
   
-  --radius: 0.5rem;
+  /* Primary - Oxford Blue */
+  --color-primary: #1e293b;
+  --color-primary-foreground: #ffffff;
+  
+  /* Secondary - Slate */
+  --color-secondary: #64748b;
+  --color-secondary-foreground: #ffffff;
+  
+  /* Accent - Amber Gold (Gamification) */
+  --color-accent: #f59e0b;
+  --color-accent-foreground: #1f2937;
+  
+  /* Admin Actions */
+  --color-success: #10b981;
+  --color-success-foreground: #ffffff;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  
+  /* UI Elements */
+  --color-muted: #f5f3f0;
+  --color-muted-foreground: #78716b;
+  --color-border: #e7e5e4;
+  --color-input: #ffffff;
+  --color-card: #fafaf9;
+  --color-card-foreground: #1c1917;
+  
+  /* Admin Sidebar */
+  --color-sidebar: #0f172a;
+  --color-sidebar-foreground: #ffffff;
+  
+  --radius: 0.75rem;
 }
 
 @layer base {
@@ -17,13 +43,18 @@
     @apply border-border;
   }
 
-  body {
-    @apply bg-background text-foreground;
-  }
-
-  /* Smooth scroll behavior */
   html {
     scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+
+  /* Premium serif for book titles */
+  .font-serif-title {
+    font-family: 'Georgia', 'Garamond', serif;
+    letter-spacing: -0.02em;
   }
 
   /* Remove default focus outline, we'll use custom */
@@ -36,7 +67,12 @@
 
   /* Selection styling */
   ::selection {
-    @apply bg-primary text-white;
+    @apply bg-accent text-accent-foreground;
+  }
+
+  /* Smooth transitions */
+  * {
+    @apply transition-colors duration-200;
   }
 }
 

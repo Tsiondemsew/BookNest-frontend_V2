@@ -1,161 +1,174 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/stores/authStore';
-import Link from 'next/link';
+import { AppShell } from '@/components/AppShell';
+import { Heart, MessageCircle, Share2, MoreHorizontal } from 'lucide-react';
 
 const MOCK_POSTS = [
   {
     id: '1',
-    author: 'Alice Reader',
-    avatar: '👩',
-    content: 'Just finished The Great Gatsby! What an amazing novel.',
-    likes: 24,
-    comments: 5,
+    author: 'Sarah_Chen',
+    avatar: 'SC',
+    content: 'Just finished "The Midnight Library" - absolutely mind-blowing! The way it explores parallel lives and choices is just... wow. Highly recommend! 📚✨',
+    book: 'The Midnight Library',
+    bookAuthor: 'Matt Haig',
     timestamp: '2 hours ago',
+    likes: 234,
+    comments: 12,
+    shares: 8,
+    liked: false,
   },
   {
     id: '2',
-    author: 'Bob Bookworm',
-    avatar: '👨',
-    content: 'Started reading Dune today. Excited to explore this sci-fi masterpiece!',
-    likes: 15,
-    comments: 3,
-    timestamp: '4 hours ago',
+    author: 'Mike_Reader',
+    avatar: 'MR',
+    content: 'Currently on chapter 15 of "Project Hail Mary". Cannot put it down! Weir never disappoints with his science fiction. 🚀',
+    book: 'Project Hail Mary',
+    bookAuthor: 'Andy Weir',
+    timestamp: '5 hours ago',
+    likes: 156,
+    comments: 8,
+    shares: 5,
+    liked: false,
   },
   {
     id: '3',
-    author: 'Carol Pages',
-    avatar: '👩',
-    content: 'Reading recommendations? I love mystery novels!',
-    likes: 32,
-    comments: 12,
-    timestamp: '6 hours ago',
+    author: 'Emma_Bookworm',
+    avatar: 'EB',
+    content: '"Atomic Habits" changed my perspective on building lasting change. Small incremental improvements really do compound! Great read for anyone looking to improve themselves.',
+    book: 'Atomic Habits',
+    bookAuthor: 'James Clear',
+    timestamp: '1 day ago',
+    likes: 589,
+    comments: 34,
+    shares: 120,
+    liked: false,
   },
 ];
 
 export default function SocialPage() {
-  const t = useTranslations();
   const params = useParams<{ locale: string }>();
   const locale = params?.locale ?? 'en';
-  const router = useRouter();
+  const t = useTranslations();
   const user = useAuthStore((s) => s.user);
-
   const [posts, setPosts] = useState(MOCK_POSTS);
-  const [newPost, setNewPost] = useState('');
 
-  const handlePostSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPost.trim()) return;
-
-    const post = {
-      id: String(posts.length + 1),
-      author: user?.displayName || 'Anonymous',
-      avatar: '📝',
-      content: newPost,
-      likes: 0,
-      comments: 0,
-      timestamp: 'now',
-    };
-
-    setPosts([post, ...posts]);
-    setNewPost('');
+  const handleLike = (postId: string) => {
+    setPosts(posts.map(post => 
+      post.id === postId 
+        ? { ...post, liked: !post.liked, likes: post.liked ? post.likes - 1 : post.likes + 1 }
+        : post
+    ));
   };
 
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>{t('common.loading')}</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold text-gray-900">BookNest</h1>
-            <nav className="flex gap-4">
-              <Link href={`/${locale}/discover`} className="text-gray-600 hover:text-gray-900">
-                {t('nav.discover')}
-              </Link>
-              <Link href={`/${locale}/library`} className="text-gray-600 hover:text-gray-900">
-                {t('nav.library')}
-              </Link>
-              <Link href={`/${locale}/social`} className="font-bold text-blue-600">
-                {t('nav.community')}
-              </Link>
-              <Link href={`/${locale}/profile`} className="text-gray-600 hover:text-gray-900">
-                {t('nav.profile')}
-              </Link>
-            </nav>
+    <AppShell currentTab="social">
+      <div className="bg-background min-h-screen">
+        {/* Header */}
+        <div className="bg-card border-b border-border sticky top-0 z-20">
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+              Community Feed
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Discover what others are reading and share your thoughts
+            </p>
           </div>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('social.title')}</h2>
-        <p className="text-gray-600 mb-6">{t('social.subtitle')}</p>
-
-        {/* Compose Post */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <form onSubmit={handlePostSubmit}>
-            <textarea
-              value={newPost}
-              onChange={(e) => setNewPost(e.target.value)}
-              placeholder={t('social.share')}
-              className="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              rows={4}
-            />
-            <div className="mt-4 flex justify-end">
-              <button
-                type="submit"
-                disabled={!newPost.trim()}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 font-medium"
-              >
-                {t('social.post')}
-              </button>
-            </div>
-          </form>
-        </div>
-
-        {/* Feed */}
-        <div className="space-y-4">
-          {posts.map((post) => (
-            <div key={post.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
-              {/* Post Header */}
-              <div className="flex items-center gap-3 mb-4">
-                <div className="text-3xl">{post.avatar}</div>
-                <div>
-                  <p className="font-semibold text-gray-900">{post.author}</p>
-                  <p className="text-xs text-gray-600">{post.timestamp}</p>
+        {/* Main Content */}
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+          {/* Create Post */}
+          <div className="bg-white rounded-lg border border-border p-6">
+            <div className="flex gap-4">
+              <div className="w-12 h-12 rounded-full bg-accent text-accent-foreground flex items-center justify-center font-semibold flex-shrink-0">
+                {user?.displayName?.charAt(0) || 'U'}
+              </div>
+              <div className="flex-1">
+                <textarea
+                  placeholder="Share your thoughts on a book you're reading..."
+                  className="w-full p-3 rounded-lg border border-border bg-muted placeholder-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-accent text-sm"
+                  rows={3}
+                />
+                <div className="flex justify-end mt-3 gap-2">
+                  <button className="px-4 py-2 rounded-lg border border-border text-foreground font-medium hover:bg-muted transition text-sm">
+                    Cancel
+                  </button>
+                  <button className="px-6 py-2 rounded-lg bg-accent text-accent-foreground font-medium hover:opacity-90 transition text-sm">
+                    Post
+                  </button>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Posts Feed */}
+          {posts.map((post) => (
+            <div key={post.id} className="bg-white rounded-lg border border-border p-6 hover:shadow-md transition">
+              {/* Post Header */}
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex gap-3 flex-1">
+                  <div className="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-semibold text-sm flex-shrink-0">
+                    {post.avatar}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-foreground">{post.author}</p>
+                    <p className="text-xs text-muted-foreground">{post.timestamp}</p>
+                  </div>
+                </div>
+                <button className="p-2 rounded-lg hover:bg-muted transition">
+                  <MoreHorizontal className="w-5 h-5 text-muted-foreground" />
+                </button>
               </div>
 
               {/* Post Content */}
-              <p className="text-gray-800 mb-4">{post.content}</p>
+              <p className="text-foreground mb-4 text-sm leading-relaxed">{post.content}</p>
+
+              {/* Book Reference */}
+              {post.book && (
+                <div className="bg-accent/5 border border-accent/20 rounded-lg p-4 mb-4">
+                  <p className="text-xs text-muted-foreground font-medium">Reading</p>
+                  <h4 className="font-serif-title font-semibold text-foreground text-sm md:text-base">{post.book}</h4>
+                  <p className="text-xs text-muted-foreground">{post.bookAuthor}</p>
+                </div>
+              )}
 
               {/* Post Actions */}
-              <div className="flex gap-6 text-sm text-gray-600 border-t pt-4">
-                <button className="hover:text-blue-600 font-medium flex items-center gap-1">
-                  ❤️ {post.likes} {t('social.like')}
+              <div className="flex items-center justify-between text-muted-foreground text-xs border-t border-border pt-4">
+                <button
+                  onClick={() => handleLike(post.id)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition ${
+                    post.liked
+                      ? 'text-accent bg-accent/10'
+                      : 'hover:bg-muted'
+                  }`}
+                >
+                  <Heart className={`w-4 h-4 ${post.liked ? 'fill-accent' : ''}`} />
+                  <span className="font-medium">{post.likes}</span>
                 </button>
-                <button className="hover:text-blue-600 font-medium flex items-center gap-1">
-                  💬 {post.comments} {t('social.comment')}
+                <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-muted transition">
+                  <MessageCircle className="w-4 h-4" />
+                  <span className="font-medium">{post.comments}</span>
                 </button>
-                <button className="hover:text-blue-600 font-medium flex items-center gap-1">
-                  📤 {t('social.share')}
+                <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-muted transition">
+                  <Share2 className="w-4 h-4" />
+                  <span className="font-medium">{post.shares}</span>
                 </button>
               </div>
             </div>
           ))}
         </div>
+
+        {/* Footer */}
+        <footer className="bg-foreground text-foreground/50 border-t border-border mt-12">
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-sm">
+            <p>&copy; 2024 BookNest. All rights reserved.</p>
+          </div>
+        </footer>
       </div>
-    </div>
+    </AppShell>
   );
 }
