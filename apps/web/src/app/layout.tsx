@@ -1,47 +1,23 @@
-import { NextIntlClientProvider } from 'next-intl';
-import { getLocale, getMessages } from 'next-intl/server';
-import { AuthProvider } from '@/components/providers/AuthProvider';
-import { QueryProvider } from '@/components/providers/QueryProvider';
-import { OfflineNotification } from '@/components/OfflineNotification';
-import { SyncStatus } from '@/components/SyncStatus';
-import { ToastContainer } from '@/components/ToastContainer';
+import type { ReactNode } from 'react';
 import '@/styles/globals.css';
 
 export const metadata = {
   title: 'BookNest - Discover & Share Stories',
   description: 'A modern PWA for discovering, reading, and sharing books with community features.',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-    themeColor: '#000000',
-  },
-  icons: {
-    icon: '/favicon.ico',
-  },
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
-  const locale = await getLocale();
-  const messages = await getMessages();
-
   return (
-    <html lang={locale} suppressHydrationWarning>
-      <body>
-        <NextIntlClientProvider locale={locale} messages={messages}>
-          <QueryProvider>
-            <AuthProvider>{children}</AuthProvider>
-            <OfflineNotification />
-            <SyncStatus />
-            <ToastContainer />
-          </QueryProvider>
-        </NextIntlClientProvider>
-      </body>
+    <html suppressHydrationWarning>
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
+      <body>{children}</body>
     </html>
   );
 }

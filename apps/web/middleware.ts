@@ -17,6 +17,7 @@ const protectedPaths = [
   '/settings',
   '/social',
   '/chat',
+  '/admin',
 ];
 
 // Public paths that don't require authentication
@@ -30,19 +31,19 @@ const publicPaths = [
 
 function isProtectedPath(pathname: string): boolean {
   // Remove locale prefix for matching
-  const pathWithoutLocale = pathname.replace(/^\/(en|es|fr)\/?/, '/') || '/';
+  const pathWithoutLocale = pathname.replace(/^\/(en|am)\/?/, '/') || '/';
   return protectedPaths.some((path) => pathWithoutLocale.startsWith(path));
 }
 
 function isPublicPath(pathname: string): boolean {
-  const pathWithoutLocale = pathname.replace(/^\/(en|es|fr)\/?/, '/') || '/';
+  const pathWithoutLocale = pathname.replace(/^\/(en|am)\/?/, '/') || '/';
   return publicPaths.some((path) => pathWithoutLocale === path || pathWithoutLocale.startsWith(path));
 }
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Check for auth token in cookies (HTTP-only cookie set by backend)
+  // Check for auth token in cookies
   const token = request.cookies.get('auth_token')?.value;
   const hasAuth = !!token;
 

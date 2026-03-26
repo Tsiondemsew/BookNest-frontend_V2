@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { UnauthorizedError } from '@repo/api-client';
 import type { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse } from '../../services/api/types';
 import { authApi } from '../../services/api/auth';
 import { useAuthStore } from '@/stores/authStore';
@@ -30,7 +29,7 @@ export function useMeQuery() {
 
     if (query.data?.user) {
       setUser(query.data.user);
-    } else if (query.error instanceof UnauthorizedError) {
+    } else {
       setUser(null);
     }
 
@@ -42,14 +41,12 @@ export function useMeQuery() {
 
 export function useLoginMutation() {
   const queryClient = useQueryClient();
-  const setToken = useAuthStore((s) => s.setToken);
   const setUser = useAuthStore((s) => s.setUser);
   const setHydrated = useAuthStore((s) => s.setHydrated);
 
   return useMutation({
     mutationFn: (body: LoginRequest) => authApi.login(body),
     onSuccess: (data: LoginResponse) => {
-      setToken(data.token);
       setUser(data.user);
       setHydrated(true);
       void queryClient.invalidateQueries({ queryKey: authKeys.me });
@@ -59,14 +56,12 @@ export function useLoginMutation() {
 
 export function useRegisterMutation() {
   const queryClient = useQueryClient();
-  const setToken = useAuthStore((s) => s.setToken);
   const setUser = useAuthStore((s) => s.setUser);
   const setHydrated = useAuthStore((s) => s.setHydrated);
 
   return useMutation({
     mutationFn: (body: RegisterRequest) => authApi.register(body),
     onSuccess: (data: RegisterResponse) => {
-      setToken(data.token);
       setUser(data.user);
       setHydrated(true);
       void queryClient.invalidateQueries({ queryKey: authKeys.me });

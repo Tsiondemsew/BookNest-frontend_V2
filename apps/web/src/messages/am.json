@@ -1,6 +1,103 @@
 {
+  "nav": {
+    "discover": "መጀመር",
+    "library": "ቤተ ጻ፦ታ",
+    "reader": "ንባብ",
+    "community": "ማህበረሰብ",
+    "profile": "ገጽ",
+    "admin": "አስተዳዳሪ",
+    "logout": "ውጣ",
+    "settings": "ቅንጅቶች"
+  },
+  "auth": {
+    "login": "ግባ",
+    "register": "ምዝገባ",
+    "email": "ኢሜይል አድራሻ",
+    "password": "ስሪ ቃል",
+    "name": "ሙሉ ስም",
+    "rememberMe": "ታታለኝ",
+    "forgotPassword": "ስሪ ቃልዎን ረስተዋል?",
+    "signIn": "ግባ",
+    "signUp": "ሂሳብ ፍጠር",
+    "noAccount": "ሂሳብ የለዎትም?",
+    "haveAccount": "ቀድሞ ሂሳብ አለዎት?"
+  },
+  "discover": {
+    "title": "መጻሕፍት ግኝት",
+    "subtitle": "ሺህ ሺህ ታሪኮችን ያስሱ",
+    "search": "መጻሕፍት, ደራሲ ይፈልጉ...",
+    "categories": "ምድቦች",
+    "fiction": "ልብ-ወሰን",
+    "mystery": "ምስጢር",
+    "romance": "ፍቅር",
+    "scifi": "ሳይንስ ብዕራ",
+    "biography": "ሕይወት ታሪክ",
+    "trending": "ሰብሳቢ",
+    "newest": "አዲስ",
+    "featured": "ዋና"
+  },
+  "library": {
+    "title": "ቤተ ጻ፦ታዬ",
+    "all": "ሁሉም መጻሕፍት",
+    "reading": "አሁን ይንበብ",
+    "finished": "ተጠናቀቀ",
+    "wishlist": "ምኞት ዝርዝር",
+    "empty": "ገና መጻሕፍት የሉም",
+    "progress": "ሂደት"
+  },
+  "reader": {
+    "title": "ንባብ",
+    "fontSize": "ፊደል መጠን",
+    "theme": "ገጽታ",
+    "lightMode": "ብርሃን",
+    "darkMode": "ጨለማ",
+    "sepiaMode": "ሴፒያ"
+  },
+  "social": {
+    "title": "ማህበረሰብ",
+    "post": "ለጋ",
+    "share": "ስሕተትዎን ስለ መጽሐፍት ያጋሩ...",
+    "like": "ወደድ",
+    "comment": "አስተያየት",
+    "replies": "ምላሾች",
+    "follow": "ተከተል",
+    "following": "ተከትሎ"
+  },
+  "profile": {
+    "title": "ገጽ",
+    "edit": "ገጽ ያርሙ",
+    "settings": "ቅንጅቶች",
+    "preferences": "ምርጫዎች",
+    "about": "ስለ",
+    "reading": "መጻሕፍት ይንበብ",
+    "finished": "መጻሕፍት ተጠናቀቀ",
+    "followers": "ተከተዋቸው",
+    "bio": "ባዮ"
+  },
+  "admin": {
+    "title": "አስተዳዳሪ Dashboard",
+    "users": "ተጠቃሚዎች",
+    "books": "መጻሕፍት",
+    "reports": "ሪፖርቶች",
+    "analytics": "ትንታኔ",
+    "moderation": "ማወቅ",
+    "pending": "በመጠባበቅ ላይ",
+    "approved": "ተቀበለ",
+    "rejected": "ተከልክለ"
+  },
   "common": {
     "welcome": "እንኳን ወደ ቡክኔስት በደህና መጡ",
+    "loading": "በመጫወት ላይ...",
+    "error": "የሆነ ምንድ ነገር ስህተት",
+    "success": "ስኬታማ",
+    "save": "ቆጤ",
+    "cancel": "ሰርዝ",
+    "delete": "ሰርዝ",
+    "edit": "ከክተት",
+    "back": "ተመለስ",
+    "next": "ቀጣይ",
+    "previous": "ውስጥ",
+    "search": "ፈልግ",
     "buy": "አሁን ግዛ"
   }
 }

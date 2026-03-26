@@ -1,6 +1,103 @@
 {
+  "nav": {
+    "discover": "Discover",
+    "library": "Library",
+    "reader": "Reader",
+    "community": "Community",
+    "profile": "Profile",
+    "admin": "Admin",
+    "logout": "Logout",
+    "settings": "Settings"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "email": "Email Address",
+    "password": "Password",
+    "name": "Full Name",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot password?",
+    "signIn": "Sign In",
+    "signUp": "Create Account",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?"
+  },
+  "discover": {
+    "title": "Discover Books",
+    "subtitle": "Explore thousands of stories",
+    "search": "Search books, authors...",
+    "categories": "Categories",
+    "fiction": "Fiction",
+    "mystery": "Mystery",
+    "romance": "Romance",
+    "scifi": "Sci-Fi",
+    "biography": "Biography",
+    "trending": "Trending",
+    "newest": "Newest",
+    "featured": "Featured"
+  },
+  "library": {
+    "title": "My Library",
+    "all": "All Books",
+    "reading": "Currently Reading",
+    "finished": "Finished",
+    "wishlist": "Wishlist",
+    "empty": "No books yet",
+    "progress": "Progress"
+  },
+  "reader": {
+    "title": "Reader",
+    "fontSize": "Font Size",
+    "theme": "Theme",
+    "lightMode": "Light",
+    "darkMode": "Dark",
+    "sepiaMode": "Sepia"
+  },
+  "social": {
+    "title": "Community",
+    "post": "Post",
+    "share": "Share your thoughts about a book...",
+    "like": "Like",
+    "comment": "Comment",
+    "replies": "Replies",
+    "follow": "Follow",
+    "following": "Following"
+  },
+  "profile": {
+    "title": "Profile",
+    "edit": "Edit Profile",
+    "settings": "Settings",
+    "preferences": "Preferences",
+    "about": "About",
+    "reading": "Books Reading",
+    "finished": "Books Finished",
+    "followers": "Followers",
+    "bio": "Bio"
+  },
+  "admin": {
+    "title": "Admin Dashboard",
+    "users": "Users",
+    "books": "Books",
+    "reports": "Reports",
+    "analytics": "Analytics",
+    "moderation": "Moderation",
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected"
+  },
   "common": {
     "welcome": "Welcome to BookNest",
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "success": "Success",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "search": "Search",
     "buy": "Buy Now"
   }
 }
