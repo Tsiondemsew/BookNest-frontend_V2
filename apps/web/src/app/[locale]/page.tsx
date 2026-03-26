@@ -1,35 +1,24 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 
-export default function Home() {
-  const t = useTranslations('common');
-  const user = useAuthStore((s) => s.user);
+/**
+ * Home page - Redirects based on auth status
+ * Authenticated: /dashboard
+ * Unauthenticated: /login
+ */
+export default function HomePage() {
+  const router = useRouter();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated());
+  const isHydrated = useAuthStore((state) => state.isHydrated);
 
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold">{t('welcome')}</h1>
-      <div className="mt-4 flex items-center gap-3">
-        {user ? (
-          <>
-            <Link className="rounded bg-black px-4 py-2 text-white" href="./dashboard">
-              Dashboard
-            </Link>
-            <Link className="rounded border px-4 py-2" href="./login">
-              Switch account
-            </Link>
-          </>
-        ) : (
-          <>
-            <Link className="rounded bg-black px-4 py-2 text-white" href="./login">
-              Login
-            </Link>
-            <button className="rounded border px-4 py-2">{t('buy')}</button>
-          </>
-        )}
-      </div>
-    </div>
-  );
+  useEffect(() => {
+    if (isHydrated) {
+      router.push(isAuthenticated ? '/dashboard' : '/login');
+    }
+  }, [isHydrated, isAuthenticated, router]);
+
+  return null;
 }

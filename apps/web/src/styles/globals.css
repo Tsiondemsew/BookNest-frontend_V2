@@ -1,0 +1,67 @@
+@import 'tailwindcss';
+
+@theme inline {
+  --color-background: #ffffff;
+  --color-foreground: #000000;
+  --color-primary: #2563eb;
+  --color-secondary: #64748b;
+  --color-accent: #dc2626;
+  --color-muted: #f1f5f9;
+  --color-border: #e2e8f0;
+  
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* Smooth scroll behavior */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Remove default focus outline, we'll use custom */
+  button,
+  a {
+    &:focus-visible {
+      @apply outline-2 outline-offset-2 outline-primary;
+    }
+  }
+
+  /* Selection styling */
+  ::selection {
+    @apply bg-primary text-white;
+  }
+}
+
+@layer utilities {
+  /* Loading spinner */
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+
+  /* Utility for sr-only content */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+}

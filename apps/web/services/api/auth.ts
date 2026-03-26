@@ -19,25 +19,27 @@ type MockSession = {
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * In production with HTTP-only cookies, these are no longer needed.
+ * For mock API, we simulate HTTP-only cookie behavior using a Map.
+ * This is NOT a real HTTP-only cookie but simulates the concept.
+ */
+const mockSessions = new Map<string, MockSession>();
+const MOCK_SESSION_ID = 'mock-session-id';
+
 function getMockSessionFromStorage(): MockSession | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = window.localStorage.getItem(MOCK_SESSION_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as MockSession;
-  } catch {
-    return null;
-  }
+  // In mock mode, we store in memory to simulate HTTP-only cookie behavior
+  // In production, the backend handles this with real HTTP-only cookies
+  return mockSessions.get(MOCK_SESSION_ID) || null;
 }
 
 function setMockSessionToStorage(session: MockSession): void {
-  if (typeof window === 'undefined') return;
-  window.localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(session));
+  // Store in memory map to simulate HTTP-only cookie
+  mockSessions.set(MOCK_SESSION_ID, session);
 }
 
 function clearMockSessionStorage(): void {
-  if (typeof window === 'undefined') return;
-  window.localStorage.removeItem(MOCK_SESSION_KEY);
+  mockSessions.delete(MOCK_SESSION_ID);
 }
 
 function buildMockUser(email: string, displayName?: string): LoginResponse['user'] {
