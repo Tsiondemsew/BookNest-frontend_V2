@@ -1,0 +1,11 @@
+{
+  "extends": "../../packages/typescript-config/tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "paths": {
+      "@/*": ["./*"],
+      "@repo/ui": ["../../packages/ui/src"],
+      "@repo/types": ["../../packages/types/src"]
+    }
+  }
+}
