@@ -1,0 +1,10 @@
+{
+  "extends": "../typescript-config/tsconfig.lib.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "jsx": "react-jsx",
+    "types": ["@types/react"],
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
+}
