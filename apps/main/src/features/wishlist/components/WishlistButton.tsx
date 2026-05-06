@@ -12,8 +12,6 @@ interface WishlistButtonProps {
   className?: string;
 }
 
-
-
 export function WishlistButton({ 
   bookId, 
   size = 'md', 
@@ -40,15 +38,15 @@ export function WishlistButton({
   };
 
   const sizeClasses = {
-    sm: 'p-1.5 text-sm',
-    md: 'p-2 text-base',
-    lg: 'p-2.5 text-lg',
+    sm: 'p-1.5',
+    md: 'p-2',
+    lg: 'p-2.5',
   };
 
   const iconSizes = {
     sm: 16,
-    md: 20,
-    lg: 24,
+    md: 18,
+    lg: 22,
   };
 
   const isActive = isInWishlist;
@@ -62,8 +60,8 @@ export function WishlistButton({
         flex items-center gap-2 rounded-full transition-all duration-200
         ${sizeClasses[size]}
         ${isActive 
-          ? 'bg-red-50 text-red-600 hover:bg-red-100' 
-          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          ? 'bg-red-50 text-red-500 hover:bg-red-100' 
+          : 'bg-white text-[#4A5568] hover:bg-[#F5F1EB] border border-[#E8E2D9]'
         }
         disabled:opacity-50 disabled:cursor-not-allowed
         ${className}
@@ -73,7 +71,7 @@ export function WishlistButton({
       <Heart 
         size={iconSizes[size]} 
         fill={isActive ? 'currentColor' : 'none'}
-        className="transition-all"
+        className="transition-transform hover:scale-110"
       />
       {showText && (
         <span className="text-sm font-medium">
@@ -83,4 +81,3 @@ export function WishlistButton({
     </button>
   );
 }
-

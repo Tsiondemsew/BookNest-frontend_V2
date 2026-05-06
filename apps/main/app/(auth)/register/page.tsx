@@ -5,32 +5,64 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { RegisterForm } from '@/features/auth/components';
 import { useAuthStore } from '@/stores/authStore';
+import { BookOpen, Globe } from 'lucide-react';
 
 export default function RegisterPage() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, isLoading } = useAuthStore();
   const router = useRouter();
 
   useEffect(() => {
-    if (isAuthenticated) {
-      router.push('/');
+    if (!isLoading && isAuthenticated) {
+      router.push('/onboarding/genres');
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isLoading, router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-[#2C3E50] border-t-[#B85C38] rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow">
-        <div>
-          <h1 className="text-3xl font-bold text-center text-gray-900">BookNest</h1>
-          <h2 className="mt-6 text-center text-xl text-gray-700">Create your account</h2>
-        </div>
-
-        <RegisterForm />
-
-        <div className="text-center text-sm">
-          <span className="text-gray-600">Already have an account? </span>
-          <Link href="/login" className="text-blue-600 hover:text-blue-500">
-            Sign in
+    <div className="min-h-screen bg-[#FDFBF7] flex flex-col">
+      {/* Header */}
+      <header className="border-b border-[#E8E2D9] bg-white">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <Link href="/" className="flex items-center gap-2">
+            <BookOpen className="w-6 h-6 text-[#B85C38]" />
+            <span className="text-xl font-bold text-[#1A2A3A]">BookNest</span>
           </Link>
+        </div>
+      </header>
+
+      <div className="flex-1 flex items-center justify-center py-12 px-4">
+        <div className="max-w-md w-full">
+          <div className="bg-white rounded-2xl shadow-sm border border-[#E8E2D9] p-8">
+            <div className="text-center mb-6">
+              <h1 className="text-2xl font-bold text-[#1A2A3A]">Create account</h1>
+              <p className="text-[#4A5568] text-sm mt-1">Join the BookNest community</p>
+            </div>
+
+            <RegisterForm />
+
+            <div className="mt-6 text-center">
+              <p className="text-sm text-[#4A5568]">
+                Already have an account?{' '}
+                <Link href="/login" className="text-[#B85C38] hover:text-[#8E735B] font-medium">
+                  Sign in
+                </Link>
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 text-center">
+            <button className="inline-flex items-center gap-1 text-sm text-[#4A5568] hover:text-[#B85C38] transition-colors">
+              <Globe size={14} />
+              <span>English</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

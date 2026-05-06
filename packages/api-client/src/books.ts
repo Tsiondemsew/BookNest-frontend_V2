@@ -20,23 +20,24 @@ export interface GetBooksParams {
   limit?: number;
 }
 
+
 export function createBooksApi(client: ApiClient) {
   return {
     // Existing methods
     getBooks: (params?: GetBooksParams) => {
-      const searchParams = new URLSearchParams();
-      if (params?.genre) searchParams.append('genre', params.genre);
-      if (params?.format) searchParams.append('format', params.format);
-      if (params?.search) searchParams.append('search', params.search);
-      if (params?.page) searchParams.append('page', String(params.page));
-      if (params?.limit) searchParams.append('limit', String(params.limit));
-      
-      const url = searchParams.toString() 
-        ? `${endpoints.books.list}?${searchParams.toString()}`
-        : endpoints.books.list;
-      
-      return client.get<BooksResponse>(url);
-    },
+  const searchParams = new URLSearchParams();
+  if (params?.genre && params.genre !== 'all') searchParams.append('genre', params.genre);
+  if (params?.format) searchParams.append('format', params.format);
+  if (params?.search) searchParams.append('search', params.search);
+  if (params?.page) searchParams.append('page', String(params.page));
+  if (params?.limit) searchParams.append('limit', String(params.limit));
+  
+  const url = searchParams.toString() 
+    ? `${endpoints.books.list}?${searchParams.toString()}`
+    : endpoints.books.list;
+  
+  return client.get<BooksResponse>(url);
+},
     
     getBookById: (id: string) => 
       client.get<BookResponse>(endpoints.books.detail(id)),

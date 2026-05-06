@@ -30,7 +30,7 @@ export function BookFilters({
   }, [searchInput, onSearchChange]);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+    <div className="bg-white rounded-xl border border-[#E8E2D9] p-5 mb-6">
       <div className="flex flex-col md:flex-row gap-4">
         {/* Search Input */}
         <div className="flex-1">
@@ -39,7 +39,7 @@ export function BookFilters({
             placeholder="Search by title or author..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2.5 border border-[#E8E2D9] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#B85C38] focus:border-[#B85C38] transition-all text-[#1A2A3A] placeholder:text-[#4A5568]"
           />
         </div>
 
@@ -48,7 +48,7 @@ export function BookFilters({
           <select
             value={selectedGenre || ''}
             onChange={(e) => onGenreChange(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2.5 border border-[#E8E2D9] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#B85C38] focus:border-[#B85C38] transition-all text-[#1A2A3A] bg-white cursor-pointer"
           >
             <option value="">All Genres</option>
             {genres.map((genre) => (
@@ -64,7 +64,7 @@ export function BookFilters({
           <select
             value={selectedFormat || ''}
             onChange={(e) => onFormatChange(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2.5 border border-[#E8E2D9] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#B85C38] focus:border-[#B85C38] transition-all text-[#1A2A3A] bg-white cursor-pointer"
           >
             <option value="">All Formats</option>
             <option value="PDF">PDF</option>

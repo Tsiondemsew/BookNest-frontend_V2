@@ -8,7 +8,7 @@ export default function UploadBookPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="container mx-auto px-4 py-8 text-center">
+      <div className="text-center py-16">
         <p className="text-red-500">Please login to upload books.</p>
       </div>
     );
@@ -16,15 +16,15 @@ export default function UploadBookPage() {
 
   if (user?.role !== 'author' && user?.role !== 'publisher') {
     return (
-      <div className="container mx-auto px-4 py-8 text-center">
+      <div className="text-center py-16">
         <p className="text-red-500">Only authors and publishers can upload books.</p>
       </div>
     );
   }
 
-  if (user?.role === 'publisher') {
-    return <PublisherBookUploadForm />;
-  }
-
-  return <AuthorBookUploadForm />;
+  return (
+    <div className="max-w-3xl mx-auto">
+      {user?.role === 'publisher' ? <PublisherBookUploadForm /> : <AuthorBookUploadForm />}
+    </div>
+  );
 }

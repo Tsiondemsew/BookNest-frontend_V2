@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Edit, Trash2, Eye } from 'lucide-react';
+import { Edit, Trash2, Eye, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 import { useMyBooks, useDeleteBook } from '@/features/books/hooks/useMyBooks';
 
 export function MyBooksList() {
@@ -15,11 +15,12 @@ export function MyBooksList() {
     return (
       <div className="space-y-4">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="flex gap-4 p-4 bg-gray-100 rounded-lg animate-pulse">
-            <div className="w-20 h-28 bg-gray-200 rounded"></div>
+          <div key={i} className="flex gap-4 p-4 bg-white rounded-xl border border-[#E8E2D9] animate-pulse">
+            <div className="w-20 h-28 bg-[#E8E2D9] rounded-lg"></div>
             <div className="flex-1 space-y-2">
-              <div className="h-5 bg-gray-200 rounded w-1/3"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+              <div className="h-5 bg-[#E8E2D9] rounded w-1/3"></div>
+              <div className="h-4 bg-[#E8E2D9] rounded w-1/4"></div>
+              <div className="h-3 bg-[#E8E2D9] rounded w-1/2"></div>
             </div>
           </div>
         ))}
@@ -28,16 +29,20 @@ export function MyBooksList() {
   }
 
   if (isError) {
-    return <p className="text-red-500">Failed to load your books</p>;
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-500">Failed to load your books</p>
+      </div>
+    );
   }
 
   if (books.length === 0) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-500">You haven't uploaded any books yet.</p>
+      <div className="text-center py-12 bg-white rounded-xl border border-[#E8E2D9]">
+        <p className="text-[#4A5568]">You haven't uploaded any books yet.</p>
         <Link
           href="/studio/upload"
-          className="inline-block mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          className="inline-block mt-4 px-4 py-2 bg-[#B85C38] text-white rounded-lg font-medium hover:bg-[#8E735B] transition-colors"
         >
           Upload Your First Book
         </Link>
@@ -46,73 +51,71 @@ export function MyBooksList() {
   }
 
   const getStatusBadge = (status: string) => {
-    const statuses: Record<string, { color: string; text: string }> = {
-      draft: { color: 'bg-gray-100 text-gray-800', text: 'Draft' },
-      pending_review: { color: 'bg-yellow-100 text-yellow-800', text: 'Pending Review' },
-      approved: { color: 'bg-green-100 text-green-800', text: 'Approved' },
-      rejected: { color: 'bg-red-100 text-red-800', text: 'Rejected' },
+    const statuses: Record<string, { color: string; bg: string; text: string; icon: any }> = {
+      draft: { color: '#4A5568', bg: '#F5F1EB', text: 'Draft', icon: Clock },
+      pending_review: { color: '#D97706', bg: '#FEF3C7', text: 'Pending Review', icon: AlertCircle },
+      approved: { color: '#2D6A4F', bg: '#D1FAE5', text: 'Approved', icon: CheckCircle },
+      rejected: { color: '#DC2626', bg: '#FEE2E2', text: 'Rejected', icon: AlertCircle },
     };
     const s = statuses[status] || statuses.draft;
-    return <span className={`px-2 py-1 rounded-full text-xs ${s.color}`}>{s.text}</span>;
+    const Icon = s.icon;
+    return (
+      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium`} style={{ backgroundColor: s.bg, color: s.color }}>
+        <Icon size={12} />
+        {s.text}
+      </span>
+    );
   };
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">My Books ({total})</h2>
-        <Link
-          href="/studio/upload"
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-        >
-          Upload New Book
-        </Link>
+        <p className="text-sm text-[#4A5568]">{total} book{total !== 1 ? 's' : ''} total</p>
       </div>
       
       <div className="space-y-4">
         {books.map((book) => (
-          <div key={book.id} className="flex gap-4 p-4 bg-white border rounded-lg shadow-sm">
+          <div key={book.id} className="flex gap-4 p-4 bg-white rounded-xl border border-[#E8E2D9] shadow-sm hover:shadow-md transition-all">
             <img
               src={book.cover_image_url}
               alt={book.title}
-              className="w-20 h-28 object-cover rounded"
+              className="w-20 h-28 object-cover rounded-lg shadow-sm"
             />
             
             <div className="flex-1">
-              <div className="flex items-start justify-between">
+              <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <h3 className="font-semibold text-lg">{book.title}</h3>
-                  <p className="text-sm text-gray-600">{book.author_name}</p>
+                  <h3 className="font-semibold text-[#1A2A3A] text-lg">{book.title}</h3>
+                  <p className="text-sm text-[#4A5568]">{book.author_name}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  {getStatusBadge(book.status)}
-                </div>
+                {getStatusBadge(book.status)}
               </div>
               
               <div className="mt-2 flex flex-wrap gap-2">
                 {book.formats?.map((format) => (
-                  <span key={format.format_type} className="text-xs bg-gray-100 px-2 py-1 rounded">
+                  <span key={format.format_type} className="text-xs bg-[#F5F1EB] text-[#4A5568] px-2 py-1 rounded-md">
                     {format.format_type}: {format.price} ETB
                   </span>
                 ))}
               </div>
               
-              <div className="mt-3 flex items-center gap-3">
+              <div className="mt-3 flex items-center gap-4">
                 <Link
                   href={`/market/${book.id}`}
-                  className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                  className="text-sm text-[#B85C38] hover:text-[#8E735B] transition-colors flex items-center gap-1"
                 >
                   <Eye size={14} /> View
                 </Link>
                 <Link
                   href={`/studio/books/${book.id}/edit`}
-                  className="text-sm text-gray-600 hover:underline flex items-center gap-1"
+                  className="text-sm text-[#4A5568] hover:text-[#1A2A3A] transition-colors flex items-center gap-1"
                 >
                   <Edit size={14} /> Edit
                 </Link>
                 <button
                   onClick={() => deleteBook.mutate(book.id)}
                   disabled={deleteBook.isPending}
-                  className="text-sm text-red-600 hover:underline flex items-center gap-1 disabled:opacity-50"
+                  className="text-sm text-red-500 hover:text-red-600 transition-colors flex items-center gap-1 disabled:opacity-50"
                 >
                   <Trash2 size={14} /> Delete
                 </button>

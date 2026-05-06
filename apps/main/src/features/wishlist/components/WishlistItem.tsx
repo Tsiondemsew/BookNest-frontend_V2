@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Trash2, BookOpen, Headphones } from 'lucide-react';
+import { Trash2, BookOpen, Headphones, Heart } from 'lucide-react';
 import type { WishlistItem } from '@repo/types';
 import { WishlistButton } from './WishlistButton';
 import { useRemoveFromWishlist } from '../hooks/useWishlist';
@@ -27,14 +27,14 @@ export function WishlistItemComponent({ item }: WishlistItemProps) {
   };
 
   return (
-    <div className="flex gap-4 p-4 bg-white rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+    <div className="flex gap-5 p-5 bg-white rounded-xl border border-[#E8E2D9] shadow-sm hover:shadow-md transition-all duration-300 group">
       {/* Book Cover */}
       <Link href={`/market/${book.id}`} className="flex-shrink-0">
-        <div className="w-24 h-32 rounded-md overflow-hidden bg-gray-100">
+        <div className="w-24 h-32 rounded-lg overflow-hidden bg-[#F5F1EB] shadow-sm">
           <img
             src={book.cover_image_url}
             alt={book.title}
-            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         </div>
       </Link>
@@ -42,23 +42,30 @@ export function WishlistItemComponent({ item }: WishlistItemProps) {
       {/* Book Info */}
       <div className="flex-1 min-w-0">
         <Link href={`/market/${book.id}`}>
-          <h3 className="font-semibold text-lg hover:text-blue-600 transition-colors line-clamp-1">
+          <h3 className="font-semibold text-[#1A2A3A] text-lg hover:text-[#B85C38] transition-colors line-clamp-1">
             {book.title}
           </h3>
         </Link>
-        <p className="text-sm text-gray-600 mt-1">{book.author_name}</p>
+        <p className="text-sm text-[#4A5568] mt-1">{book.author_name}</p>
+        
+        {/* Rating */}
+        <div className="flex items-center gap-1 mt-2">
+          <span className="text-[#B85C38] text-sm">★</span>
+          <span className="text-sm text-[#4A5568]">{book.rating || '4.5'}</span>
+          <span className="text-xs text-[#4A5568]">({book.review_count || 0})</span>
+        </div>
         
         {/* Formats */}
-        <div className="flex items-center gap-3 mt-2">
+        <div className="flex items-center gap-3 mt-3">
           {hasPdf && (
-            <span className="flex items-center gap-1 text-xs text-gray-500">
-              <BookOpen size={14} />
+            <span className="inline-flex items-center gap-1 text-xs bg-[#F5F1EB] text-[#4A5568] px-2 py-1 rounded-md">
+              <BookOpen size={12} />
               PDF
             </span>
           )}
           {hasAudio && (
-            <span className="flex items-center gap-1 text-xs text-gray-500">
-              <Headphones size={14} />
+            <span className="inline-flex items-center gap-1 text-xs bg-[#F5F1EB] text-[#4A5568] px-2 py-1 rounded-md">
+              <Headphones size={12} />
               Audio
             </span>
           )}
@@ -66,23 +73,23 @@ export function WishlistItemComponent({ item }: WishlistItemProps) {
 
         {/* Price */}
         {minPrice > 0 && (
-          <p className="text-lg font-bold text-gray-900 mt-2">
+          <p className="text-lg font-bold text-[#2C3E50] mt-3">
             From {minPrice} ETB
           </p>
         )}
 
         {/* Actions */}
-        <div className="flex items-center gap-3 mt-3">
+        <div className="flex items-center gap-3 mt-4">
           <Link
             href={`/market/${book.id}`}
-            className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
+            className="px-4 py-1.5 bg-[#2C3E50] text-white text-sm rounded-lg font-medium hover:bg-[#1A2A3A] transition-colors shadow-sm"
           >
             View Details
           </Link>
           <button
             onClick={handleRemove}
             disabled={isPending}
-            className="p-1.5 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
+            className="p-2 text-[#4A5568] hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 disabled:opacity-50"
             aria-label="Remove from wishlist"
           >
             <Trash2 size={18} />
@@ -90,7 +97,7 @@ export function WishlistItemComponent({ item }: WishlistItemProps) {
         </div>
       </div>
 
-      {/* Quick Remove Button */}
+      {/* Quick Wishlist Button */}
       <div className="flex-shrink-0">
         <WishlistButton bookId={book.id} size="sm" />
       </div>

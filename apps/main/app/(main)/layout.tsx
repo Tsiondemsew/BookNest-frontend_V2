@@ -1,101 +1,79 @@
 'use client';
 
-import { useEffect } from 'react';
-import Link from 'next/link';
-import { Heart } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
-import { useWishlistCount } from '@/features/wishlist/hooks/useWishlist';
-import { CartIcon } from '@/features/CartIcon';
-function WishlistIcon() {
-  const { isAuthenticated } = useAuthStore();
-  const { data: count } = useWishlistCount();
+import GuestLayout from './GuestLayout';
+import DashboardLayout from './DashboardLayout';
 
-  if (!isAuthenticated) {
-    return (
-      <Link href="/login" className="text-gray-700 hover:text-blue-600">
-        <Heart size={20} />
-      </Link>
-    );
-  }
+// Routes that should ALWAYS use guest layout (even if logged in)
+const GUEST_ONLY_ROUTES = ['/login', '/register', '/onboarding'];
 
-  return (
-    <Link href="/wishlist" className="relative text-gray-700 hover:text-blue-600">
-      <Heart size={20} />
-      {count && count > 0 && (
-        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-          {count > 9 ? '9+' : count}
-        </span>
-      )}
-    </Link>
-  );
-}
+// Routes that require authentication
+const PROTECTED_ROUTES = [
+  '/dashboard',
+  '/library', 
+  '/cart',
+  '/checkout',
+  '/wishlist',
+  '/community',
+  '/messages',
+  '/profile',
+  '/studio'
+];
 
 export default function MainLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { isLoading, isAuthenticated, fetchMe, user } = useAuthStore(); // ✅ Added 'user' here
+  const pathname = usePathname();
+  const router = useRouter();
+  const { isLoading, isAuthenticated, fetchMe, user } = useAuthStore();
+  const [showDashboard, setShowDashboard] = useState(false);
 
   useEffect(() => {
     fetchMe();
   }, [fetchMe]);
-  
+
+  useEffect(() => {
+    if (!isLoading) {
+      // Check if current route is guest-only
+      const isGuestOnlyRoute = GUEST_ONLY_ROUTES.some(route => pathname?.startsWith(route));
+      
+      // Check if current route requires authentication
+      const isProtectedRoute = PROTECTED_ROUTES.some(route => pathname?.startsWith(route));
+      
+      // If on guest-only route and authenticated, redirect to dashboard
+      if (isAuthenticated && isGuestOnlyRoute) {
+        router.push('/dashboard');
+        return;
+      }
+      
+      // If on protected route and not authenticated, redirect to login
+      if (!isAuthenticated && isProtectedRoute) {
+        router.push(`/login?redirect=${encodeURIComponent(pathname || '/')}`);
+        return;
+      }
+      
+      // Show dashboard layout for authenticated users (except on guest-only routes)
+      setShowDashboard(isAuthenticated && !isGuestOnlyRoute);
+    }
+  }, [isAuthenticated, isLoading, pathname, router]);
+
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-[#2C3E50] border-t-[#B85C38] rounded-full animate-spin"></div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navigation Bar */}
-      <nav className="bg-white shadow-sm border-b sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="text-xl font-bold text-gray-900">
-              BookNest
-            </Link>
-            
-            <div className="flex items-center gap-6">
-              <Link href="/market" className="text-gray-700 hover:text-blue-600">
-                Marketplace
-              </Link>
-              
-              {isAuthenticated && (
-                <>
-                  <Link href="/library" className="text-gray-700 hover:text-blue-600">
-                    Library
-                  </Link>
-                  
-                  {/* ✅ Studio link - only for authors and publishers */}
-                  {(user?.role === 'author' || user?.role === 'publisher') && (
-                    <Link href="/studio" className="text-gray-700 hover:text-blue-600">
-                      Studio
-                    </Link>
-                  )}
-                  
-                  <WishlistIcon />
-                  <CartIcon />
-                  <Link href="/profile" className="text-gray-700 hover:text-blue-600">
-                    Profile
-                  </Link>
-                </>
-              )}
-              
-              {!isAuthenticated && (
-                <Link href="/login" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                  Sign In
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
-      
-      <main>{children}</main>
-    </div>
-  );
+  // Use DashboardLayout for authenticated users
+  if (showDashboard) {
+    return <DashboardLayout user={user}>{children}</DashboardLayout>;
+  }
+
+  // Use GuestLayout for non-authenticated users
+  return <GuestLayout>{children}</GuestLayout>;
 }
