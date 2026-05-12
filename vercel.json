@@ -13,5 +13,5 @@
     }
   ],
   "installCommand": "pnpm install",
-  "buildCommand": "pnpm build --filter=main"
+  "buildCommand": "next build"
 }
