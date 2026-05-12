@@ -59,7 +59,7 @@ export default function DashboardPage() {
       {/* Welcome Header */}
       <div>
         <h1 className="text-2xl font-bold text-[#1A2A3A]">
-          Welcome back, {user?.name?.split(' ')[0] || user?.role} 👋
+          Welcome back, {user?.publicName?.split(' ')[0] || user?.role} 👋
         </h1>
         <p className="text-[#4A5568] mt-1">
           {userRole === 'reader' && "Ready to continue your reading journey?"}

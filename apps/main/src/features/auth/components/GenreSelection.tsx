@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { apiClient } from '@/lib/api/client';
 
@@ -17,10 +17,16 @@ interface GenreSelectionProps {
 
 export function GenreSelection({ genres }: GenreSelectionProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuthStore();
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Get pending action from URL
+  const pendingAction = searchParams.get('action');
+  const pendingBookFormatId = searchParams.get('book_format_id');
+  const pendingRedirect = searchParams.get('redirect') || '/';
 
   const toggleGenre = (genreId: string) => {
     setSelectedGenres(prev => {
@@ -37,6 +43,25 @@ export function GenreSelection({ genres }: GenreSelectionProps) {
     });
   };
 
+  const executePendingAction = async () => {
+    if (pendingAction === 'add-to-cart' && pendingBookFormatId) {
+      try {
+        await apiClient.post('/api/cart/items', { book_format_id: pendingBookFormatId });
+        router.push('/cart');
+        return true;
+      } catch (err) {
+        console.error('Failed to add to cart after onboarding:', err);
+      }
+    }
+    
+    if (pendingAction === 'buy' && pendingBookFormatId) {
+      router.push(`/checkout?book_format_id=${pendingBookFormatId}`);
+      return true;
+    }
+    
+    return false;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -49,13 +74,16 @@ export function GenreSelection({ genres }: GenreSelectionProps) {
     setError(null);
 
     try {
-      // ✅ CORRECT ENDPOINT - using /api/auth since routes are mounted there
-      const response = await apiClient.post('/api/auth/favorite-genres', {
+      await apiClient.post('/api/auth/favorite-genres', {
         genre_ids: selectedGenres,
       });
       
-      console.log('Saved successfully:', response);
-      router.push('/');
+      // Execute pending action if any
+      const actionExecuted = await executePendingAction();
+      
+      if (!actionExecuted) {
+        router.push(pendingRedirect);
+      }
     } catch (err: any) {
       console.error('Save error:', err);
       setError(err.message || 'Failed to save your preferences');
@@ -64,8 +92,12 @@ export function GenreSelection({ genres }: GenreSelectionProps) {
     }
   };
 
-  const skip = () => {
-    router.push('/');
+  const skip = async () => {
+    // Still execute pending action even if skipping genres
+    const actionExecuted = await executePendingAction();
+    if (!actionExecuted) {
+      router.push(pendingRedirect);
+    }
   };
 
   return (

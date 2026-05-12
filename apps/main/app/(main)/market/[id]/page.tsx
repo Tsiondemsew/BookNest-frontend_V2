@@ -81,7 +81,7 @@ function BookDetailContent() {
               <div className="flex items-center gap-2">
                 <span className="text-2xl text-[#B85C38]">★</span>
                 <div>
-                  <div className="text-xl font-bold text-[#1A2A3A]">{book.rating || '4.8'}</div>
+                  <div className="text-xl font-bold text-[#1A2A3A]">{book.avg_rating || '4.8'}</div>
                   <div className="text-xs text-[#4A5568]">{book.review_count || 0} reviews</div>
                 </div>
               </div>

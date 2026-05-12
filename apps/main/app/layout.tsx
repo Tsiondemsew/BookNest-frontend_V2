@@ -1,35 +1,45 @@
-import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+'use client';
+
+import { useEffect } from 'react';
+import { useAuthStore } from '@/stores/authStore';
+import { initOfflineSync } from '@/lib/progress/progressService';
+import { InstallPrompt } from '@/components/InstallPrompt';
 import { AppProviders } from '@/providers/app-providers';
+import { OfflineIndicator } from '@/components/OfflineIndicator';
 import './globals.css';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const { fetchMe, restoreOfflineSession, isAuthenticated } = useAuthStore();
 
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
+  useEffect(() => {
+    const initAuth = async () => {
+      if (navigator.onLine) {
+        await fetchMe();
+      } else {
+        // Offline - try to restore session from IndexedDB
+        await restoreOfflineSession();
+      }
+    };
+    
+    initAuth();
+    initOfflineSync();
 
-export const metadata: Metadata = {
-  title: 'BookNest',
-  description: 'BookNest main application',
-};
+    // Listen for online/offline events
+    const handleOnline = async () => {
+      await fetchMe();
+    };
+    
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [fetchMe, restoreOfflineSession]);
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">
+    <html lang="en">
+      
+      <body>
         <AppProviders>{children}</AppProviders>
+        <OfflineIndicator/>
+        <InstallPrompt />
       </body>
     </html>
   );

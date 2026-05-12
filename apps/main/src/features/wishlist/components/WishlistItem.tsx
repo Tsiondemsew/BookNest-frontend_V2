@@ -51,7 +51,7 @@ export function WishlistItemComponent({ item }: WishlistItemProps) {
         {/* Rating */}
         <div className="flex items-center gap-1 mt-2">
           <span className="text-[#B85C38] text-sm">★</span>
-          <span className="text-sm text-[#4A5568]">{book.rating || '4.5'}</span>
+          <span className="text-sm text-[#4A5568]">{book.avg_rating || '4.5'}</span>
           <span className="text-xs text-[#4A5568]">({book.review_count || 0})</span>
         </div>
         

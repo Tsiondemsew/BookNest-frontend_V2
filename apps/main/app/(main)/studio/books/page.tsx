@@ -1,4 +1,6 @@
 import { MyBooksList } from '@/features/studio/components/MyBooksList';
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 export default function MyBooksPage() {
   return (

@@ -26,7 +26,9 @@ export function AddToCartButton({
 
   const handleBuyNow = () => {
     if (!isAuthenticated) {
-      router.push('/login?redirect=' + encodeURIComponent(window.location.pathname));
+      // ✅ Store the intended action in the redirect URL
+      const redirectUrl = `/login?redirect=${encodeURIComponent(window.location.pathname)}&action=buy&book_format_id=${bookFormatId}`;
+      router.push(redirectUrl);
       return;
     }
     router.push(`/checkout?book_format_id=${bookFormatId}`);
@@ -34,7 +36,9 @@ export function AddToCartButton({
   
   const handleAddToCart = async () => {
     if (!isAuthenticated) {
-      router.push('/login?redirect=' + encodeURIComponent(window.location.pathname));
+      // ✅ Store the intended action in the redirect URL
+      const redirectUrl = `/login?redirect=${encodeURIComponent(window.location.pathname)}&action=add-to-cart&book_format_id=${bookFormatId}`;
+      router.push(redirectUrl);
       return;
     }
 

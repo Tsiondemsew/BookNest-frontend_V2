@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BookNest - Offline</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #FDFBF7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    .container {
+      text-align: center;
+      padding: 24px;
+      max-width: 400px;
+    }
+    h1 {
+      font-size: 28px;
+      color: #1A2A3A;
+      margin-bottom: 12px;
+    }
+    p {
+      color: #4A5568;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    .book-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+    }
+    .btn {
+      display: inline-block;
+      background: #2C3E50;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 16px;
+      cursor: pointer;
+      text-decoration: none;
+      margin: 5px;
+    }
+    .btn-secondary {
+      background: #8E735B;
+    }
+    .btn:hover {
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="book-icon">📚</div>
+    <h1>You're offline</h1>
+    <p>You can still access your downloaded books from the library.</p>
+    <a href="/library" class="btn">📖 My Library</a>
+    <button onclick="location.reload()" class="btn btn-secondary">🔄 Try Again</button>
+    <p style="margin-top: 24px; font-size: 12px;">
+      Connect to the internet to browse the marketplace and community.
+    </p>
+  </div>
+</body>
+</html>

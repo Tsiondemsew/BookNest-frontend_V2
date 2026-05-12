@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Generate Icons</title>
+  <style>
+    body { font-family: monospace; padding: 20px; background: #1a1a2e; color: white; }
+    button { background: #e94560; border: none; padding: 10px 20px; color: white; cursor: pointer; margin: 5px; }
+    .done { background: green; }
+    pre { background: #0f0f1a; padding: 10px; border-radius: 5px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>📦 BookNest Icon Generator</h1>
+  <p>Click each button to generate and download the icon. Then place them in this folder.</p>
+  <div id="buttons"></div>
+  <pre id="output"></pre>
+
+  <script>
+    const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+    const output = document.getElementById('output');
+    const buttonsDiv = document.getElementById('buttons');
+
+    function drawIcon(ctx, size) {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const context = canvas.getContext('2d');
+      
+      // Background
+      context.fillStyle = '#2C3E50';
+      context.fillRect(0, 0, size, size);
+      
+      // Book icon (simple)
+      context.fillStyle = '#B85C38';
+      const padding = size * 0.2;
+      const width = size - padding * 2;
+      const height = size * 0.6;
+      const x = padding;
+      const y = (size - height) / 2;
+      
+      // Draw book shape
+      context.fillRect(x, y, width, height);
+      
+      // Pages (white lines)
+      context.fillStyle = '#FDFBF7';
+      const pageWidth = width / 3;
+      for (let i = 1; i <= 2; i++) {
+        context.fillRect(x + (pageWidth * i) - 2, y + 5, 2, height - 10);
+      }
+      
+      // Bookmark
+      context.fillStyle = '#E94560';
+      context.fillRect(x + width - 15, y - 5, 10, 20);
+      
+      // Text line placeholders
+      context.fillStyle = '#E8E2D9';
+      const lineY = y + height - height * 0.3;
+      context.fillRect(x + 5, lineY, width - 10, 4);
+      context.fillRect(x + 5, lineY + 8, width * 0.6, 3);
+      
+      return canvas;
+    }
+
+    function downloadIcon(size) {
+      const canvas = drawIcon(null, size);
+      const link = document.createElement('a');
+      link.download = `icon-${size}x${size}.png`;
+      link.href = canvas.toDataURL();
+      link.click();
+      output.innerHTML += `✅ Generated icon-${size}x${size}.png\n`;
+    }
+
+    for (const size of sizes) {
+      const btn = document.createElement('button');
+      btn.textContent = `Generate ${size}x${size}`;
+      btn.onclick = () => downloadIcon(size);
+      buttonsDiv.appendChild(btn);
+    }
+    
+    output.innerHTML = 'Click each button to generate icons...\n';
+  </script>
+</body>
+</html>

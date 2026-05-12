@@ -1,9 +1,39 @@
 'use client';  
 import Link from "next/link";
 import GuestLayout from "./(main)/GuestLayout";
+import { useState, useEffect } from 'react'; 
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
 
 
 export default function PublicLandingPage() {
+    const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+    };
+
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!deferredPrompt) {
+      alert('Install prompt not available. You can also install manually via browser menu.');
+      return;
+    }
+    await deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
+  
   return (
     <GuestLayout >
     <div className="min-h-screen bg-[#FDFBF7]">
@@ -179,31 +209,27 @@ export default function PublicLandingPage() {
         </div>
       </div>
 
-      {/* CTA Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="bg-white rounded-2xl p-8 md:p-12 text-center shadow-sm border border-[#E8E2D9]">
-          <h2 className="text-2xl md:text-3xl font-bold text-[#1A2A3A] mb-3">
-            Ready to start reading?
-          </h2>
-          <p className="text-[#4A5568] mb-6 max-w-md mx-auto">
-            Join thousands of readers who discovered BookNest
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+       <div className="flex flex-wrap gap-4">
             <Link 
-              href="/register" 
-              className="bg-[#2C3E50] text-white px-6 py-2.5 rounded-lg font-medium hover:bg-[#1A2A3A] transition-colors"
+              href="/market"
+              className="group bg-[#2C3E50] text-white px-8 py-3.5 rounded-xl font-medium hover:bg-[#1A2A3A] transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
             >
-              Create free account
+              Explore marketplace
+              <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </Link>
-            <Link 
-              href="/market" 
-              className="border border-[#8E735B]/30 text-[#8E735B] px-6 py-2.5 rounded-lg font-medium hover:bg-[#8E735B]/5 transition-colors"
+            
+            <button 
+              onClick={handleInstall}
+              className="border border-[#8E735B]/30 text-[#8E735B] px-8 py-3.5 rounded-xl font-medium hover:bg-[#8E735B]/5 transition-all flex items-center gap-2"
             >
-              Browse as guest
-            </Link>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Install app
+            </button>
           </div>
-        </div>
-      </div>
 
       {/* Footer */}
       <div className="border-t border-[#E8E2D9] py-8">
