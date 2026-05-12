@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "apps/main/package.json",
+      "src": "apps/main/**",
       "use": "@vercel/next"
     }
   ],
@@ -11,5 +11,7 @@
       "src": "/(.*)",
       "dest": "apps/main/$1"
     }
-  ]
+  ],
+  "installCommand": "pnpm install",
+  "buildCommand": "pnpm build --filter=main"
 }
