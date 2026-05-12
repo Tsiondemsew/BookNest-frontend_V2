@@ -15,6 +15,7 @@ export interface BookFormat {
   duration_sec?: number | null;
   file_size_bytes?: number | null;
   storage_path?: string;
+  file_url?: string | null; 
   is_active?: boolean;
 }
 
@@ -41,6 +42,8 @@ export interface Book {
   is_active: boolean;
   sales_count?: number;
   total_revenue?: number;
+  avg_rating?: number;
+  review_count?: number; 
   created_at: string;
   updated_at: string;
 }
@@ -202,6 +205,7 @@ export interface AnalyticsResponse {
       total_copies_sold: number;
       total_revenue: number;
       pending_approval: number;
+      monthly_earnings: number;
     };
     sales_over_time: SalesDataPoint[];
     top_books: BookSalesData[];

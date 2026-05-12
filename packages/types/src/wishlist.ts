@@ -13,6 +13,8 @@ export interface WishlistItem {
       price: number;
       currency: string;
     }[];
+      avg_rating?: number;
+  review_count?: number; 
   };
 }
 
