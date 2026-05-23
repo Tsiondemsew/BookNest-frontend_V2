@@ -19,7 +19,8 @@ const PROTECTED_ROUTES = [
   '/community',
   '/messages',
   '/profile',
-  '/studio'
+  '/studio',
+  '/@',
 ];
 
 export default function MainLayout({

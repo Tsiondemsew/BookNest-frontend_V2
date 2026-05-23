@@ -7,8 +7,11 @@ export * from './books';
 export * from './wishlist';
 export * from './analytics';
 export * from './seller';
-export * from './cart';      // NEW
-export * from './checkout';  // NEW
+export * from './cart';      
+export * from './checkout';
+export * from './chat';  
+export * from './feed';
+export * from './profile';
 
 // Re-export types
 export type {
@@ -25,4 +28,6 @@ export type {
   UpdateCartItemRequest,
   CheckoutRequest,
   CheckoutResponse,
+  ChatResponse,
+  ChatMessagesResponse,
 } from '@repo/types';

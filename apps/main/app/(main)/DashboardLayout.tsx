@@ -29,23 +29,9 @@ import {
 import { useAuthStore } from '@/stores/authStore';
 
 // Navigation structure - clean, grouped
+// Updated navigation structure - Community FIRST
 const navigationGroups = {
   reader: [
-    {
-      title: 'Main',
-      items: [
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'Marketplace', href: '/market', icon: Store },
-        { name: 'My Library', href: '/library', icon: Library },
-      ]
-    },
-    {
-      title: 'Shopping',
-      items: [
-        { name: 'Cart', href: '/cart', icon: ShoppingCart },
-        { name: 'Wishlist', href: '/wishlist', icon: Heart },
-      ]
-    },
     {
       title: 'Community',
       items: [
@@ -56,37 +42,47 @@ const navigationGroups = {
     {
       title: 'Reading',
       items: [
+        { name: 'My Library', href: '/library', icon: Library },
         { name: 'Reading Stats', href: '/dashboard/stats', icon: TrendingUp },
         { name: 'Achievements', href: '/dashboard/achievements', icon: Award },
       ]
     },
     {
+      title: 'Marketplace',
+      items: [
+        { name: 'Browse', href: '/market', icon: Store },
+        { name: 'Cart', href: '/cart', icon: ShoppingCart },
+        { name: 'Wishlist', href: '/wishlist', icon: Heart },
+      ]
+    },
+    {
       title: 'Account',
       items: [
+        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
         { name: 'Profile', href: '/profile', icon: Settings },
       ]
     }
   ],
   author: [
     {
-      title: 'Main',
+      title: 'Community',
       items: [
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'Marketplace', href: '/market', icon: Store },
-        { name: 'My Library', href: '/library', icon: Library },
+        { name: 'Community Feed', href: '/community', icon: Users },
+        { name: 'Messages', href: '/messages', icon: MessageCircle },
       ]
     },
     {
-      title: 'Shopping',
+      title: 'Reading',
       items: [
-        { name: 'Cart', href: '/cart', icon: ShoppingCart },
-        { name: 'Wishlist', href: '/wishlist', icon: Heart },
+        { name: 'My Library', href: '/library', icon: Library },
+        { name: 'Reading Stats', href: '/dashboard/stats', icon: TrendingUp },
+        { name: 'Achievements', href: '/dashboard/achievements', icon: Award },
       ]
     },
     {
       title: 'Author Studio',
       items: [
-        { name: 'Studio Overview', href: '/studio', icon: Crown },
+        { name: 'Dashboard', href: '/studio', icon: Crown },
         { name: 'Upload Book', href: '/studio/upload', icon: Upload },
         { name: 'My Books', href: '/studio/books', icon: BookOpen },
         { name: 'Analytics', href: '/studio/analytics', icon: BarChart3 },
@@ -94,17 +90,11 @@ const navigationGroups = {
       ]
     },
     {
-      title: 'Community',
+      title: 'Marketplace',
       items: [
-        { name: 'Community Feed', href: '/community', icon: Users },
-        { name: 'Messages', href: '/messages', icon: MessageCircle },
-      ]
-    },
-    {
-      title: 'Reading',
-      items: [
-        { name: 'Reading Stats', href: '/dashboard/stats', icon: TrendingUp },
-        { name: 'Achievements', href: '/dashboard/achievements', icon: Award },
+        { name: 'Browse', href: '/market', icon: Store },
+        { name: 'Cart', href: '/cart', icon: ShoppingCart },
+        { name: 'Wishlist', href: '/wishlist', icon: Heart },
       ]
     },
     {
@@ -116,16 +106,16 @@ const navigationGroups = {
   ],
   publisher: [
     {
-      title: 'Main',
+      title: 'Community',
       items: [
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'Marketplace', href: '/market', icon: Store },
+        { name: 'Community Feed', href: '/community', icon: Users },
+        { name: 'Messages', href: '/messages', icon: MessageCircle },
       ]
     },
     {
       title: 'Publisher Studio',
       items: [
-        { name: 'Studio Overview', href: '/studio', icon: Crown },
+        { name: 'Dashboard', href: '/studio', icon: Crown },
         { name: 'Upload Book', href: '/studio/upload', icon: Upload },
         { name: 'Catalog', href: '/studio/books', icon: Library },
         { name: 'Analytics', href: '/studio/analytics', icon: BarChart3 },
@@ -134,10 +124,9 @@ const navigationGroups = {
       ]
     },
     {
-      title: 'Community',
+      title: 'Marketplace',
       items: [
-        { name: 'Community Feed', href: '/community', icon: Users },
-        { name: 'Messages', href: '/messages', icon: MessageCircle },
+        { name: 'Browse', href: '/market', icon: Store },
       ]
     },
     {
