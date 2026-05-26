@@ -20,7 +20,10 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@repo/ui": ["../../packages/ui/src"],
+      "@repo/types": ["../../packages/types/src"],
+      "@repo/api-client": ["../../packages/api-client/src"]
     }
   },
   "include": [

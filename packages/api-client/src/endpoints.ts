@@ -40,6 +40,7 @@ export const endpoints = {
     initialize: '/api/checkout',
     verify: '/api/checkout/verify',
   },
+
     chat: {
     list: '/api/chat',
     direct: '/api/chat/direct',
@@ -72,5 +73,32 @@ export const endpoints = {
     isFollowing: (userId: string) => `/api/follow/${userId}/is-following`,
     followers: (userId: string) => `/api/follow/${userId}/followers`,
     following: (userId: string) => `/api/follow/${userId}/following`,
+  },
+  // Admin endpoints
+  admin: {
+    dashboard: {
+      stats: '/api/admin/dashboard/stats',
+      revenueChart: '/api/admin/dashboard/revenue',
+      userChart: '/api/admin/dashboard/users',
+      booksChart: '/api/admin/dashboard/books',
+    },
+    users: {
+      list: '/api/admin/users',
+      detail: (userId: string) => `/api/admin/users/${userId}`,
+      ban: (userId: string) => `/api/admin/users/${userId}/ban`,
+      unban: (userId: string) => `/api/admin/users/${userId}/unban`,
+      updateRole: (userId: string) => `/api/admin/users/${userId}/role`,
+    },
+    books: {
+      pending: '/api/admin/books/pending',
+      detail: (bookId: string) => `/api/admin/books/${bookId}`,
+      approve: (bookId: string) => `/api/admin/books/${bookId}/approve`,
+      reject: (bookId: string) => `/api/admin/books/${bookId}/reject`,
+    },
+    reports: {
+      list: '/api/admin/reports',
+      detail: (reportId: string) => `/api/admin/reports/${reportId}`,
+      resolve: (reportId: string) => `/api/admin/reports/${reportId}/resolve`,
+    },
   },
 } as const;
