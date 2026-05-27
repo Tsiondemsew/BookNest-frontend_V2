@@ -66,7 +66,7 @@ function MarketPageContent() {
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3">
             Discover your next read
           </h1>
-          <p className="text-[#8E735B] text-base md:text-lg max-w-2xl">
+          <p className="text-[#f1c59e] text-base md:text-lg max-w-2xl">
             Browse thousands of books from independent authors and publishers
           </p>
         </div>

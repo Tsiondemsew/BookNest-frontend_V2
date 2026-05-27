@@ -27,7 +27,7 @@ export function WishlistItemComponent({ item }: WishlistItemProps) {
   };
 
   return (
-    <div className="flex gap-5 p-5 bg-white rounded-xl border border-[#E8E2D9] shadow-sm hover:shadow-md transition-all duration-300 group">
+    <div className="relative flex md:flex-row flex-col gap-5 p-5 bg-white rounded-xl border border-[#E8E2D9] shadow-sm hover:shadow-md transition-all duration-300 group">
       {/* Book Cover */}
       <Link href={`/market/${book.id}`} className="flex-shrink-0">
         <div className="w-24 h-32 rounded-lg overflow-hidden bg-[#F5F1EB] shadow-sm">
@@ -70,7 +70,7 @@ export function WishlistItemComponent({ item }: WishlistItemProps) {
             </span>
           )}
         </div>
-
+<div className='flex md:flex-row flex-col justify-between md:items-center'>
         {/* Price */}
         {minPrice > 0 && (
           <p className="text-lg font-bold text-[#2C3E50] mt-3">
@@ -86,19 +86,12 @@ export function WishlistItemComponent({ item }: WishlistItemProps) {
           >
             View Details
           </Link>
-          <button
-            onClick={handleRemove}
-            disabled={isPending}
-            className="p-2 text-[#4A5568] hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 disabled:opacity-50"
-            aria-label="Remove from wishlist"
-          >
-            <Trash2 size={18} />
-          </button>
+        </div>
         </div>
       </div>
 
       {/* Quick Wishlist Button */}
-      <div className="flex-shrink-0">
+      <div className="flex-shrink-0 absolute top-5 right-5">
         <WishlistButton bookId={book.id} size="sm" />
       </div>
     </div>

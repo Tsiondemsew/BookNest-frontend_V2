@@ -7,7 +7,7 @@ import { InstallPrompt } from '@/components/InstallPrompt';
 import { AppProviders } from '@/providers/app-providers';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
 import './globals.css';
-
+import {Toaster} from 'react-hot-toast'
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const { fetchMe, restoreOfflineSession, isAuthenticated } = useAuthStore();
 
@@ -37,7 +37,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       
       <body>
-        <AppProviders>{children}</AppProviders>
+        <AppProviders>
+          <Toaster/>
+          {children}
+          </AppProviders>
         <OfflineIndicator/>
         <InstallPrompt />
       </body>

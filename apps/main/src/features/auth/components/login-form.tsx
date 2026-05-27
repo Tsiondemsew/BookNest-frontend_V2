@@ -52,7 +52,7 @@ export function LoginForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full pl-10 pr-4 py-2.5 border border-[#E8E2D9] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#B85C38] focus:border-[#B85C38] transition-all placeholder:text-[#A0A0A0]"
+            className="w-full pl-10 pr-4 py-2.5 border border-[#E8E2D9] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#B85C38] focus:border-[#B85C38] transition-all placeholder:text-[#A0A0A0] text-black"
             placeholder="you@example.com"
           />
         </div>
@@ -70,7 +70,7 @@ export function LoginForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full pl-10 pr-10 py-2.5 border border-[#E8E2D9] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#B85C38] focus:border-[#B85C38] transition-all placeholder:text-[#A0A0A0]"
+            className="w-full pl-10 pr-10 py-2.5 border border-[#E8E2D9] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#B85C38] focus:border-[#B85C38] transition-all placeholder:text-[#A0A0A0] text-black"
             placeholder="••••••••"
           />
           <button

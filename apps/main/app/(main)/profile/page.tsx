@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { apiClient } from '@/lib/api/client';
-import { Camera, Save, Loader2,TrendingUp,Eye, EyeOff, Lock, Globe, Bell, Shield, User, Mail, MapPin, Link as LinkIcon } from 'lucide-react';
+import { Camera, Save, Loader2,TrendingUp, Globe, Bell, Shield, User, Mail, MapPin, Link as LinkIcon } from 'lucide-react';
 
 interface UserProfile {
   id: string;
@@ -289,7 +289,7 @@ export default function ProfilePage() {
                 type="text"
                 value={formData.pen_name}
                 onChange={(e) => setFormData(prev => ({ ...prev, pen_name: e.target.value }))}
-                className="w-full px-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38]"
+                className="w-full px-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38] text-black placeholder-[#b2958a]"
                 placeholder="Your pen name (publicly visible)"
               />
             </div>
@@ -302,7 +302,7 @@ export default function ProfilePage() {
                 type="text"
                 value={formData.company_name}
                 onChange={(e) => setFormData(prev => ({ ...prev, company_name: e.target.value }))}
-                className="w-full px-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38]"
+                className="w-full px-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38] text-black placeholder-[#b2958a]"
                 placeholder="Your publishing company name"
               />
             </div>
@@ -315,7 +315,7 @@ export default function ProfilePage() {
               type="text"
               value={formData.display_name}
               onChange={(e) => setFormData(prev => ({ ...prev, display_name: e.target.value }))}
-              className="w-full px-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38]"
+              className="w-full px-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38] text-black placeholder-[#b2958a]"
               placeholder="How you want to be seen"
             />
           </div>
@@ -326,7 +326,7 @@ export default function ProfilePage() {
               value={formData.bio}
               onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
               rows={4}
-              className="w-full px-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38] resize-none"
+              className="w-full px-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38] text-black placeholder-[#b2958a] resize-none"
               placeholder="Tell us about yourself..."
             />
             <p className="text-xs text-[#4A5568] mt-1">{formData.bio.length} characters</p>
@@ -341,7 +341,7 @@ export default function ProfilePage() {
                   type="text"
                   value={formData.location}
                   onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                  className="w-full pl-10 pr-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38]"
+                  className="w-full pl-10 pr-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38] text-black placeholder-[#b2958a]"
                   placeholder="City, Country"
                 />
               </div>
@@ -355,7 +355,7 @@ export default function ProfilePage() {
                   type="url"
                   value={formData.website_url}
                   onChange={(e) => setFormData(prev => ({ ...prev, website_url: e.target.value }))}
-                  className="w-full pl-10 pr-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38]"
+                  className="w-full pl-10 pr-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38] text-black placeholder-[#b2958a]"
                   placeholder="https://yourwebsite.com"
                 />
               </div>

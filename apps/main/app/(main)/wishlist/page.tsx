@@ -82,7 +82,7 @@ export default function WishlistPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex md:flex-row flex-col md:items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-[#1A2A3A]">My Wishlist</h1>
           <p className="text-[#4A5568] text-sm mt-1">
@@ -91,7 +91,7 @@ export default function WishlistPage() {
         </div>
         <Link
           href="/market"
-          className="text-[#B85C38] hover:text-[#8E735B] text-sm font-medium flex items-center gap-1 transition-colors"
+          className="text-[#B85C38] mt-2 hover:text-[#8E735B] text-sm font-medium flex items-center gap-1 transition-colors"
         >
           Continue Shopping
           <ArrowRight size={16} />

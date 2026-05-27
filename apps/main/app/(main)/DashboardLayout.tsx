@@ -150,6 +150,21 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
   const { logout, isAuthenticated } = useAuthStore();
 
   useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) { 
+        setSidebarCollapsed(true);
+      } else {
+        setSidebarCollapsed(false);
+      }
+    };
+
+    handleResize();
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
     if (!isAuthenticated) {
       router.push('/login');
     }
@@ -202,10 +217,9 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
               <span className="text-xl font-bold text-[#1A2A3A]">BookNest</span>
             </div>
           )}
-          {sidebarCollapsed && <BookOpen className="w-6 h-6 text-[#B85C38]" />}
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="p-1.5 rounded-lg hover:bg-[#F5F1EB] transition-colors flex-shrink-0"
+            className="p-1.5 rounded-lg hover:bg-[#b73502] bg-[#B85C38] transition-colors flex-shrink-0"
           >
             {sidebarCollapsed ? <Menu size={18} /> : <ChevronLeft size={18} />}
           </button>
@@ -214,11 +228,11 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
         {/* User Info - Fixed */}
         <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-3'} px-4 py-4 border-b border-[#E8E2D9] flex-shrink-0`}>
           <div className="w-10 h-10 rounded-full bg-[#2C3E50] flex items-center justify-center text-white font-semibold flex-shrink-0">
-            {user?.name?.[0] || user?.email?.[0] || 'U'}
+            {user?.publicName?.[0] || user?.email?.[0] || 'U'}
           </div>
           {!sidebarCollapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-[#1A2A3A] truncate">{user?.name || user?.email?.split('@')[0]}</p>
+              <p className="text-sm font-semibold text-[#1A2A3A] truncate">{user?.publicName || user?.email?.split('@')[0]}</p>
               <p className="text-xs text-[#4A5568] capitalize">{user?.role || 'Reader'}</p>
             </div>
           )}

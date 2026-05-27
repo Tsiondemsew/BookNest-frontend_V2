@@ -110,7 +110,7 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="What's on your mind? Share your thoughts about books, reading, or connect with authors..."
-            className="w-full px-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38] focus:ring-1 focus:ring-[#B85C38] resize-none min-h-[100px]"
+            className="w-full px-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38] focus:ring-1 focus:ring-[#B85C38] resize-none min-h-[100px] text-black"
           />
           
           {/* Image Preview */}

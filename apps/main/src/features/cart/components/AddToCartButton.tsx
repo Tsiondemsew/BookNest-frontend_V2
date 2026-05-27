@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ShoppingCart, Check, Loader2, CreditCard } from 'lucide-react';
 import { useCart } from '../hooks/useCart';
 import { useAuthStore } from '@/stores/authStore';
+import toast from 'react-hot-toast';
 
 interface AddToCartButtonProps {
   bookFormatId: string;
@@ -45,6 +46,7 @@ export function AddToCartButton({
     try {
       await addToCart(bookFormatId);
       setIsAdded(true);
+      toast.success('Added to cart successfully')
       setTimeout(() => setIsAdded(false), 2000);
     } catch (error) {
       console.error('Failed to add to cart:', error);
@@ -101,7 +103,7 @@ export function AddToCartButton({
         ) : (
           <ShoppingCart size={16} />
         )}
-        {price} ETB - Add to Cart
+        Add to Cart
       </button>
     );
   }
@@ -117,7 +119,7 @@ export function AddToCartButton({
       ) : (
         <ShoppingCart size={16} />
       )}
-      {price} ETB - Add to Cart
+      Add to Cart
     </button>
   );
 }

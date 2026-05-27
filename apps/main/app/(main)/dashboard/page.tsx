@@ -166,14 +166,14 @@ export default function DashboardPage() {
         {/* Quick Actions */}
         <div className="bg-white rounded-xl border border-[#E8E2D9] p-5">
           <h3 className="font-semibold text-[#1A2A3A] mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Link href="/market" className="flex items-center gap-2 p-3 rounded-lg border border-[#E8E2D9] hover:border-[#B85C38]/30 hover:shadow-sm transition-all">
               <Store size={16} className="text-[#B85C38]" />
-              <span className="text-sm">Marketplace</span>
+              <span className="text-sm text-black">Marketplace</span>
             </Link>
             <Link href="/library" className="flex items-center gap-2 p-3 rounded-lg border border-[#E8E2D9] hover:border-[#B85C38]/30 hover:shadow-sm transition-all">
               <Library size={16} className="text-[#2C3E50]" />
-              <span className="text-sm">My Library</span>
+              <span className="text-sm text-black">My Library</span>
             </Link>
             {(userRole === 'author' || userRole === 'publisher') && (
               <Link href="/studio/upload" className="flex items-center gap-2 p-3 rounded-lg border border-[#E8E2D9] hover:border-[#B85C38]/30 hover:shadow-sm transition-all">
@@ -183,7 +183,7 @@ export default function DashboardPage() {
             )}
             <Link href="/messages" className="flex items-center gap-2 p-3 rounded-lg border border-[#E8E2D9] hover:border-[#B85C38]/30 hover:shadow-sm transition-all">
               <MessageCircle size={16} className="text-[#8E735B]" />
-              <span className="text-sm">Messages</span>
+              <span className="text-sm text-black">Messages</span>
             </Link>
           </div>
         </div>

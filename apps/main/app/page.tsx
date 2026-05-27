@@ -35,7 +35,7 @@ export default function PublicLandingPage() {
   };
   
   return (
-    <GuestLayout >
+    <GuestLayout>
     <div className="min-h-screen bg-[#FDFBF7]">
       
       {/* Hero Section */}
@@ -191,28 +191,28 @@ export default function PublicLandingPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div>
               <div className="text-3xl font-bold">10,000+</div>
-              <div className="text-[#8E735B] text-sm mt-1">Books</div>
+              <div className="text-[#ceb6a2] text-sm mt-1">Books</div>
             </div>
             <div>
               <div className="text-3xl font-bold">5,000+</div>
-              <div className="text-[#8E735B] text-sm mt-1">Readers</div>
+              <div className="text-[#ceb6a2] text-sm mt-1">Readers</div>
             </div>
             <div>
               <div className="text-3xl font-bold">500+</div>
-              <div className="text-[#8E735B] text-sm mt-1">Authors</div>
+              <div className="text-[#ceb6a2] text-sm mt-1">Authors</div>
             </div>
             <div>
               <div className="text-3xl font-bold">50k+</div>
-              <div className="text-[#8E735B] text-sm mt-1">Hours read</div>
+              <div className="text-[#ceb6a2] text-sm mt-1">Hours read</div>
             </div>
           </div>
         </div>
       </div>
 
-       <div className="flex flex-wrap gap-4">
+       <div className="flex md:flex-row flex-col gap-4 h-40 justify-center items-center">
             <Link 
               href="/market"
-              className="group bg-[#2C3E50] text-white px-8 py-3.5 rounded-xl font-medium hover:bg-[#1A2A3A] transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+              className="group w-[75%] md:w-fit bg-[#2C3E50] text-white px-8 py-3.5 h-12 rounded-xl font-medium hover:bg-[#1A2A3A] transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
             >
               Explore marketplace
               <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -222,7 +222,7 @@ export default function PublicLandingPage() {
             
             <button 
               onClick={handleInstall}
-              className="border border-[#8E735B]/30 text-[#8E735B] px-8 py-3.5 rounded-xl font-medium hover:bg-[#8E735B]/5 transition-all flex items-center gap-2"
+              className="border border-[#8E735B]/30 w-[75%] md:w-fit h-12 text-[#8E735B] px-8 py-3.5 rounded-xl font-medium hover:bg-[#8E735B]/5 transition-all flex items-center justify-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />

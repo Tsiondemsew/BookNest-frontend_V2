@@ -73,7 +73,7 @@ export default function NewChatPage() {
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             placeholder="Search by name or email..."
-            className="w-full pl-10 pr-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38]"
+            className="text-black w-full pl-10 pr-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38]"
           />
         </div>
 

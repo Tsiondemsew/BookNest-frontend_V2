@@ -54,14 +54,14 @@ export default function MessagesPage() {
   return (
     <div className="h-[calc(100vh-120px)] flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex md:flex-row flex-col md:items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-[#1A2A3A]">Messages</h1>
           <p className="text-sm text-[#4A5568] mt-1">Connect with readers, authors, and publishers</p>
         </div>
         <Link
           href="/messages/new"
-          className="flex items-center gap-2 px-4 py-2 bg-[#B85C38] text-white rounded-lg hover:bg-[#8E735B] transition-colors"
+          className="flex items-center gap-2 px-4 py-2 w-fit mt-2 bg-[#B85C38] text-white rounded-lg hover:bg-[#8E735B] transition-colors"
         >
           <Plus size={18} />
           New Chat
@@ -77,7 +77,7 @@ export default function MessagesPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search conversations..."
-            className="w-full pl-10 pr-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38]"
+            className="text-black w-full pl-10 pr-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38]"
           />
         </div>
         

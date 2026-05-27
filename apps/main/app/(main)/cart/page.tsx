@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Trash2, ArrowRight, ShoppingBag, CreditCard } from 'lucide-react';
 import { useCart } from '@/features/cart/hooks/useCart';
 import { useAuthStore } from '@/stores/authStore';
+import toast from 'react-hot-toast';
 
 export default function CartPage() {
   const { isAuthenticated } = useAuthStore();
@@ -65,45 +66,57 @@ export default function CartPage() {
           const bookFormatId = item.book_format_id;
           
           return (
-            <div key={item.id} className="flex gap-4 p-4 bg-white rounded-xl border border-[#E8E2D9] shadow-sm hover:shadow-md transition-all">
+            <div key={item.id} className="flex md:flex-row flex-col gap-4 p-4 bg-white rounded-xl border border-[#E8E2D9] shadow-sm hover:shadow-md transition-all">
               <img
                 src={book?.cover_image_url || '/placeholder-book.jpg'}
                 alt={book?.title || 'Book'}
-                className="w-24 h-32 object-cover rounded-lg"
+                className="w-24  h-32 object-cover rounded-lg"
               />
               
               <div className="flex-1">
-                <div className="flex justify-between">
-                  <div>
-                    <h3 className="font-semibold text-[#1A2A3A] text-lg">{book?.title || 'Unknown Book'}</h3>
-                    <p className="text-sm text-[#4A5568]">{book?.author_name || 'Unknown Author'}</p>
-                    <div className="mt-1">
-                      <span className="text-xs bg-[#F5F1EB] text-[#4A5568] px-2 py-1 rounded-md">
-                        {item.book_format?.format_type || 'Unknown Format'}
-                      </span>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => removeItem(item.id)}
-                    className="text-[#4A5568] hover:text-red-500 transition-colors"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-                
-                <div className="flex justify-between items-center mt-4">
-                  <p className="font-bold text-lg text-[#2C3E50]">
-                    {price.toFixed(2)} ETB
-                  </p>
-                  <Link
-                    href={`/checkout?book_format_id=${bookFormatId}`}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#B85C38] text-white rounded-lg text-sm font-medium hover:bg-[#8E735B] transition-colors"
-                  >
-                    <CreditCard size={16} />
-                    Buy Now
-                  </Link>
-                </div>
-              </div>
+  {/* Header Section: Title and Delete Button */}
+  <div className="flex justify-between items-start gap-4 w-full">
+    <div>
+      <h3 className="font-semibold text-[#1A2A3A] text-lg">
+        {book?.title || 'Unknown Book'}
+      </h3>
+      <p className="text-sm text-[#4A5568] mt-0.5">
+        {book?.author_name || 'Unknown Author'}
+      </p>
+      <div className="mt-2">
+        <span className="text-xs bg-[#F5F1EB] text-[#4A5568] px-2 py-1 rounded-md">
+          {item.book_format?.format_type || 'Unknown Format'}
+        </span>
+      </div>
+    </div>
+
+    {/* Delete Button - Pushed to the far right with a gap */}
+    <button
+      onClick={() => {removeItem(item.id);
+        toast.success('Book removed from cart!');
+      }
+      }
+      className="text-[#4A5568] hover:text-red-500 transition-colors p-1 flex-shrink-0"
+      title="Remove item"
+    >
+      <Trash2 size={18} />
+    </button>
+  </div>
+  
+  {/* Footer Section: Price and Buy Button */}
+  <div className="flex justify-between items-center mt-4">
+    <p className="font-bold text-lg text-[#2C3E50]">
+      {price.toFixed(2)} ETB
+    </p>
+    <Link
+      href={`/checkout?book_format_id=${bookFormatId}`}
+      className="flex items-center gap-2 px-4 py-2 bg-[#B85C38] text-white rounded-lg text-sm font-medium hover:bg-[#8E735B] transition-colors"
+    >
+      <CreditCard size={16} />
+      Buy Now
+    </Link>
+  </div>
+</div>
             </div>
           );
         })}

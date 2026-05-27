@@ -77,7 +77,7 @@ function BookDetailContent() {
             </div>
 
             {/* Rating & Stats */}
-            <div className="flex flex-wrap items-center gap-6 p-4 bg-white rounded-xl border border-[#E8E2D9] mb-6">
+            <div className="flex items-center gap-6 p-4 bg-white rounded-xl border border-[#E8E2D9] mb-6">
               <div className="flex items-center gap-2">
                 <span className="text-2xl text-[#B85C38]">★</span>
                 <div>
@@ -151,7 +151,7 @@ function BookDetailContent() {
                         </div>
                       </div>
                       
-                      <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                         <div className="text-right">
                           <div className="text-2xl font-bold text-[#2C3E50]">
                             {format.price} {format.currency || 'ETB'}
@@ -159,7 +159,7 @@ function BookDetailContent() {
                         </div>
                         
                         {/* Same buttons for everyone - AddToCartButton handles redirect internally */}
-                        <div className="flex gap-2">
+                        <div className="flex md:flex-row flex-col gap-2">
                           <AddToCartButton
                             bookFormatId={format.id}
                             formatType={format.format_type}

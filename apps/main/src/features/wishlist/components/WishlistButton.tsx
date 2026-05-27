@@ -4,6 +4,7 @@ import { Heart } from 'lucide-react';
 import { useIsInWishlist, useToggleWishlist } from '../hooks/useWishlist';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 interface WishlistButtonProps {
   bookId: string;
@@ -34,6 +35,7 @@ export function WishlistButton({
 
     if (!isChecking && !isPending) {
       await toggleWishlist(bookId, isInWishlist || false);
+      {isInWishlist ? toast.success('Book removed from wishlist!'): toast.success('Book added to wishlist!')}
     }
   };
 
