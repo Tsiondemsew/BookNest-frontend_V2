@@ -62,7 +62,15 @@ export const endpoints = {
     me: '/api/users/profile',
     avatar: '/api/users/profile/avatar',
     settings: '/api/users/profile/settings',
-    public: (username: string) => `/api/users/profile/public/${username}`,
+    public: (username: string) => `/api/public/profile/${username}`,
     userPosts: (userId: string) => `/api/feed/users/${userId}/posts`,
+  },
+  follow: {
+    follow: (userId: string) => `/api/follow/${userId}/follow`,
+    unfollow: (userId: string) => `/api/follow/${userId}/follow`,
+    toggle: (userId: string) => `/api/follow/${userId}/toggle`,
+    isFollowing: (userId: string) => `/api/follow/${userId}/is-following`,
+    followers: (userId: string) => `/api/follow/${userId}/followers`,
+    following: (userId: string) => `/api/follow/${userId}/following`,
   },
 } as const;

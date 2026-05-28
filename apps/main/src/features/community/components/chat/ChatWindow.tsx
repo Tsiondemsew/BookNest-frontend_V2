@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRealtimeChat } from '@/hooks/useRealtimeChat';
 import { chatApi } from '@/lib/api/chat';
 import { formatRelativeTime } from '@/features/community/utils/timeFormat';
+import { useAuthStore } from '@/stores/authStore';
 import type { ChatMessage } from '@repo/types';
 
 interface ChatWindowProps {
@@ -16,6 +17,7 @@ interface ChatWindowProps {
 }
 
 export function ChatWindow({ chatId, chatName, chatType = 'direct', onBack }: ChatWindowProps) {
+  const { user } = useAuthStore();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -72,7 +74,7 @@ export function ChatWindow({ chatId, chatName, chatType = 'direct', onBack }: Ch
     const newMessage: ChatMessage = {
       id: tempId,
       content: inputValue.trim(),
-      senderId: 'currentUser',
+      senderId: user?.id || 'currentUser',
       senderName: 'You',
       isRead: false,
       createdAt: new Date().toISOString(),
@@ -125,7 +127,7 @@ export function ChatWindow({ chatId, chatName, chatType = 'direct', onBack }: Ch
       <div className="flex items-center justify-between px-4 py-3 border-b border-[#E8E2D9]">
         <div className="flex items-center gap-3">
           {onBack && (
-            <button onClick={onBack} className="p-1 hover:bg-[#F5F1EB] rounded-lg">
+            <button onClick={onBack} className="p-1 hover:bg-[#E8E2D9] text-[#d3a45d] rounded-lg">
               <ArrowLeft size={20} />
             </button>
           )}
@@ -169,7 +171,7 @@ export function ChatWindow({ chatId, chatName, chatType = 'direct', onBack }: Ch
           </div>
         ) : (
           messages.map((msg) => {
-            const isOwn = msg.senderId === 'currentUser';
+            const isOwn = msg.senderId === (user?.id || 'currentUser');
             return (
               <div key={msg.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[70%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col`}>
@@ -208,7 +210,7 @@ export function ChatWindow({ chatId, chatName, chatType = 'direct', onBack }: Ch
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
             rows={1}
-            className="flex-1 px-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38] focus:ring-1 focus:ring-[#B85C38] resize-none max-h-32"
+            className="text-black flex-1 px-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38] focus:ring-1 focus:ring-[#B85C38] resize-none max-h-32"
             style={{ height: 'auto' }}
             onInput={(e) => {
               const target = e.target as HTMLTextAreaElement;

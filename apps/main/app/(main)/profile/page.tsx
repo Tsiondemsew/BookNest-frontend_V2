@@ -4,12 +4,15 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { apiClient } from '@/lib/api/client';
-import { Camera, Save, Loader2,TrendingUp, Globe, Bell, Shield, User, Mail, MapPin, Link as LinkIcon } from 'lucide-react';
+import { followApi } from '@/lib/api/follow';
+import { Camera, Save, Loader2, TrendingUp, Globe, Bell, Shield, User, Mail, MapPin, Link as LinkIcon } from 'lucide-react';
 
 interface UserProfile {
   id: string;
   email: string;
   role: string;
+  follower_count?: number;
+  following_count?: number;
   profile: {
     display_name?: string;
     pen_name?: string;
@@ -32,6 +35,14 @@ interface UserProfile {
   };
 }
 
+interface FollowUser {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+  bio?: string;
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuthStore();
@@ -40,6 +51,9 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [followers, setFollowers] = useState<FollowUser[]>([]);
+  const [following, setFollowing] = useState<FollowUser[]>([]);
+  const [isLoadingFollows, setIsLoadingFollows] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'privacy' | 'notifications'>('profile');
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -90,6 +104,21 @@ export default function ProfilePage() {
         push_notifications: profileData?.notification_preferences?.push_notifications ?? true,
         marketing_emails: profileData?.notification_preferences?.marketing_emails ?? false,
       });
+
+    // Handle Follow Info Data Async Queue fetch
+      setIsLoadingFollows(true);
+      try {
+        const [followersResponse, followingResponse] = await Promise.all([
+          followApi.getFollowers(data.id, 1, 20),
+          followApi.getFollowing(data.id, 1, 20),
+        ]);
+        setFollowers(followersResponse.data.followers || []);
+        setFollowing(followingResponse.data.following || []);
+      } catch (followError) {
+        console.error('Failed to fetch follows:', followError);
+      } finally {
+        setIsLoadingFollows(false);
+      }
     } catch (error) {
       console.error('Failed to fetch profile:', error);
     } finally {
@@ -196,10 +225,10 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* Avatar Section */}
+      {/* Hero Avatar & Analytics Status Row */}
       <div className="bg-white rounded-xl border border-[#E8E2D9] p-6">
         <div className="flex items-center gap-6">
-          <div className="relative">
+          <div className="relative flex-shrink-0">
             <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#2C3E50] to-[#B85C38] flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
               {profile?.profile?.avatar_url ? (
                 <img src={profile.profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
@@ -224,9 +253,21 @@ export default function ProfilePage() {
               className="hidden"
             />
           </div>
-          <div>
-            <p className="font-medium text-[#1A2A3A]">Profile Picture</p>
-            <p className="text-sm text-[#4A5568]">JPG, PNG or WEBP. Max 5MB.</p>
+          <div className="space-y-1.5 min-w-0">
+            <p className="font-semibold text-lg text-[#1A2A3A] truncate">
+              {user.publicName || formData.pen_name || user.email.split('@')[0]}
+            </p>
+            
+            {/* Inline Follower Analytics Blocks beside Profile Info */}
+            <div className="flex items-center gap-4">
+              <p className="text-sm text-[#4A5568]">
+                <span className="font-bold text-[#1A2A3A] text-base mr-1">{profile?.follower_count ?? followers.length}</span> followers
+              </p>
+              <div className="w-1 h-1 rounded-full bg-[#E8E2D9]" />
+              <p className="text-sm text-[#4A5568]">
+                <span className="font-bold text-[#1A2A3A] text-base mr-1">{profile?.following_count ?? following.length}</span> following
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -361,7 +402,7 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
-        </div>
+          </div>
       )}
 
       {/* Privacy Tab */}

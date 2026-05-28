@@ -12,6 +12,7 @@ export * from './checkout';
 export * from './chat';  
 export * from './feed';
 export * from './profile';
+export * from './follow';
 
 // Re-export types
 export type {

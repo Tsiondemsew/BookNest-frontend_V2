@@ -3,15 +3,23 @@
 import { useState } from 'react';
 import { UserPlus, UserCheck, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { followApi } from '@/lib/api/follow';
 
 interface FollowButtonProps {
   userId: string;
   initialIsFollowing: boolean;
   initialFollowerCount: number;
   size?: 'sm' | 'md';
+  onFollowChange?: (state: { isFollowing: boolean; followerCount: number }) => void;
 }
 
-export function FollowButton({ userId, initialIsFollowing, initialFollowerCount, size = 'md' }: FollowButtonProps) {
+export function FollowButton({
+  userId,
+  initialIsFollowing,
+  initialFollowerCount,
+  size = 'md',
+  onFollowChange,
+}: FollowButtonProps) {
   const { isAuthenticated } = useAuthStore();
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
   const [followerCount, setFollowerCount] = useState(initialFollowerCount);
@@ -30,17 +38,32 @@ export function FollowButton({ userId, initialIsFollowing, initialFollowerCount,
 
     setIsPending(true);
     
-    if (isFollowing) {
-      setFollowerCount(prev => prev - 1);
-      setIsFollowing(false);
-    } else {
-      setFollowerCount(prev => prev + 1);
-      setIsFollowing(true);
-    }
+    const previous = { isFollowing, followerCount };
+    const nextState = {
+      isFollowing: !isFollowing,
+      followerCount: isFollowing ? followerCount - 1 : followerCount + 1,
+    };
+    setIsFollowing(nextState.isFollowing);
+    setFollowerCount(nextState.followerCount);
+    onFollowChange?.(nextState);
 
-    // TODO: API call to follow/unfollow
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setIsPending(false);
+    try {
+      const response = await followApi.toggleFollow(userId);
+      const serverState = {
+        isFollowing: response.data.isFollowing,
+        followerCount: response.data.followerCount,
+      };
+      setIsFollowing(serverState.isFollowing);
+      setFollowerCount(serverState.followerCount);
+      onFollowChange?.(serverState);
+    } catch (error) {
+      console.error('Failed to toggle follow:', error);
+      setIsFollowing(previous.isFollowing);
+      setFollowerCount(previous.followerCount);
+      onFollowChange?.(previous);
+    } finally {
+      setIsPending(false);
+    }
   };
 
   return (

@@ -6,6 +6,7 @@ import { MapPin, Link as LinkIcon, Calendar, Settings, MessageCircle } from 'luc
 import { FollowButton } from './FollowButton';
 import { formatRelativeTime } from '../../utils/timeFormat';
 import Link from 'next/link';
+import { followApi } from '@/lib/api/follow';
 interface ProfileHeaderProps {
   profile: {
     id: string;
@@ -31,6 +32,28 @@ interface ProfileHeaderProps {
 
 export function ProfileHeader({ profile, onMessage, onEdit, onSettings }: ProfileHeaderProps) {
   const [coverImageError, setCoverImageError] = useState(false);
+  const [followerCount, setFollowerCount] = useState(profile.followerCount);
+  const [followingCount] = useState(profile.followingCount);
+  const [listType, setListType] = useState<'followers' | 'following' | null>(null);
+  const [listUsers, setListUsers] = useState<Array<{ id: string; name: string; email?: string; avatarUrl?: string; bio?: string }>>([]);
+  const [isListLoading, setIsListLoading] = useState(false);
+
+  const openUserList = async (type: 'followers' | 'following') => {
+    setListType(type);
+    setIsListLoading(true);
+    try {
+      const response =
+        type === 'followers'
+          ? await followApi.getFollowers(profile.id, 1, 50)
+          : await followApi.getFollowing(profile.id, 1, 50);
+      setListUsers(type === 'followers' ? response.data.followers : response.data.following);
+    } catch (error) {
+      console.error(`Failed to fetch ${type}:`, error);
+      setListUsers([]);
+    } finally {
+      setIsListLoading(false);
+    }
+  };
 
   return (
     <div className="bg-white rounded-xl border border-[#E8E2D9] overflow-hidden">
@@ -82,20 +105,14 @@ export function ProfileHeader({ profile, onMessage, onEdit, onSettings }: Profil
                   userId={profile.id}
                   initialIsFollowing={profile.isFollowing || false}
                   initialFollowerCount={profile.followerCount}
+                  onFollowChange={({ followerCount: nextCount }) => setFollowerCount(nextCount)}
                 />
                 <button
-                  onClick={onMessage}
+                  onClick={onMessage || (() => { window.location.href = `/messages/new?user=${profile.id}`; })}
                   className="p-1.5 border border-[#E8E2D9] rounded-full hover:bg-[#F5F1EB] transition-colors"
                 >
                   <MessageCircle size={16} />
                 </button>
-              
-  <Link
-    href={`/messages/new?user=${profile.id}`}
-    className="p-1.5 border border-[#E8E2D9] rounded-full hover:bg-[#F5F1EB] transition-colors"
-  >
-    <MessageCircle size={16} />
-  </Link>
               </>
             )}
           </div>
@@ -140,14 +157,14 @@ export function ProfileHeader({ profile, onMessage, onEdit, onSettings }: Profil
               <span className="font-semibold text-[#1A2A3A]">{profile.postCount}</span>
               <span className="text-sm text-[#4A5568] ml-1">posts</span>
             </div>
-            <div>
-              <span className="font-semibold text-[#1A2A3A]">{profile.followerCount}</span>
+            <button onClick={() => openUserList('followers')} className="hover:opacity-80 transition-opacity">
+              <span className="font-semibold text-[#1A2A3A]">{followerCount}</span>
               <span className="text-sm text-[#4A5568] ml-1">followers</span>
-            </div>
-            <div>
-              <span className="font-semibold text-[#1A2A3A]">{profile.followingCount}</span>
+            </button>
+            <button onClick={() => openUserList('following')} className="hover:opacity-80 transition-opacity">
+              <span className="font-semibold text-[#1A2A3A]">{followingCount}</span>
               <span className="text-sm text-[#4A5568] ml-1">following</span>
-            </div>
+            </button>
           </div>
 
           {/* Private Account Badge */}
@@ -158,6 +175,43 @@ export function ProfileHeader({ profile, onMessage, onEdit, onSettings }: Profil
           )}
         </div>
       </div>
+      {listType && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setListType(null)}>
+          <div className="w-full max-w-md rounded-xl bg-white border border-[#E8E2D9] p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-[#1A2A3A] capitalize">{listType}</h3>
+              <button onClick={() => setListType(null)} className="text-sm text-[#4A5568] hover:text-[#1A2A3A]">Close</button>
+            </div>
+            <div className="max-h-80 overflow-y-auto space-y-2">
+              {isListLoading ? (
+                <p className="text-sm text-[#4A5568]">Loading...</p>
+              ) : listUsers.length === 0 ? (
+                <p className="text-sm text-[#4A5568]">No users yet.</p>
+              ) : (
+                listUsers.map((user) => (
+                  <Link
+                    key={user.id}
+                    href={`/${user.email?.split('@')[0] || user.name}`}
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#F5F1EB]"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#2C3E50] to-[#B85C38] flex items-center justify-center text-white text-sm font-semibold">
+                      {user.avatarUrl ? (
+                        <Image src={user.avatarUrl} alt={user.name} width={36} height={36} className="rounded-full object-cover" />
+                      ) : (
+                        user.name.charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-[#1A2A3A] truncate">{user.name}</p>
+                      {user.bio && <p className="text-xs text-[#4A5568] truncate">{user.bio}</p>}
+                    </div>
+                  </Link>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

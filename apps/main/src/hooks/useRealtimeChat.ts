@@ -28,7 +28,7 @@ export function useRealtimeChat(chatId: string | null) {
   const supabase = getSupabaseClient();
 
   useEffect(() => {
-    if (!chatId || !user) return;
+    if (!chatId || !user || !supabase) return;
 
     console.log(`Subscribing to chat: ${chatId}`);
 

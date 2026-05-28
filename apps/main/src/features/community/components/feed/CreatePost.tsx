@@ -98,7 +98,7 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
 
   return (
     <div className="bg-white rounded-xl border border-[#E8E2D9] p-4">
-      <div className="flex gap-3">
+      <div className="flex md:flex-row flex-col gap-3">
         {/* Avatar */}
         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#2C3E50] to-[#B85C38] flex items-center justify-center text-white font-semibold flex-shrink-0">
           {user?.publicName?.charAt(0) || 'U'}
@@ -127,7 +127,7 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
           )}
           
           {/* Action Buttons */}
-          <div className="flex items-center justify-between">
+          <div className="flex md:flex-row flex-col md:items-center justify-between">
             <div className="flex gap-2">
               <button
                 onClick={() => fileInputRef.current?.click()}
@@ -145,7 +145,7 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
               />
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex md:flex-row flex-col gap-2">
               <button
                 onClick={saveDraft}
                 disabled={isSavingDraft || (!content.trim() && !imageFile)}

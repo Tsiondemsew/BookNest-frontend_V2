@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Search, Loader2, ArrowLeft } from 'lucide-react';
 import { chatApi } from '@/lib/api/chat';
 import { apiClient } from '@/lib/api/client';
@@ -15,10 +15,12 @@ interface User {
 
 export default function NewChatPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [users, setUsers] = useState<User[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const hasAutoStartedRef = useRef(false);
 
   const searchUsers = async (query: string) => {
     if (!query.trim() || query.length < 2) {
@@ -43,13 +45,22 @@ export default function NewChatPage() {
     setIsCreating(true);
     try {
       const response = await chatApi.getOrCreateDirectChat(userId);
-      router.push(`/messages/${response.data.chat.id}`);
+      router.push(`/messages?chat=${response.data.chat.id}`);
     } catch (error) {
       console.error('Failed to start chat:', error);
     } finally {
       setIsCreating(false);
     }
   };
+
+  const quickUserId = searchParams.get('user');
+
+  useEffect(() => {
+    if (quickUserId && !hasAutoStartedRef.current) {
+      hasAutoStartedRef.current = true;
+      startChat(quickUserId);
+    }
+  }, [quickUserId]);
 
   const handleSearch = (value: string) => {
     setSearchQuery(value);
