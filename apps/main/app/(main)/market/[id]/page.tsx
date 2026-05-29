@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useBook } from '@/features/books/hooks/useBooks';
 import { BookFormatPurchaseSection } from '@/features/books/components/BookFormatPurchaseSection';
+import { BookReviewsList } from '@/features/reviews/components/BookReviewsList';
 import { Suspense } from 'react';
 
 function BookDetailContent() {
@@ -77,8 +78,10 @@ function BookDetailContent() {
               <div className="flex items-center gap-2">
                 <span className="text-2xl text-[#B85C38]">★</span>
                 <div>
-                  <div className="text-xl font-bold text-[#1A2A3A]">{book.avg_rating || '4.8'}</div>
-                  <div className="text-xs text-[#4A5568]">{book.review_count || 0} reviews</div>
+                  <div className="text-xl font-bold text-[#1A2A3A]">
+                    {book.avg_rating ? Number(book.avg_rating).toFixed(1) : '—'}
+                  </div>
+                  <div className="text-xs text-[#4A5568]">{book.review_count ?? 0} reviews</div>
                 </div>
               </div>
               <div className="w-px h-8 bg-[#E8E2D9]"></div>
@@ -121,6 +124,11 @@ function BookDetailContent() {
                 formats={book.formats || []}
                 bookId={book.id}
               />
+            </div>
+
+            <div className="mt-10">
+              <h3 className="text-lg font-semibold text-[#1A2A3A] mb-4">Reviews</h3>
+              <BookReviewsList bookId={book.id} />
             </div>
           </div>
         </div>

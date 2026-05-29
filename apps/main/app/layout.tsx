@@ -7,6 +7,7 @@ import { InstallPrompt } from '@/components/InstallPrompt';
 import { AppProviders } from '@/providers/app-providers';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
 import { AuthHashRedirect } from '@/components/AuthHashRedirect';
+import { isPublicAppPath } from '@/lib/auth/publicRoutes';
 import './globals.css';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -27,10 +28,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     window.addEventListener('online', handleOnline);
     document.addEventListener('visibilitychange', handleVisibility);
     const handleUnauthorized = () => {
-      // Cookie session expired or invalid — route user to login cleanly.
-      if (window.location.pathname !== '/login') {
-        window.location.assign('/login?reason=expired');
-      }
+      const path = window.location.pathname;
+      if (isPublicAppPath(path) || path === '/login') return;
+      window.location.assign(`/login?redirect=${encodeURIComponent(path)}`);
     };
     window.addEventListener('auth:unauthorized', handleUnauthorized as EventListener);
 

@@ -2,7 +2,12 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthStore } from '@/stores/authStore';
-import { getLocalProgressForBook, saveProgressLocally, syncProgressToBackend } from '@/lib/progress/progressService';
+import {
+  getLocalProgressForBook,
+  saveProgressLocally,
+  syncProgressToBackend,
+  mergeProgressFromServer,
+} from '@/lib/progress/progressService';
 
 interface UseReadingProgressOptions {
   bookFormatId: string;
@@ -27,6 +32,7 @@ export function useReadingProgress({ bookFormatId, total, onComplete }: UseReadi
     
     const loadProgress = async () => {
       try {
+        await mergeProgressFromServer(user.id);
         const localProgress = await getLocalProgressForBook(user.id, bookFormatId);
         if (localProgress) {
           const percent = localProgress.progressPercent;
@@ -51,7 +57,10 @@ export function useReadingProgress({ bookFormatId, total, onComplete }: UseReadi
   }, [isAuthenticated, user, bookFormatId, onComplete]);
   
   // Update progress - only increases, never decreases
-  const updateProgress = useCallback(async (newPosition: number) => {
+  const updateProgress = useCallback(async (
+    newPosition: number,
+    sessionMeta?: { minutesDelta?: number }
+  ) => {
     if (!isAuthenticated || !user || !bookFormatId) return;
     
     // ✅ NEVER decrease progress - only update if new position is GREATER
@@ -65,19 +74,24 @@ export function useReadingProgress({ bookFormatId, total, onComplete }: UseReadi
     
     const newPercent = Math.min(100, Math.floor((newPosition / total) * 100));
     const previousPercent = progressPercent;
-    
-    // Update refs
+    const pagesDelta = sessionMeta?.minutesDelta
+      ? 0
+      : newPosition - maxPositionRef.current;
+
     maxPositionRef.current = newPosition;
     setProgressPercent(newPercent);
     setLastPosition(newPosition);
-    
-    // Save to IndexedDB
+
     await saveProgressLocally(
       user.id,
       bookFormatId,
       newPercent,
       newPosition,
-      total
+      total,
+      {
+        pagesDelta: pagesDelta > 0 ? pagesDelta : 0,
+        minutesDelta: sessionMeta?.minutesDelta,
+      }
     );
     
     // Check if just completed

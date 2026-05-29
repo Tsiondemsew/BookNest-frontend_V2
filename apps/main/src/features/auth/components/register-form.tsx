@@ -75,7 +75,9 @@ export function RegisterForm() {
     setResendMessage('');
     try {
       const res = await authApi.resendVerification({ email: registeredEmail });
-      setResendMessage(res.message || 'Verification email resent! Check your inbox.');
+      setResendMessage(
+        (res as { message?: string }).message || 'Verification email resent! Check your inbox.'
+      );
     } catch (err: unknown) {
       setResendMessage(getFriendlyAuthMessage(err));
     }

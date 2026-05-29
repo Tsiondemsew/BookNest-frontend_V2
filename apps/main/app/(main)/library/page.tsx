@@ -4,40 +4,20 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { BookOpen, Headphones, ArrowRight, Clock, Download, CheckCircle, Loader2, WifiOff } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
-import { apiClient } from '@/lib/api/client';
+import { libraryApi } from '@/lib/api/client';
+import { mergeProgressFromServer } from '@/lib/progress/progressService';
+import { canDownloadOffline } from '@/lib/offline/downloadService';
+import type { LibraryItem } from '@repo/types';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getLocalProgressForBook, syncProgressToBackend } from '@/lib/progress/progressService';
 import { downloadBookForOffline, isBookDownloaded, removeOfflineBook, checkStorageSpace } from '@/lib/offline/downloadService';
+import { consumePendingReview, wasReviewPromptShown } from '@/lib/reader/reviewPrompt';
+import { ExitReviewPrompt } from '@/features/reviews/components/ExitReviewPrompt';
+import { LibraryReviewButton } from '@/features/reviews/components/LibraryReviewButton';
+import type { PendingReview } from '@/lib/reader/reviewPrompt';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
-
-interface LibraryItem {
-  id: string;
-  purchased_at: string;
-  last_read?: string;
-  progress?: number;
-  format: {
-    id: string;
-    type: 'PDF' | 'Audio';
-    price: number;
-    currency: string;
-    storage_path: string;
-    file_url: string | null;
-  };
-  book: {
-    id: string;
-    title: string;
-    subtitle?: string;
-    description?: string;
-    author_name: string;
-    publisher_name?: string;
-    cover_image_url: string;
-    language: string;
-    page_count?: number;
-    duration_sec?: number;
-  };
-}
 
 interface LibraryWithProgress extends LibraryItem {
   localProgress?: number;
@@ -53,7 +33,7 @@ interface DownloadStatus {
 }
 
 const fetchLibrary = async (): Promise<LibraryItem[]> => {
-  const response = await apiClient.get<{ success: boolean; data: LibraryItem[] }>('/api/library');
+  const response = await libraryApi.getLibrary();
   return response.data;
 };
 
@@ -63,7 +43,15 @@ export default function LibraryPage() {
   const [libraryWithProgress, setLibraryWithProgress] = useState<LibraryWithProgress[]>([]);
   const [downloadStatus, setDownloadStatus] = useState<DownloadStatus>({});
   const [storageInfo, setStorageInfo] = useState<{ available: number; isSufficient: boolean }>({ available: 0, isSufficient: true });
-  
+  const [exitReview, setExitReview] = useState<PendingReview | null>(null);
+
+  useEffect(() => {
+    const pending = consumePendingReview();
+    if (pending && !wasReviewPromptShown(pending.bookId)) {
+      setExitReview(pending);
+    }
+  }, []);
+
   const { data: library, isLoading, isError, refetch } = useQuery({
     queryKey: ['library'],
     queryFn: fetchLibrary,
@@ -100,24 +88,30 @@ export default function LibraryPage() {
     loadStatuses();
   }, [library]);
 
-  // Load local progress from IndexedDB and merge with library data
   useEffect(() => {
     if (!isAuthenticated || !user || !library) return;
-    
+
     const loadProgress = async () => {
+      await mergeProgressFromServer(user.id);
       const merged = await Promise.all(
         library.map(async (item) => {
           const localProgressData = await getLocalProgressForBook(user.id, item.format.id);
+          const serverPct = item.progress?.progress_percent;
+          const localPct = localProgressData?.progressPercent;
+          const best =
+            serverPct != null && localPct != null
+              ? Math.max(serverPct, localPct)
+              : serverPct ?? localPct;
           return {
             ...item,
-            localProgress: localProgressData?.progressPercent,
-            syncedProgress: item.progress,
+            localProgress: best,
+            syncedProgress: serverPct,
           };
         })
       );
       setLibraryWithProgress(merged);
     };
-    
+
     loadProgress();
   }, [isAuthenticated, user, library]);
 
@@ -134,7 +128,12 @@ export default function LibraryPage() {
 
   // Handle download for offline
 const handleDownload = async (bookFormatId: string, bookTitle: string, formatType: 'PDF' | 'Audio', fileSizeMB: number) => {
-  // Show storage warning before attempting download
+  const pwa = canDownloadOffline();
+  if (!pwa.allowed) {
+    alert(pwa.reason);
+    return;
+  }
+
   if (!storageInfo.isSufficient) {
     alert(`⚠️ Not enough storage space.\n\nAvailable: ${storageInfo.available}MB\nNeeded: ${fileSizeMB}MB\n\nPlease free up space and try again.`);
     return;
@@ -186,8 +185,10 @@ const handleDownload = async (bookFormatId: string, bookTitle: string, formatTyp
   };
 
   const getDisplayProgress = (item: LibraryWithProgress): number => {
-    return item.localProgress !== undefined ? item.localProgress : (item.syncedProgress || 0);
+    return item.localProgress ?? item.syncedProgress ?? item.progress?.progress_percent ?? 0;
   };
+
+  const pwaInstalled = typeof window !== 'undefined' && canDownloadOffline().allowed;
 
   if (!isAuthenticated) {
     return (
@@ -265,10 +266,17 @@ const handleDownload = async (bookFormatId: string, bookTitle: string, formatTyp
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
-      {/* Header */}
+      {exitReview && (
+        <ExitReviewPrompt pending={exitReview} onDismiss={() => setExitReview(null)} />
+      )}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-[#1A2A3A]">My Library</h1>
         <p className="text-[#4A5568] mt-1">Your collection of purchased books</p>
+        {!pwaInstalled && (
+          <p className="mt-2 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            Install the BookNest app to download books for offline reading. Browser tabs cannot keep books offline.
+          </p>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -373,7 +381,9 @@ const handleDownload = async (bookFormatId: string, bookTitle: string, formatTyp
             const isDownloaded = status?.isDownloaded || false;
             const isDownloading = status?.isDownloading || false;
             const fileUrl = item.format.file_url;
-            const fileSizeMB = 10; // TODO: Get actual file size from API
+            const fileSizeMB = item.format.file_size_bytes
+              ? Math.ceil(item.format.file_size_bytes / (1024 * 1024))
+              : 10;
             
             return (
               <div key={item.id} className="group">
@@ -436,16 +446,20 @@ const handleDownload = async (bookFormatId: string, bookTitle: string, formatTyp
                         ) : (
                           <button
   onClick={() => handleDownload(item.format.id, item.book.title, item.format.type, fileSizeMB)}
-  disabled={isDownloading}
+  disabled={isDownloading || !pwaInstalled}
   className="p-1.5 text-[#4A5568] hover:text-[#B85C38] transition-colors disabled:opacity-50"
-  title="Download for offline"
+  title={pwaInstalled ? 'Download for offline' : 'Install the BookNest app to download'}
 >
   {isDownloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
 </button>
                         )}
-                        <Link href={`/reader/${item.book.id}?format_id=${item.format.id}`} className="text-sm text-[#B85C38] font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                          {progress === 100 ? 'Review →' : (progress > 0 ? 'Continue →' : 'Start →')}
-                        </Link>
+                        {progress === 100 ? (
+                          <LibraryReviewButton bookId={item.book.id} bookTitle={item.book.title} />
+                        ) : (
+                          <Link href={`/reader/${item.book.id}?format_id=${item.format.id}`} className="text-sm text-[#B85C38] font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                            {progress > 0 ? 'Continue →' : 'Start →'}
+                          </Link>
+                        )}
                       </div>
                     </div>
                   </div>

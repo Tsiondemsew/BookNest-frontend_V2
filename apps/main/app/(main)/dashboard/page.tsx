@@ -2,10 +2,27 @@
 
 import { useAuthStore } from '@/stores/authStore';
 import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
+import { gamificationApi, analyticsApi } from '@/lib/api/client';
 import { BookOpen, Users, MessageCircle, TrendingUp, Award, Clock, Library, Heart, Store, ShoppingCart, ArrowRight } from 'lucide-react';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
+
+  const { data: gamificationRes } = useQuery({
+    queryKey: ['gamification', 'me'],
+    queryFn: () => gamificationApi.getMe(),
+    enabled: !!user,
+  });
+
+  const { data: analyticsRes } = useQuery({
+    queryKey: ['analytics', 'sales'],
+    queryFn: () => analyticsApi.getSalesAnalytics(),
+    enabled: !!user && (user.role === 'author' || user.role === 'publisher'),
+  });
+
+  const g = gamificationRes?.data;
+  const analytics = analyticsRes?.data;
 
   // Mock community activity
   const communityActivity = [
@@ -39,22 +56,22 @@ export default function DashboardPage() {
 
   const stats = {
     reader: [
-      { label: 'Reading Streak', value: '12', icon: Award, color: '#B85C38', change: 'days' },
-      { label: 'Books Completed', value: '8', icon: BookOpen, color: '#2C3E50', change: 'this year' },
-      { label: 'Following', value: '23', icon: Users, color: '#2D6A4F', change: '+5 this month' },
-      { label: 'Hours Read', value: '86', icon: Clock, color: '#8E735B', change: 'total' },
+      { label: 'Reading Streak', value: String(g?.streak.current ?? 0), icon: Award, color: '#B85C38', change: 'days' },
+      { label: 'Books Completed', value: String(g?.total_books_completed ?? 0), icon: BookOpen, color: '#2C3E50', change: 'total' },
+      { label: 'Pages Today', value: String(g?.today.pages_read ?? 0), icon: Users, color: '#2D6A4F', change: 'pages' },
+      { label: 'Minutes Today', value: String(g?.today.minutes_read ?? 0), icon: Clock, color: '#8E735B', change: 'min' },
     ],
     author: [
-      { label: 'Followers', value: '456', icon: Users, color: '#2D6A4F', change: '+12 this week' },
-      { label: 'Books Sold', value: '1,247', icon: TrendingUp, color: '#2C3E50', change: '+23%' },
-      { label: 'Reviews', value: '89', icon: Heart, color: '#B85C38', change: '4.8 avg' },
-      { label: 'Earnings', value: '12.4K', icon: Award, color: '#8E735B', change: 'ETB' },
+      { label: 'Reading Streak', value: String(g?.streak.current ?? 0), icon: Award, color: '#B85C38', change: 'days' },
+      { label: 'Books Sold', value: String(analytics?.summary.total_copies_sold ?? 0), icon: TrendingUp, color: '#2C3E50', change: 'copies' },
+      { label: 'Revenue', value: String(Number(analytics?.summary.total_revenue ?? 0).toFixed(0)), icon: Heart, color: '#B85C38', change: 'ETB' },
+      { label: 'Wallet', value: String(Number(analytics?.wallet?.available_balance ?? 0).toFixed(0)), icon: Award, color: '#8E735B', change: 'ETB avail.' },
     ],
     publisher: [
-      { label: 'Total Revenue', value: '45.2K', icon: TrendingUp, color: '#2C3E50', change: 'ETB' },
-      { label: 'Catalog', value: '28', icon: Library, color: '#B85C38', change: 'books' },
-      { label: 'Authors', value: '12', icon: Users, color: '#2D6A4F', change: 'active' },
-      { label: 'Monthly Sales', value: '3.2K', icon: Award, color: '#8E735B', change: 'units' },
+      { label: 'Total Revenue', value: String(Number(analytics?.summary.total_revenue ?? 0).toFixed(0)), icon: TrendingUp, color: '#2C3E50', change: 'ETB' },
+      { label: 'Catalog', value: String(analytics?.summary.total_books ?? 0), icon: Library, color: '#B85C38', change: 'books' },
+      { label: 'Copies Sold', value: String(analytics?.summary.total_copies_sold ?? 0), icon: Users, color: '#2D6A4F', change: 'total' },
+      { label: 'Streak', value: String(g?.streak.current ?? 0), icon: Award, color: '#8E735B', change: 'days' },
     ],
   };
 

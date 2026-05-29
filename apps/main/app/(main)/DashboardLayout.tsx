@@ -27,6 +27,7 @@ import {
   DollarSign
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { isPublicAppPath } from '@/lib/auth/publicRoutes';
 
 // Navigation structure - clean, grouped
 // Updated navigation structure - Community FIRST
@@ -148,10 +149,10 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
   const { logout, isAuthenticated } = useAuthStore();
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/login');
+    if (!isAuthenticated && pathname && !isPublicAppPath(pathname)) {
+      router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, pathname, router]);
 
   if (!isAuthenticated) {
     return null;

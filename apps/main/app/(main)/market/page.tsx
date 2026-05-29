@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useCallback, useEffect } from 'react';
+import { Suspense, useCallback, useEffect, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { BookGrid, BookFilters, BookPagination } from '@/features/books/components';
 import { useBooks, useGenres, usePersonalizedBooks } from '@/features/books/hooks';
@@ -10,7 +10,6 @@ export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 
 const PAGE_SIZE = 12;
-const PREVIEW_SIZE = 6;
 
 function MarketPageContent() {
   const router = useRouter();
@@ -23,11 +22,11 @@ function MarketPageContent() {
   const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
 
   const hasActiveFilters = Boolean(genre || format || search);
-  const showPersonalizedSection = isAuthenticated && !hasActiveFilters;
+  const mergePersonalized = isAuthenticated && !hasActiveFilters && page === 1;
 
   const { data: personalizedData, isLoading: personalizedLoading } = usePersonalizedBooks(
-    PREVIEW_SIZE,
-    showPersonalizedSection
+    PAGE_SIZE,
+    mergePersonalized
   );
 
   const { data: booksData, isLoading, isFetching, isError } = useBooks({
@@ -105,10 +104,17 @@ function MarketPageContent() {
   const showPagination = totalPages > 1 || currentPage > 1 || hasNextPage;
 
   const personalizedBooks = personalizedData?.books ?? [];
-  const hasPersonalizedPreview =
-    showPersonalizedSection &&
+  const hasPersonalized =
+    mergePersonalized &&
     Boolean(personalizedData?.meta?.personalized) &&
     personalizedBooks.length > 0;
+
+  const displayBooks = useMemo(() => {
+    if (!hasPersonalized) return books;
+    const favoriteIds = new Set(personalizedBooks.map((b) => b.id));
+    const rest = books.filter((b) => !favoriteIds.has(b.id));
+    return [...personalizedBooks, ...rest];
+  }, [books, personalizedBooks, hasPersonalized]);
 
   const rangeStart = total === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
   const rangeEnd = Math.min(currentPage * PAGE_SIZE, total);
@@ -129,21 +135,14 @@ function MarketPageContent() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3">Discover your next read</h1>
           <p className="text-[#8E735B] text-base md:text-lg max-w-2xl">
-            {hasPersonalizedPreview
-              ? 'Books picked from your favorite genres'
+            {hasPersonalized
+              ? 'Your favorite genres appear first — browse the full marketplace below'
               : 'Browse thousands of books from independent authors and publishers'}
           </p>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {hasPersonalizedPreview && (
-          <section className="mb-10">
-            <h2 className="text-lg font-semibold text-[#1A2A3A] mb-4">From your favorite genres</h2>
-            <BookGrid books={personalizedBooks} isLoading={personalizedLoading} />
-          </section>
-        )}
-
         <div className="mb-8">
           <BookFilters
             genres={genres || []}
@@ -196,7 +195,10 @@ function MarketPageContent() {
           </div>
         )}
 
-        <BookGrid books={books} isLoading={isLoading || genresLoading} />
+        <BookGrid
+          books={displayBooks}
+          isLoading={isLoading || genresLoading || (mergePersonalized && personalizedLoading)}
+        />
 
         {showPagination && (
           <div className="mt-10">

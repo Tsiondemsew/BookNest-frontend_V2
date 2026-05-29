@@ -15,10 +15,13 @@ import {
   Headphones,
 } from 'lucide-react';
 import { useReadingProgress } from '@/hooks/useReadingProgress';
-import { getOfflineBookData } from '@/lib/offline/downloadService';
+import { loadBookFileBytes } from '@/lib/reader/loadBookFile';
+
+import { handleReaderExitReview } from '@/lib/reader/reviewPrompt';
 
 interface AudioPlayerProps {
   bookFormatId: string;
+  bookId: string;
   bookTitle: string;
   bookAuthor: string;
   coverImage: string;
@@ -28,10 +31,11 @@ interface AudioPlayerProps {
 
 export function AudioPlayer({
   bookFormatId,
+  bookId,
   bookTitle,
   bookAuthor,
   coverImage,
-  audioUrl,
+  audioUrl: _audioUrl,
   totalDuration,
 }: AudioPlayerProps) {
   const router = useRouter();
@@ -45,15 +49,22 @@ export function AudioPlayer({
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [isDownloading, setIsDownloading] = useState(false);
   const [audioBlobUrl, setAudioBlobUrl] = useState<string | null>(null);
+  const completedSessionRef = useRef(false);
+  const lastMinuteRef = useRef(0);
 
-  // Progress tracking
   const { progressPercent, lastPosition, updateProgress } = useReadingProgress({
     bookFormatId,
     total: totalDuration,
     onComplete: () => {
-      console.log('Book completed!');
+      completedSessionRef.current = true;
     },
   });
+
+  useEffect(() => {
+    return () => {
+      handleReaderExitReview(bookId, bookTitle, completedSessionRef.current);
+    };
+  }, [bookId, bookTitle]);
 
   // Load audio from offline storage or network
   useEffect(() => {
@@ -61,23 +72,9 @@ export function AudioPlayer({
       setIsLoading(true);
 
       try {
-        let audioData: ArrayBuffer | null = null;
+        const { data: audioData, fromCache } = await loadBookFileBytes(bookFormatId);
+        if (fromCache) setIsOffline(true);
 
-        // Try to get from offline storage first
-        const offlineData = await getOfflineBookData(bookFormatId);
-        if (offlineData) {
-          console.log('Loading audio from offline storage');
-          audioData = offlineData;
-          setIsOffline(true);
-        } else if (audioUrl && !isOffline) {
-          console.log('Loading audio from network');
-          const response = await fetch(audioUrl, { credentials: 'include' });
-          audioData = await response.arrayBuffer();
-        } else {
-          throw new Error('No offline data and no network connection');
-        }
-
-        // Create blob URL
         const blob = new Blob([audioData], { type: 'audio/mpeg' });
         const blobUrl = URL.createObjectURL(blob);
         setAudioBlobUrl(blobUrl);
@@ -97,7 +94,7 @@ export function AudioPlayer({
         URL.revokeObjectURL(audioBlobUrl);
       }
     };
-  }, [bookFormatId, audioUrl, isOffline]);
+  }, [bookFormatId]);
 
   // Set up audio element
   useEffect(() => {
@@ -117,7 +114,13 @@ export function AudioPlayer({
     if (audioRef.current) {
       const time = audioRef.current.currentTime;
       setCurrentTime(time);
-      updateProgress(Math.floor(time));
+      const minute = Math.floor(time / 60);
+      let minutesDelta = 0;
+      if (minute > lastMinuteRef.current) {
+        minutesDelta = minute - lastMinuteRef.current;
+        lastMinuteRef.current = minute;
+      }
+      updateProgress(Math.floor(time), { minutesDelta: minutesDelta || undefined });
     }
   };
 
@@ -344,6 +347,7 @@ export function AudioPlayer({
           />
         </div>
       </div>
+
     </div>
   );
 }

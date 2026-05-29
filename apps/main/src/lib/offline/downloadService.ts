@@ -1,5 +1,12 @@
-import { getDB, saveOfflineBook, getOfflineBook, getAllOfflineBooks, deleteOfflineBook, OfflineBook } from '@/lib/db/schema';
-import { apiClient } from '@/lib/api/client';
+import {
+  getOfflineBook,
+  getAllOfflineBooks,
+  deleteOfflineBook,
+  saveOfflineBook,
+  OfflineBook,
+} from '@/lib/db/schema';
+import { downloadApi } from '@/lib/api/client';
+import { isInstalledPwa } from '@/lib/pwa/isInstalledPwa';
 
 export async function checkStorageSpace(fileSizeMB: number): Promise<{
   available: number;
@@ -10,15 +17,16 @@ export async function checkStorageSpace(fileSizeMB: number): Promise<{
     const used = (estimate.usage || 0) / (1024 * 1024);
     const quota = (estimate.quota || 0) / (1024 * 1024);
     const available = quota - used;
-    
+
     return {
       available: Math.round(available),
       isSufficient: available > fileSizeMB + 10,
     };
   }
-  
+
   return { available: 100, isSufficient: true };
 }
+
 export async function getStorageInfo(): Promise<{
   availableMB: number;
   usedMB: number;
@@ -30,23 +38,40 @@ export async function getStorageInfo(): Promise<{
     const quotaMB = (estimate.quota || 0) / (1024 * 1024);
     const usedMB = (estimate.usage || 0) / (1024 * 1024);
     const availableMB = quotaMB - usedMB;
-    
+
     return {
       availableMB: Math.round(availableMB),
       usedMB: Math.round(usedMB),
       quotaMB: Math.round(quotaMB),
-      percentageUsed: Math.round((usedMB / quotaMB) * 100),
+      percentageUsed: quotaMB > 0 ? Math.round((usedMB / quotaMB) * 100) : 0,
     };
   }
-  
+
   return { availableMB: 100, usedMB: 0, quotaMB: 512, percentageUsed: 0 };
 }
+
+export function canDownloadOffline(): { allowed: boolean; reason?: string } {
+  if (!isInstalledPwa()) {
+    return {
+      allowed: false,
+      reason:
+        'Install the BookNest app to save books for offline reading. Browser tabs cannot access downloads when offline.',
+    };
+  }
+  return { allowed: true };
+}
+
 export async function downloadBookForOffline(
   bookFormatId: string,
   title: string,
   formatType: 'PDF' | 'Audio',
   fileSizeMB: number
 ): Promise<{ success: boolean; error?: string; fileSize?: number }> {
+  const pwaCheck = canDownloadOffline();
+  if (!pwaCheck.allowed) {
+    return { success: false, error: pwaCheck.reason };
+  }
+
   const { isSufficient, available } = await checkStorageSpace(fileSizeMB);
   if (!isSufficient) {
     return {
@@ -54,32 +79,26 @@ export async function downloadBookForOffline(
       error: `Not enough space. Need ${fileSizeMB}MB, only ${available}MB available.`,
     };
   }
-  
+
   try {
-    // Use absolute URL for development to ensure correct origin
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-    const url = `${apiUrl}/api/download/${bookFormatId}`;
-    
-    console.log('Downloading from:', url);
-    
+    const url = downloadApi.getDownloadUrl(bookFormatId);
+
     const response = await fetch(url, {
       method: 'GET',
-      credentials: 'include',  // Important: sends cookies
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      credentials: 'include',
     });
-    
-    console.log('Response status:', response.status);
-    
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error?.message || `Download failed: ${response.status}`);
+      throw new Error(
+        (errorData as { error?: { message?: string } }).error?.message ||
+          `Download failed: ${response.status}`
+      );
     }
-    
+
     const fileData = await response.arrayBuffer();
     const fileSize = fileData.byteLength;
-    
+
     const offlineBook: OfflineBook = {
       id: bookFormatId,
       bookFormatId,
@@ -90,13 +109,13 @@ export async function downloadBookForOffline(
       downloadedAt: new Date().toISOString(),
       lastAccessed: new Date().toISOString(),
     };
-    
+
     await saveOfflineBook(offlineBook);
-    
+
     return { success: true, fileSize };
-  } catch (error: any) {
-    console.error('Download failed:', error);
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Download failed';
+    return { success: false, error: message };
   }
 }
 
@@ -106,7 +125,7 @@ export async function isBookDownloaded(bookFormatId: string): Promise<boolean> {
 }
 
 export async function getDownloadedBooks(): Promise<OfflineBook[]> {
-  return await getAllOfflineBooks();
+  return getAllOfflineBooks();
 }
 
 export async function removeOfflineBook(bookFormatId: string): Promise<void> {

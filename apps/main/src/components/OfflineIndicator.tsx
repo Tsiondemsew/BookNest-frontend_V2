@@ -23,7 +23,9 @@ export function OfflineIndicator() {
     };
   }, []);
 
-  if (isOnline && !isOfflineMode) return null;
+  // Only show the banner when the browser reports offline.
+  // `isOfflineMode` can be enabled briefly when restoring cached sessions even if online.
+  if (isOnline) return null;
 
   return (
     <div

@@ -13,9 +13,15 @@ import {
   createCheckoutApi,
   createProgressApi,
   createUsersApi,
+  createLibraryApi,
+  createDownloadApi,
+  createReviewsApi,
+  createSellerFinanceApi,
+  createGamificationApi,
 } from '@repo/api-client';
-import { apiConfig } from './config';  
+import { apiConfig } from './config';
 import { useAuthStore } from '@/stores/authStore';
+import { isPublicAppPath } from '@/lib/auth/publicRoutes';
 
 export const apiClient = new ApiClient(apiConfig);
 
@@ -27,12 +33,15 @@ apiClient.request = async (...args: Parameters<typeof _request>) => {
     return await _request(...args);
   } catch (error) {
     if (error instanceof UnauthorizedError) {
-      try {
-        await useAuthStore.getState().logout();
-      } catch {
-        // ignore
-      }
-      if (typeof window !== 'undefined') {
+      const path = typeof window !== 'undefined' ? window.location.pathname : '';
+      const isMeCheck = typeof args[0] === 'string' && args[0].includes('/api/auth/me');
+
+      if (!isPublicAppPath(path) && !isMeCheck) {
+        try {
+          await useAuthStore.getState().logout();
+        } catch {
+          // ignore
+        }
         window.dispatchEvent(new CustomEvent('auth:unauthorized'));
       }
     }
@@ -52,6 +61,11 @@ export const cartApi = createCartApi(apiClient);
 export const checkoutApi = createCheckoutApi(apiClient);
 export const progressApi = createProgressApi(apiClient);
 export const usersApi = createUsersApi(apiClient);
+export const libraryApi = createLibraryApi(apiClient);
+export const downloadApi = createDownloadApi(apiConfig);
+export const reviewsApi = createReviewsApi(apiClient);
+export const sellerFinanceApi = createSellerFinanceApi(apiClient);
+export const gamificationApi = createGamificationApi(apiClient);
 
 // Re-export types for convenience
 
