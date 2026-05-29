@@ -206,10 +206,15 @@ export interface AnalyticsResponse {
       total_copies_sold: number;
       total_revenue: number;
       pending_approval: number;
-      monthly_earnings: number;
+      monthly_earnings?: number;
     };
     sales_over_time: SalesDataPoint[];
     top_books: BookSalesData[];
+    wallet?: {
+      available_balance: number;
+      pending_balance: number;
+      currency: string;
+    };
   };
 }
 
@@ -264,9 +269,16 @@ export interface LibraryFormat {
   price: number;
   currency: string;
   storage_path: string;
+  file_url?: string | null;
   page_count?: number | null;
   duration_sec?: number | null;
   file_size_bytes?: number | null;
+}
+
+export interface LibraryProgress {
+  progress_percent: number;
+  completed_at: string | null;
+  updated_at: string;
 }
 
 export interface LibraryBook {
@@ -287,6 +299,7 @@ export interface LibraryBook {
 export interface LibraryItem {
   id: string;
   purchased_at: string;
+  progress?: LibraryProgress | null;
   format: LibraryFormat;
   book: LibraryBook;
 }

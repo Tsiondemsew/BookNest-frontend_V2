@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { gamificationApi } from '@/lib/api/client';
 import { Loader2, Award, Lock } from 'lucide-react';
+import type { UserAchievement } from '@repo/types';
 
 export default function AchievementsPage() {
   const { data, isLoading, isError } = useQuery({
@@ -11,7 +12,8 @@ export default function AchievementsPage() {
   });
 
   const profile = data?.data;
-  const earnedIds = new Set((profile?.achievements || []).map((a) => a.achievement_id));
+  const achievements: UserAchievement[] = profile?.achievements ?? [];
+  const earnedIds = new Set(achievements.map((item) => item.achievement_id));
 
   if (isLoading) {
     return (
@@ -52,7 +54,7 @@ export default function AchievementsPage() {
                   <p className="text-xs text-green-600 mt-1">
                     Earned{' '}
                     {new Date(
-                      profile.achievements.find((a) => a.achievement_id === def.id)?.earned_at || ''
+                      achievements.find((item) => item.achievement_id === def.id)?.earned_at || ''
                     ).toLocaleDateString()}
                   </p>
                 )}

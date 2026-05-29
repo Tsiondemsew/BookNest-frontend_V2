@@ -11,20 +11,6 @@ export const endpoints = {
     resetPassword: '/api/auth/reset-password',
     confirmEmail: '/api/auth/confirm-email',
   },
-  books: {
-    list: '/api/books',
-    detail: (id: string) => `/api/books/${id}`,
-    genres: '/api/books/genres',
-    languages: '/api/books/languages',
-    personalized: '/api/books/personalized',
-    search: '/api/books/search',
-    myBooks: '/api/books/my-books',
-    upload: '/api/books/upload',
-    edit: (id: string) => `/api/books/${id}/edit`,
-    updateUpload: (id: string) => `/api/books/${id}/upload`,
-    addFormat: (id: string) => `/api/books/${id}/formats`,
-    submit: (id: string) => `/api/books/${id}/submit`,
-  },
   wishlist: {
     list: '/api/wishlist',
     add: '/api/wishlist',
@@ -34,9 +20,28 @@ export const endpoints = {
   },
   analytics: {
     sales: '/api/analytics/sales',
+    salesReport: '/api/analytics/sales/report',
   },
   seller: {
     profile: (userId: string) => `/api/seller/${userId}`,
+    wallet: '/api/seller/wallet',
+    earnings: '/api/seller/earnings',
+    withdrawals: '/api/seller/withdrawals',
+  },
+  library: {
+    list: '/api/library',
+    check: (bookFormatId: string) => `/api/library/check/${bookFormatId}`,
+  },
+  download: {
+    book: (bookFormatId: string) => `/api/download/${bookFormatId}`,
+  },
+  reviews: {
+    list: (bookId: string) => `/api/books/${bookId}/reviews`,
+    can: (bookId: string) => `/api/books/${bookId}/reviews/can`,
+    create: (bookId: string) => `/api/books/${bookId}/reviews`,
+  },
+  gamification: {
+    me: '/api/gamification/me',
   },
   // NEW: Cart endpoints
   cart: {
@@ -77,7 +82,24 @@ export const endpoints = {
     userPosts: (userId: string) => `/api/feed/users/${userId}/posts`,
   },
   progress: {
+    list: '/api/progress',
+    forFormat: (bookFormatId: string) => `/api/progress/${bookFormatId}`,
     sync: '/api/progress/sync',
+  },
+  books: {
+    list: '/api/books',
+    detail: (id: string) => `/api/books/${id}`,
+    genres: '/api/books/genres',
+    languages: '/api/books/languages',
+    personalized: '/api/books/personalized',
+    search: '/api/books/search',
+    myBooks: '/api/books/my-books',
+    upload: '/api/books/upload',
+    edit: (id: string) => `/api/books/${id}/edit`,
+    updateUpload: (id: string) => `/api/books/${id}/upload`,
+    addFormat: (id: string) => `/api/books/${id}/formats`,
+    submit: (id: string) => `/api/books/${id}/submit`,
+    formatById: (formatId: string) => `/api/books/formats/${formatId}`,
   },
   users: {
     search: '/api/users/search',

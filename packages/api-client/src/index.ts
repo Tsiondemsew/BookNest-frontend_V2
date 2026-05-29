@@ -8,13 +8,26 @@ export * from './books';
 export * from './wishlist';
 export * from './analytics';
 export * from './seller';
-export * from './cart';      
+export * from './cart';
 export * from './checkout';
 export * from './chat';
 export * from './feed';
 export * from './profile';
 export * from './progress';
+export * from './library';
+export * from './download';
+export * from './reviews';
+export * from './sellerFinance';
+export * from './gamification';
 export * from './users';
+
+export { createLibraryApi } from './library';
+export { createDownloadApi } from './download';
+export { createReviewsApi } from './reviews';
+export { createSellerFinanceApi } from './sellerFinance';
+export { createGamificationApi } from './gamification';
+export { createProgressApi } from './progress';
+export { createAnalyticsApi } from './analytics';
 
 // Re-export types
 export type {
