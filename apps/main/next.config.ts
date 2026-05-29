@@ -1,6 +1,10 @@
 import type { NextConfig } from 'next';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import withPWAInit from 'next-pwa';
 import { pwaRuntimeCaching } from './src/lib/pwa/runtimeCaching';
+
+const monorepoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 const withPWA = withPWAInit({
   dest: 'public',
@@ -38,6 +42,19 @@ const nextConfig: NextConfig = {
   },
 
   transpilePackages: ['@repo/ui', '@repo/types', '@repo/api-client', '@repo/validation'],
+
+  outputFileTracingRoot: monorepoRoot,
+
+  webpack: (config, { isServer }) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      canvas: false,
+    };
+    if (isServer) {
+      config.externals = [...(config.externals || []), 'canvas'];
+    }
+    return config;
+  },
 
   // next-pwa relies on webpack; silence Next 16's turbopack/webpack mismatch warning.
   turbopack: {},
