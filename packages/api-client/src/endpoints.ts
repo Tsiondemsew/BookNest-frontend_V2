@@ -7,12 +7,17 @@ export const endpoints = {
     profile: '/api/auth/profile',
     
   },
+  messages: {
+    list: '/api/messages',
+    markRead: (id: string) => `/api/messages/${id}/read`,
+  },
   books: {
     list: '/api/books',
     detail: (id: string) => `/api/books/${id}`,
     genres: '/api/books/genres',
     search: '/api/books/search',
     myBooks: '/api/books/my-books',
+    submissionTimeline: '/api/books/submission-timeline',
   },
   wishlist: {
     list: '/api/wishlist',

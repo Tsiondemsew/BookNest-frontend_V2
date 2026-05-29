@@ -8,21 +8,25 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/auth/me', {
+        const response = await fetch('/api/admin/me', {
           method: 'GET',
           credentials: 'include',
         });
         const payload = await response.json();
+
         if (response.ok && payload.authenticated) {
           router.replace('/dashboard');
         }
       } catch {
-        // ignore
+        // not logged in
+      } finally {
+        setCheckingSession(false);
       }
     };
 
@@ -35,7 +39,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch('/api/admin/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -46,12 +50,17 @@ export default function LoginPage() {
 
       const payload = await response.json();
 
-      if (!response.ok || payload?.success === false) {
-        setError(payload?.message || 'Invalid admin credentials.');
+      if (!response.ok || payload?.success === false || !payload?.authenticated) {
+        setError(
+          payload?.message ||
+            payload?.error?.message ||
+            'Invalid admin credentials. Please use your admin email and password.',
+        );
         return;
       }
 
-      router.push('/dashboard');
+      router.replace('/dashboard');
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to sign in.');
     } finally {
@@ -59,13 +68,23 @@ export default function LoginPage() {
     }
   };
 
+  if (checkingSession) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50">
+        <p className="text-sm text-zinc-600">Checking session…</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4 py-10">
       <div className="w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-10 shadow-xl">
         <div className="mb-8 text-center">
           <p className="text-sm uppercase tracking-[0.24em] text-blue-600">Admin Portal</p>
           <h1 className="mt-4 text-3xl font-semibold text-zinc-900">Sign in to Admin</h1>
-          <p className="mt-2 text-sm text-zinc-600">Use your admin credentials to manage books, users, and reports.</p>
+          <p className="mt-2 text-sm text-zinc-600">
+            Use your admin credentials to manage books, users, and reports.
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -79,6 +98,7 @@ export default function LoginPage() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               required
+              autoComplete="email"
               className="mt-2 w-full rounded-3xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>
@@ -93,6 +113,7 @@ export default function LoginPage() {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
+              autoComplete="current-password"
               className="mt-2 w-full rounded-3xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>
@@ -114,7 +135,11 @@ export default function LoginPage() {
 
         <div className="mt-8 rounded-3xl border border-zinc-200 bg-zinc-50 p-5 text-sm text-zinc-600">
           <p className="font-medium text-zinc-900">Admin only</p>
-          <p className="mt-2">Please use your admin email and password to access the BookNest admin dashboard.</p>
+          <p className="mt-2">
+            Sign in with your BookNest admin account (Supabase user with{' '}
+            <span className="font-medium">role = admin</span>). The API must be running on port
+            5000.
+          </p>
         </div>
       </div>
     </div>

@@ -68,6 +68,30 @@ export function createBooksApi(client: ApiClient) {
       return client.get<MyBooksResponse>(url);
     },
 
+    getSubmissionTimeline: () =>
+      client.get<{
+        success: boolean;
+        data: {
+          events: Array<{
+            id: string;
+            bookId: string;
+            bookTitle: string;
+            type: string;
+            status: string;
+            at: string;
+            updateNote: string | null;
+            genre: string | null;
+          }>;
+          books: unknown[];
+        };
+      }>(endpoints.books.submissionTimeline),
+
+    submitForReview: (id: string, updateNote?: string) =>
+      client.patch<{ success: boolean; data: { book: unknown } }>(
+        `/api/books/${id}/submit-for-review`,
+        { updateNote: updateNote || '' },
+      ),
+
     // Update book cover - using PUT instead of PATCH
     updateBookCover: (id: string, coverImagePath: string, coverImageUrl: string) =>
       client.put<{ success: boolean; message: string }>(

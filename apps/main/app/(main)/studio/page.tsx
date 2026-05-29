@@ -3,6 +3,7 @@
 import { useAuthStore } from '@/stores/authStore';
 import { useSalesAnalytics } from '@/features/analytics/hooks/useAnalytics';
 import { MyBooksList } from '@/features/studio/components/MyBooksList';
+import { AuthorReviewInbox } from '@/features/studio/components/AuthorReviewInbox';
 import Link from 'next/link';
 import { Plus, BookOpen, DollarSign, TrendingUp, Clock, AlertCircle } from 'lucide-react';
 
@@ -104,6 +105,8 @@ export default function StudioDashboard() {
           </div>
         </div>
       )}
+
+      <AuthorReviewInbox />
 
       {/* My Books Section */}
       <div>

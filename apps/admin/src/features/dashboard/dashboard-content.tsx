@@ -1,301 +1,281 @@
 'use client';
 
 import {
-  Search,
-  Bell,
-  History,
-  DollarSign,
-  Users,
-  BookOpen,
+  Activity,
   AlertTriangle,
-  TrendingUp,
+  ChevronDown,
+  DollarSign,
+  Download,
+  TrendingDown,
+  Users,
 } from 'lucide-react';
+import { useState } from 'react';
+import { AdminTopHeader } from '@/components/admin-top-header';
+import { useAdminDashboard } from '@/hooks/useAdminDashboard';
+import { FinancialSummaryPanel } from './financial-summary-panel';
+import { RecentApprovalsTable } from './recent-approvals-table';
+import { UsabilityIndexChart } from './usability-index-chart';
 
-import {
-  RevenueChart,
-  UserChart,
-  BookChart,
- 
-} from '@/components';
-// import { RecentApprovals } from '@/components';
-import { AnalyticsCard } from '@/components/AnalyticsCard';
-import { useDashboardData } from '@/hooks/useDashboardData';
+const DATE_RANGES = [
+  { label: 'Last 7 Days', days: 7 },
+  { label: 'Last 30 Days', days: 30 },
+  { label: 'Last 90 Days', days: 90 },
+];
+
+function KpiCard({
+  label,
+  value,
+  badge,
+  badgeClass,
+  sublabel,
+  icon,
+  iconBg,
+  footer,
+}: {
+  label: string;
+  value: string;
+  badge?: string;
+  badgeClass?: string;
+  sublabel?: string;
+  icon: React.ReactNode;
+  iconBg: string;
+  footer?: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="flex items-start justify-between">
+        <div className={`rounded-xl p-2.5 ${iconBg}`}>{icon}</div>
+        {badge && (
+          <span
+            className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${badgeClass}`}
+          >
+            {badge}
+          </span>
+        )}
+      </div>
+      <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">{label}</p>
+      <p className="mt-1 text-3xl font-bold text-zinc-900 dark:text-white">{value}</p>
+      {sublabel && <p className="mt-1 text-xs text-zinc-500">{sublabel}</p>}
+      {footer}
+    </div>
+  );
+}
+
+function HealthBars() {
+  return (
+    <div className="mt-3 flex gap-1">
+      {Array.from({ length: 12 }).map((_, i) => (
+        <div
+          key={i}
+          className={`h-6 w-2 rounded-sm ${i < 10 ? 'bg-emerald-500' : 'bg-emerald-200'}`}
+        />
+      ))}
+    </div>
+  );
+}
 
 export function DashboardContent() {
-  const { stats, revenue, users, books, loading, error } =
-    useDashboardData();
+  const [searchInput, setSearchInput] = useState('');
+  const [days, setDays] = useState(30);
+  const [rangeOpen, setRangeOpen] = useState(false);
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F5F7FA]">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-zinc-300 border-t-indigo-600"></div>
-      </div>
-    );
-  }
+  const { data, loading, error, refetch } = useAdminDashboard(days);
+  const rangeLabel = DATE_RANGES.find((r) => r.days === days)?.label ?? 'Last 30 Days';
 
-  if (error) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F5F7FA]">
-        <div className="rounded-3xl border border-red-200 bg-red-50 px-8 py-6 shadow-sm">
-          <p className="text-lg font-semibold text-red-700">
-            Error loading dashboard
-          </p>
-
-          <p className="mt-2 text-sm text-red-500">{error}</p>
-        </div>
-      </div>
-    );
-  }
+  const handleExport = () => {
+    if (!data) return;
+    const lines = [
+      'Metric,Value',
+      `Monthly Revenue,${data.metrics.monthlyRevenue.formatted}`,
+      `System Health,${data.metrics.systemHealth.formatted}`,
+      `Active Users,${data.metrics.activeUsers.value}`,
+      `Pending Approvals,${data.metrics.pendingApprovals.value}`,
+    ];
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `system-overview-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA]">
-      {/* Top Header */}
-      <div className="border-b border-zinc-200 bg-white px-8 py-4">
-        <div className="flex items-center justify-between">
-          {/* Search */}
-          <div className="relative w-full max-w-md">
-            <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400"
-              size={18}
-            />
+    <div className="min-h-screen bg-[#F5F7FA] dark:bg-zinc-950">
+      <AdminTopHeader
+        searchPlaceholder="Search system resources..."
+        searchValue={searchInput}
+        onSearchChange={setSearchInput}
+        adminSubtitle="Super Administrator"
+      />
 
-            <input
-              type="text"
-              placeholder="Search system resources..."
-              className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 py-3 pl-12 pr-4 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-            />
-          </div>
-
-          {/* Right Side */}
-          <div className="ml-6 flex items-center gap-5">
-            {/* Notification */}
-            <button className="relative rounded-xl p-2 transition hover:bg-zinc-100">
-              <Bell size={20} className="text-zinc-600" />
-
-              <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500"></span>
-            </button>
-
-            {/* History */}
-            <button className="rounded-xl p-2 transition hover:bg-zinc-100">
-              <History size={20} className="text-zinc-600" />
-            </button>
-
-            {/* Divider */}
-            <div className="h-10 w-px bg-zinc-200"></div>
-
-            {/* Admin Profile */}
-            <div className="flex items-center gap-3">
-              <div className="text-right">
-                <p className="text-sm font-semibold text-zinc-900">
-                  Admin User
-                </p>
-
-                <p className="text-xs text-zinc-500">
-                  Super Administrator
-                </p>
-              </div>
-
-              <img
-                src="https://i.pravatar.cc/100"
-                alt="Admin"
-                className="h-12 w-12 rounded-full border-2 border-white shadow-md"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Dashboard */}
-      <div className="p-8">
-        {/* Title */}
-        <div className="mb-8 flex items-center justify-between">
+      <div className="px-8 py-8">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h1 className="text-5xl font-bold tracking-tight text-indigo-900">
+            <h1 className="text-3xl font-bold tracking-tight text-[#1e3a5f] dark:text-white">
               System Overview
             </h1>
-
-            <p className="mt-2 text-lg text-zinc-500">
-              Real-time platform performance and analytics
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+              Real-time performance and financial tracking
             </p>
           </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-4">
-            <button className="rounded-2xl border border-zinc-300 bg-white px-5 py-3 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50">
-              Last 30 Days
-            </button>
-
-            <button className="rounded-2xl bg-indigo-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-800">
+          <div className="flex shrink-0 items-center gap-3">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setRangeOpen((o) => !o)}
+                className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+              >
+                {rangeLabel}
+                <ChevronDown size={16} />
+              </button>
+              {rangeOpen && (
+                <div className="absolute right-0 z-10 mt-2 w-44 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+                  {DATE_RANGES.map((r) => (
+                    <button
+                      key={r.days}
+                      type="button"
+                      onClick={() => {
+                        setDays(r.days);
+                        setRangeOpen(false);
+                      }}
+                      className={`block w-full px-4 py-2.5 text-left text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 ${
+                        days === r.days ? 'font-semibold text-indigo-600' : 'text-zinc-700 dark:text-zinc-300'
+                      }`}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={handleExport}
+              disabled={loading || !data}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#1e3a5f] px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-[#152a45] disabled:opacity-50"
+            >
+              <Download size={18} />
               Export Report
             </button>
           </div>
         </div>
 
-        {/* Analytics Cards */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-          <AnalyticsCard
-            title="Monthly Revenue"
-            value={`$${stats?.totalRevenue?.toLocaleString() || 0}`}
-            icon={
-              <DollarSign className="h-7 w-7 text-indigo-700" />
+        {error && (
+          <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+            <button type="button" className="ml-2 font-semibold underline" onClick={() => refetch()}>
+              Retry
+            </button>
+          </div>
+        )}
+
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <KpiCard
+            label="Monthly Revenue"
+            value={loading ? '—' : data?.metrics.monthlyRevenue.formatted ?? '0 ETB'}
+            badge={loading ? undefined : data?.metrics.monthlyRevenue.changeLabel}
+            badgeClass={
+              (data?.metrics.monthlyRevenue.change ?? 0) >= 0
+                ? 'bg-emerald-100 text-emerald-700'
+                : 'bg-red-100 text-red-700'
+            }
+            icon={<DollarSign size={20} className="text-violet-600" />}
+            iconBg="bg-violet-50"
+          />
+          <KpiCard
+            label="System Health"
+            value={loading ? '—' : data?.metrics.systemHealth.formatted ?? '99.98%'}
+            badge={loading ? undefined : data?.metrics.systemHealth.status}
+            badgeClass="bg-emerald-100 text-emerald-700"
+            icon={<Activity size={20} className="text-emerald-600" />}
+            iconBg="bg-emerald-50"
+            footer={!loading ? <HealthBars /> : undefined}
+          />
+          <KpiCard
+            label="Active Users"
+            value={loading ? '—' : (data?.metrics.activeUsers.value ?? 0).toLocaleString()}
+            badge={loading ? undefined : data?.metrics.activeUsers.changeLabel}
+            badgeClass={
+              (data?.metrics.activeUsers.change ?? 0) >= 0
+                ? 'bg-emerald-100 text-emerald-700'
+                : 'bg-red-100 text-red-700'
+            }
+            sublabel={
+              loading
+                ? undefined
+                : `${(data?.metrics.activeUsers.online ?? 0).toLocaleString()} online currently`
+            }
+            icon={<Users size={20} className="text-sky-600" />}
+            iconBg="bg-sky-50"
+            footer={
+              !loading && data ? (
+                <div className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-red-600">
+                  <TrendingDown size={12} />
+                  {data.metrics.activeUsers.changeLabel}
+                </div>
+              ) : undefined
             }
           />
-
-          <AnalyticsCard
-            title="System Health"
-            value="99.98%"
-            icon={
-              <TrendingUp className="h-7 w-7 text-green-600" />
+          <KpiCard
+            label="Pending Approvals"
+            value={loading ? '—' : String(data?.metrics.pendingApprovals.value ?? 0)}
+            badge={
+              data?.metrics.pendingApprovals.actionRequired ? 'Action Required' : undefined
             }
-          />
-
-          <AnalyticsCard
-            title="Active Users"
-            value={stats?.totalUsers?.toLocaleString() || 0}
-            icon={<Users className="h-7 w-7 text-zinc-700" />}
-          />
-
-          <AnalyticsCard
-            title="Pending Reports"
-            value={stats?.pendingReports || 0}
-            icon={
-              <AlertTriangle className="h-7 w-7 text-red-600" />
+            badgeClass="bg-red-100 text-red-700"
+            sublabel={
+              loading
+                ? undefined
+                : `${data?.metrics.pendingApprovals.urgent ?? 0} urgent priority`
             }
+            icon={<AlertTriangle size={20} className="text-amber-600" />}
+            iconBg="bg-amber-50"
           />
         </div>
 
-        {/* Charts Section */}
-        <div className="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-3">
-          {/* Main Chart */}
-          <div className="xl:col-span-2 rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-2xl font-semibold text-zinc-900">
-                Platform Analytics
+        <div className="mt-8 grid gap-6 xl:grid-cols-5">
+          <div className="rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm xl:col-span-3 dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="mb-2 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
+                System Usability Index
               </h2>
-
-              <div className="flex items-center gap-5 text-sm text-zinc-500">
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-indigo-700"></div>
-                  Revenue
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-indigo-200"></div>
-                  Users
-                </div>
+              <div className="hidden items-center gap-4 text-xs text-zinc-500 sm:flex">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#1e3a5f]" />
+                  Backend Load
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-sky-400" />
+                  Response Time
+                </span>
               </div>
             </div>
-
-            {revenue && <RevenueChart data={revenue} />}
+            <UsabilityIndexChart data={data?.usabilityIndex ?? []} loading={loading} />
           </div>
 
-          {/* Financial Summary */}
-          <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-            <h2 className="text-2xl font-semibold text-zinc-900">
-              Financial Summary
-            </h2>
-
-            <div className="mt-8 space-y-7">
-              <SummaryItem
-                title="Revenue"
-                amount={`$${stats?.totalRevenue?.toLocaleString() || 0}`}
-                width="85%"
-              />
-
-              <SummaryItem
-                title="Readers"
-                amount={`${stats?.totalReaders || 0}`}
-                width="65%"
-              />
-
-              <SummaryItem
-                title="Authors"
-                amount={`${stats?.totalAuthors || 0}`}
-                width="45%"
-              />
-            </div>
-
-            {/* Top Performer */}
-            <div className="mt-10 border-t border-zinc-200 pt-6">
-              <p className="text-xs font-semibold tracking-wider text-zinc-400">
-                TOP CATEGORY
-              </p>
-
-              <div className="mt-4 flex items-center gap-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-100">
-                  <BookOpen className="text-indigo-700" />
-                </div>
-
-                <div>
-                  <p className="font-semibold text-zinc-900">
-                    Most Popular Genre
-                  </p>
-
-                  <p className="text-sm text-green-600">
-                    +18% growth
-                  </p>
-                </div>
-              </div>
-            </div>
+          <div className="rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm xl:col-span-2 dark:border-zinc-800 dark:bg-zinc-900">
+            <FinancialSummaryPanel
+              summary={data?.financialSummary ?? []}
+              topPerformer={data?.topPerformer ?? { name: '—', growth: '—', subtitle: '' }}
+              loading={loading}
+            />
           </div>
         </div>
 
-        {/* Bottom Charts */}
-         <div className="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-5 text-xl font-semibold text-zinc-900">
-              User Growth
-            </h2>
+        <div className="mt-8">
+          <RecentApprovalsTable rows={data?.recentApprovals ?? []} loading={loading} />
+        </div>
 
-            {users && <UserChart data={users} />}
+        <footer className="mt-10 flex flex-col gap-2 border-t border-zinc-200 pt-6 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800">
+          <p>© {new Date().getFullYear()} LibrarianPro Systems. All rights reserved.</p>
+          <div className="flex gap-4">
+            <span className="cursor-pointer hover:text-zinc-700">Compliance Center</span>
+            <span className="cursor-pointer hover:text-zinc-700">Privacy Policy</span>
+            <span className="cursor-pointer hover:text-zinc-700">API Docs</span>
           </div>
-
-          <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-5 text-xl font-semibold text-zinc-900">
-              Books by Genre
-            </h2>
-
-            {books && <BookChart data={books} />}
-          </div>
-        </div> 
+        </footer>
       </div>
     </div>
   );
-}
-
-/* Financial Summary Item */
-function SummaryItem({
-  title,
-  amount,
-  width,
-}: {
-  title: string;
-  amount: string;
-  width: string;
-}) {
-  return (
-    <div>
-      <div className="mb-2 flex items-center justify-between">
-        <p className="text-sm font-medium text-zinc-600">
-          {title}
-        </p>
-
-        <p className="text-sm font-semibold text-zinc-900">
-          {amount}
-        </p>
-      </div>
-
-      <div className="h-3 overflow-hidden rounded-full bg-zinc-100">
-        <div
-          className="h-full rounded-full bg-indigo-700"
-          style={{ width }}
-        ></div>
-      </div>
-
-    </div>
-    
-  );
-//   <div className="mt-8">
-//   <RecentApprovals />
-// </div>
 }

@@ -91,6 +91,13 @@ export function MyBooksList() {
                 {getStatusBadge(book.status)}
               </div>
               
+              {book.status === 'rejected' && (book as { review_note?: string }).review_note && (
+                <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+                  <strong>Rejection feedback:</strong>{' '}
+                  {(book as { review_note?: string }).review_note}
+                </p>
+              )}
+
               <div className="mt-2 flex flex-wrap gap-2">
                 {book.formats?.map((format) => (
                   <span key={format.format_type} className="text-xs bg-[#F5F1EB] text-[#4A5568] px-2 py-1 rounded-md">

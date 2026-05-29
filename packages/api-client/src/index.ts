@@ -13,6 +13,7 @@ export * from './chat';
 export * from './feed';
 export * from './profile';
 export * from './follow';
+export * from './messages';
 
 // Re-export types
 export type {
