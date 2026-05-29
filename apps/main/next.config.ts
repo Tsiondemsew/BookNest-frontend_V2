@@ -41,7 +41,13 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  transpilePackages: ['@repo/ui', '@repo/types', '@repo/api-client', '@repo/validation'],
+  transpilePackages: [
+    '@repo/ui',
+    '@repo/types',
+    '@repo/api-client',
+    '@repo/validation',
+    'lucide-react',
+  ],
 
   outputFileTracingRoot: monorepoRoot,
 
@@ -49,6 +55,7 @@ const nextConfig: NextConfig = {
     config.resolve.alias = {
       ...config.resolve.alias,
       canvas: false,
+      'lucide-react': path.join(monorepoRoot, 'node_modules/lucide-react'),
     };
     if (isServer) {
       config.externals = [...(config.externals || []), 'canvas'];

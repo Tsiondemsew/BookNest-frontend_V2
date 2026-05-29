@@ -1,2 +1,2 @@
-export * from './auth.js';
-export * from './password-strength.js';
+export * from './auth';
+export * from './password-strength';
