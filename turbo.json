@@ -7,6 +7,16 @@
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
       "cache": true
     },
+    "@repo/types#build": {
+      "dependsOn": [],
+      "outputs": [],
+      "cache": true
+    },
+    "@repo/api-client#build": {
+      "dependsOn": ["@repo/types#build"],
+      "outputs": [],
+      "cache": true
+    },
     "dev": {
       "cache": false,
       "persistent": true

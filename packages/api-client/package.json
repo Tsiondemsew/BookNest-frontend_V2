@@ -2,19 +2,17 @@
   "name": "@repo/api-client",
   "version": "0.1.0",
   "private": true,
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "types": "./src/index.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "dev": "tsc -p tsconfig.json --watch",
-    "clean": "rm -rf dist"
+    "build": "tsc --noEmit -p tsconfig.json",
+    "dev": "tsc --noEmit -p tsconfig.json --watch",
+    "clean": "echo ok"
   },
   "dependencies": {
     "@repo/types": "workspace:*"
