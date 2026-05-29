@@ -7,6 +7,11 @@
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
       "cache": true
     },
+    "main#build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**"],
+      "cache": true
+    },
     "@repo/types#build": {
       "dependsOn": [],
       "outputs": [],
