@@ -19,6 +19,7 @@ const PUBLIC_ROUTE_PREFIXES = [
   '/auth',
   '/resend-verification',
   '/market',
+  '/checkout/result',
 ];
 
 // Routes that require authentication
