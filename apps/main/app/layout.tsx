@@ -1,44 +1,52 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useAuthStore } from '@/stores/authStore';
+import { bootstrapAuth, refreshAuthWhenOnline } from '@/lib/auth/bootstrapAuth';
 import { initOfflineSync } from '@/lib/progress/progressService';
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { AppProviders } from '@/providers/app-providers';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
+import { AuthHashRedirect } from '@/components/AuthHashRedirect';
 import './globals.css';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const { fetchMe, restoreOfflineSession, isAuthenticated } = useAuthStore();
-
   useEffect(() => {
-    const initAuth = async () => {
-      if (navigator.onLine) {
-        await fetchMe();
-      } else {
-        // Offline - try to restore session from IndexedDB
-        await restoreOfflineSession();
-      }
-    };
-    
-    initAuth();
+    bootstrapAuth();
     initOfflineSync();
 
-    // Listen for online/offline events
-    const handleOnline = async () => {
-      await fetchMe();
+    const handleOnline = () => {
+      refreshAuthWhenOnline();
     };
-    
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && navigator.onLine) {
+        refreshAuthWhenOnline();
+      }
+    };
+
     window.addEventListener('online', handleOnline);
-    return () => window.removeEventListener('online', handleOnline);
-  }, [fetchMe, restoreOfflineSession]);
+    document.addEventListener('visibilitychange', handleVisibility);
+    const handleUnauthorized = () => {
+      // Cookie session expired or invalid — route user to login cleanly.
+      if (window.location.pathname !== '/login') {
+        window.location.assign('/login?reason=expired');
+      }
+    };
+    window.addEventListener('auth:unauthorized', handleUnauthorized as EventListener);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('auth:unauthorized', handleUnauthorized as EventListener);
+    };
+  }, []);
 
   return (
     <html lang="en">
-      
       <body>
+        <AuthHashRedirect />
         <AppProviders>{children}</AppProviders>
-        <OfflineIndicator/>
+        <OfflineIndicator />
         <InstallPrompt />
       </body>
     </html>

@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Send, Loader2, Phone, Video, MoreVertical, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRealtimeChat } from '@/hooks/useRealtimeChat';
-import { chatApi } from '@/lib/api/chat';
+import { chatApi } from '@/lib/api/client';
 import { formatRelativeTime } from '@/features/community/utils/timeFormat';
 import type { ChatMessage } from '@repo/types';
 

@@ -3,17 +3,13 @@
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useBook } from '@/features/books/hooks/useBooks';
-import { AddToCartButton } from '@/features/cart/components/AddToCartButton';
-import type { BookFormat } from '@repo/types';
+import { BookFormatPurchaseSection } from '@/features/books/components/BookFormatPurchaseSection';
 import { Suspense } from 'react';
-import { useAuth } from '@/features/auth/hooks';
 
 function BookDetailContent() {
   const params = useParams();
   const bookId = params.id as string;
   const { data: book, isLoading, isError } = useBook(bookId);
-  const { user } = useAuth();
-
   if (isLoading) {
     return <BookDetailSkeleton />;
   }
@@ -117,67 +113,14 @@ function BookDetailContent() {
               )}
             </div>
 
-            {/* Purchase Options - SAME UI for everyone */}
             <div>
               <h3 className="text-lg font-semibold text-[#1A2A3A] mb-4">
                 Available formats
               </h3>
-              <div className="space-y-3">
-                {book.formats?.map((format: BookFormat) => (
-                  <div
-                    key={format.id}
-                    className="bg-white rounded-xl border border-[#E8E2D9] p-5 hover:border-[#8E735B]/30 hover:shadow-md transition-all"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div className="flex items-center gap-4">
-                        <div className="text-3xl">
-                          {format.format_type === 'PDF' ? '📖' : '🎧'}
-                        </div>
-                        <div>
-                          <div className="font-semibold text-[#1A2A3A]">
-                            {format.format_type === 'PDF' ? 'eBook (PDF)' : 'Audiobook'}
-                          </div>
-                          {format.format_type === 'PDF' && format.page_count && (
-                            <div className="text-sm text-[#4A5568]">
-                              {format.page_count} pages
-                            </div>
-                          )}
-                          {format.format_type === 'Audio' && format.duration_sec && (
-                            <div className="text-sm text-[#4A5568]">
-                              {Math.floor(format.duration_sec / 3600)}h{' '}
-                              {Math.floor((format.duration_sec % 3600) / 60)}m
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-[#2C3E50]">
-                            {format.price} {format.currency || 'ETB'}
-                          </div>
-                        </div>
-                        
-                        {/* Same buttons for everyone - AddToCartButton handles redirect internally */}
-                        <div className="flex gap-2">
-                          <AddToCartButton
-                            bookFormatId={format.id}
-                            formatType={format.format_type}
-                            price={format.price}
-                            variant="outline"
-                          />
-                          <AddToCartButton
-                            bookFormatId={format.id}
-                            formatType={format.format_type}
-                            price={format.price}
-                            variant="buy-now"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <BookFormatPurchaseSection
+                formats={book.formats || []}
+                bookId={book.id}
+              />
             </div>
           </div>
         </div>

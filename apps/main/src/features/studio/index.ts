@@ -1,5 +1,9 @@
 export { AuthorBookUploadForm } from './components/AuthorBookUploadForm';
 export { PublisherBookUploadForm } from './components/PublisherBookUploadForm';
+export { MyBooksList } from './components/MyBooksList';
+export { AddFormatPanel } from './components/AddFormatPanel';
+export { BookUploadInfoCallout } from './components/BookUploadInfoCallout';
 export { useBookUpload } from './hooks/useBookUpload';
+export { useBookForEdit } from './hooks/useBookForEdit';
 export { usePublisherSearch } from './hooks/usePublisherSearch';
 export { useAuthorSearch } from './hooks/useAuthorSearch';

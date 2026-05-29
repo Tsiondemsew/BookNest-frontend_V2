@@ -1,12 +1,12 @@
-import { 
-  getDB, 
-  getLocalProgress, 
-  saveLocalProgress, 
+import {
+  getDB,
+  getLocalProgress,
+  saveLocalProgress,
   getAllUnsyncedProgress,
   markProgressSynced,
-  ReadingProgress 
+  ReadingProgress,
 } from '@/lib/db/schema';
-import { apiClient } from '@/lib/api/client';
+import { progressApi } from '@/lib/api/client';
 import { useAuthStore } from '@/stores/authStore';
 
 /**
@@ -74,7 +74,7 @@ export async function syncProgressToBackend(): Promise<void> {
   
   for (const progress of unsynced) {
     try {
-      await apiClient.post('/api/progress/sync', {
+      await progressApi.syncProgress({
         book_format_id: progress.bookFormatId,
         progress_percent: progress.progressPercent,
         last_position: progress.lastPosition,

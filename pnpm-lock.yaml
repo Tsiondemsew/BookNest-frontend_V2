@@ -85,6 +85,9 @@ importers:
       '@repo/types':
         specifier: workspace:*
         version: link:../../packages/types
+      '@repo/validation':
+        specifier: workspace:*
+        version: link:../../packages/validation
       '@supabase/auth-helpers-nextjs':
         specifier: ^0.15.0
         version: 0.15.0(@supabase/supabase-js@2.106.1)
@@ -188,6 +191,16 @@ importers:
       react:
         specifier: ^18.0.0
         version: 18.3.1
+
+  packages/validation:
+    dependencies:
+      zod:
+        specifier: ^4.4.2
+        version: 4.4.3
+    devDependencies:
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
 
 packages:
 

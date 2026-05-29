@@ -6,3 +6,4 @@ export * from './cart';
 export * from './chat';
 export * from './feed';
 export * from './profile';
+export * from './progress';

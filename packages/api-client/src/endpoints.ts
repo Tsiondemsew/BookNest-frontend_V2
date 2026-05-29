@@ -5,14 +5,25 @@ export const endpoints = {
     logout: '/api/auth/logout',
     me: '/api/auth/me',
     profile: '/api/auth/profile',
-    
+    resendVerification: '/api/auth/resend-verification',
+    favoriteGenres: '/api/users/favorite-genres',
+    forgotPassword: '/api/auth/forgot-password',
+    resetPassword: '/api/auth/reset-password',
+    confirmEmail: '/api/auth/confirm-email',
   },
   books: {
     list: '/api/books',
     detail: (id: string) => `/api/books/${id}`,
     genres: '/api/books/genres',
+    languages: '/api/books/languages',
+    personalized: '/api/books/personalized',
     search: '/api/books/search',
     myBooks: '/api/books/my-books',
+    upload: '/api/books/upload',
+    edit: (id: string) => `/api/books/${id}/edit`,
+    updateUpload: (id: string) => `/api/books/${id}/upload`,
+    addFormat: (id: string) => `/api/books/${id}/formats`,
+    submit: (id: string) => `/api/books/${id}/submit`,
   },
   wishlist: {
     list: '/api/wishlist',
@@ -58,11 +69,17 @@ export const endpoints = {
     postDetail: (postId: string) => `/api/feed/posts/${postId}`,
     userPosts: (userId: string) => `/api/feed/users/${userId}/posts`,
   },
-   profile: {
+  profile: {
     me: '/api/users/profile',
     avatar: '/api/users/profile/avatar',
     settings: '/api/users/profile/settings',
     public: (username: string) => `/api/users/profile/public/${username}`,
     userPosts: (userId: string) => `/api/feed/users/${userId}/posts`,
+  },
+  progress: {
+    sync: '/api/progress/sync',
+  },
+  users: {
+    search: '/api/users/search',
   },
 } as const;

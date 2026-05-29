@@ -32,3 +32,22 @@ export function useGenres() {
   });
 }
 
+export function useLanguages() {
+  return useQuery({
+    queryKey: ['books', 'languages'],
+    queryFn: () => booksApi.getLanguages(),
+    select: (response) => response.data,
+    staleTime: 60 * 60 * 1000,
+  });
+}
+
+export function usePersonalizedBooks(limit = 6, enabled = true) {
+  return useQuery({
+    queryKey: bookQueryKeys.personalized(limit),
+    queryFn: () => booksApi.getPersonalizedBooks(limit),
+    select: (response) => response.data,
+    enabled,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+

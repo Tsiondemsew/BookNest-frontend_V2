@@ -83,7 +83,6 @@ const navigationGroups = {
       title: 'Author Studio',
       items: [
         { name: 'Dashboard', href: '/studio', icon: Crown },
-        { name: 'Upload Book', href: '/studio/upload', icon: Upload },
         { name: 'My Books', href: '/studio/books', icon: BookOpen },
         { name: 'Analytics', href: '/studio/analytics', icon: BarChart3 },
         { name: 'Earnings', href: '/studio/earnings', icon: DollarSign },
@@ -116,7 +115,6 @@ const navigationGroups = {
       title: 'Publisher Studio',
       items: [
         { name: 'Dashboard', href: '/studio', icon: Crown },
-        { name: 'Upload Book', href: '/studio/upload', icon: Upload },
         { name: 'Catalog', href: '/studio/books', icon: Library },
         { name: 'Analytics', href: '/studio/analytics', icon: BarChart3 },
         { name: 'Payouts', href: '/studio/earnings', icon: DollarSign },
@@ -286,18 +284,7 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
               <h1 className="text-xl font-semibold text-[#1A2A3A]">{getPageTitle()}</h1>
             </div>
             
-            <div className="flex items-center gap-3">
-              {/* Quick upload button for authors/publishers */}
-              {(user?.role === 'author' || user?.role === 'publisher') && (
-                <Link
-                  href="/studio/upload"
-                  className="flex items-center gap-2 px-3 py-1.5 bg-[#B85C38] text-white rounded-lg text-sm font-medium hover:bg-[#8E735B] transition-colors"
-                >
-                  <Upload size={16} />
-                  <span className="hidden sm:inline">Upload Book</span>
-                </Link>
-              )}
-            </div>
+            <div className="flex items-center gap-3" />
           </div>
         </header>
 

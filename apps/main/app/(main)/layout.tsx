@@ -5,9 +5,21 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import GuestLayout from './GuestLayout';
 import DashboardLayout from './DashboardLayout';
+import { resolvePostLoginPath } from '@/lib/auth/postLoginRedirect';
 
 // Routes that should ALWAYS use guest layout (even if logged in)
 const GUEST_ONLY_ROUTES = ['/login', '/register', '/onboarding'];
+
+/** Public app routes (no login required) */
+const PUBLIC_ROUTE_PREFIXES = [
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+  '/auth',
+  '/resend-verification',
+  '/market',
+];
 
 // Routes that require authentication
 const PROTECTED_ROUTES = [
@@ -30,39 +42,33 @@ export default function MainLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { isLoading, isAuthenticated, fetchMe, user } = useAuthStore();
+  const { isInitializing, isAuthenticated, isOfflineMode, user } = useAuthStore();
   const [showDashboard, setShowDashboard] = useState(false);
 
   useEffect(() => {
-    fetchMe();
-  }, [fetchMe]);
+    if (!isInitializing) {
+      const isGuestOnlyRoute = GUEST_ONLY_ROUTES.some((route) => pathname?.startsWith(route));
+      const isPublicRoute = PUBLIC_ROUTE_PREFIXES.some((route) => pathname?.startsWith(route));
+      const isProtectedRoute = PROTECTED_ROUTES.some((route) => pathname?.startsWith(route));
 
-  useEffect(() => {
-    if (!isLoading) {
-      // Check if current route is guest-only
-      const isGuestOnlyRoute = GUEST_ONLY_ROUTES.some(route => pathname?.startsWith(route));
-      
-      // Check if current route requires authentication
-      const isProtectedRoute = PROTECTED_ROUTES.some(route => pathname?.startsWith(route));
-      
-      // If on guest-only route and authenticated, redirect to dashboard
-      if (isAuthenticated && isGuestOnlyRoute) {
-        router.push('/dashboard');
+      if (isAuthenticated && isGuestOnlyRoute && user) {
+        resolvePostLoginPath(user, '/dashboard').then((path) => {
+          if (pathname?.startsWith('/onboarding') && path.startsWith('/onboarding')) return;
+          router.push(path);
+        });
         return;
       }
-      
-      // If on protected route and not authenticated, redirect to login
-      if (!isAuthenticated && isProtectedRoute) {
+
+      if (!isAuthenticated && isProtectedRoute && !isPublicRoute) {
         router.push(`/login?redirect=${encodeURIComponent(pathname || '/')}`);
         return;
       }
-      
-      // Show dashboard layout for authenticated users (except on guest-only routes)
+
       setShowDashboard(isAuthenticated && !isGuestOnlyRoute);
     }
-  }, [isAuthenticated, isLoading, pathname, router]);
+  }, [isAuthenticated, isInitializing, isOfflineMode, pathname, router, user]);
 
-  if (isLoading) {
+  if (isInitializing) {
     return (
       <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-[#2C3E50] border-t-[#B85C38] rounded-full animate-spin"></div>

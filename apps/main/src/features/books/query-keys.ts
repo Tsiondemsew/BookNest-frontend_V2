@@ -5,4 +5,5 @@ export const bookQueryKeys = {
   details: () => [...bookQueryKeys.all, 'detail'] as const,
   detail: (id: string) => [...bookQueryKeys.details(), id] as const,
   genres: () => [...bookQueryKeys.all, 'genres'] as const,
+  personalized: (limit: number) => [...bookQueryKeys.all, 'personalized', limit] as const,
 };

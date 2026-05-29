@@ -1,46 +1,60 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { ShoppingCart, Check, Loader2, CreditCard } from 'lucide-react';
 import { useCart } from '../hooks/useCart';
 import { useAuthStore } from '@/stores/authStore';
+import { buildLoginUrl } from '@/lib/auth/pendingAuthAction';
 
 interface AddToCartButtonProps {
   bookFormatId: string;
+  bookId?: string;
   formatType: 'PDF' | 'Audio';
   price: number;
   variant?: 'primary' | 'outline' | 'small' | 'buy-now';
+  isOwned?: boolean;
+  isOwnBook?: boolean;
 }
 
-export function AddToCartButton({ 
-  bookFormatId, 
-  formatType, 
-  price, 
-  variant = 'primary' 
+export function AddToCartButton({
+  bookFormatId,
+  bookId,
+  formatType,
+  price,
+  variant = 'primary',
+  isOwned = false,
+  isOwnBook = false,
 }: AddToCartButtonProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { isAuthenticated } = useAuthStore();
   const { addToCart, isLoading } = useCart();
   const [isAdded, setIsAdded] = useState(false);
 
+  const redirectPath = bookId ? `/market/${bookId}` : pathname || '/market';
+
+  const requireAuth = (action: 'add-to-cart' | 'buy') => {
+    if (isAuthenticated) return true;
+    router.push(
+      buildLoginUrl({
+        redirect: redirectPath,
+        action,
+        bookFormatIds: [bookFormatId],
+      })
+    );
+    return false;
+  };
+
   const handleBuyNow = () => {
-    if (!isAuthenticated) {
-      // ✅ Store the intended action in the redirect URL
-      const redirectUrl = `/login?redirect=${encodeURIComponent(window.location.pathname)}&action=buy&book_format_id=${bookFormatId}`;
-      router.push(redirectUrl);
-      return;
-    }
+    if (isOwnBook || isOwned) return;
+    if (!requireAuth('buy')) return;
     router.push(`/checkout?book_format_id=${bookFormatId}`);
   };
-  
+
   const handleAddToCart = async () => {
-    if (!isAuthenticated) {
-      // ✅ Store the intended action in the redirect URL
-      const redirectUrl = `/login?redirect=${encodeURIComponent(window.location.pathname)}&action=add-to-cart&book_format_id=${bookFormatId}`;
-      router.push(redirectUrl);
-      return;
-    }
+    if (isOwnBook || isOwned) return;
+    if (!requireAuth('add-to-cart')) return;
 
     try {
       await addToCart(bookFormatId);
@@ -51,11 +65,27 @@ export function AddToCartButton({
     }
   };
 
+  if (isOwnBook) {
+    return (
+      <span className="block w-full rounded-lg bg-[#F5F1EB] py-2 text-center text-xs font-medium text-[#4A5568]">
+        Your book
+      </span>
+    );
+  }
+
+  if (isOwned) {
+    return (
+      <span className="block w-full rounded-lg bg-[#F0FDF4] py-2 text-center text-xs font-medium text-[#2D6A4F]">
+        Owned
+      </span>
+    );
+  }
+
   if (variant === 'buy-now') {
     return (
       <button
         onClick={handleBuyNow}
-        className="flex items-center gap-2 rounded-lg bg-[#B85C38] text-white px-5 py-2 text-sm font-medium hover:bg-[#8E735B] transition-colors shadow-sm"
+        className="flex items-center gap-2 rounded-lg bg-[#B85C38] px-5 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#8E735B]"
       >
         <CreditCard size={16} />
         Buy Now
@@ -65,7 +95,10 @@ export function AddToCartButton({
 
   if (isAdded) {
     return (
-      <button className="flex items-center gap-2 rounded-lg bg-[#2D6A4F] text-white px-5 py-2 text-sm font-medium" disabled>
+      <button
+        className="flex items-center gap-2 rounded-lg bg-[#2D6A4F] px-5 py-2 text-sm font-medium text-white"
+        disabled
+      >
         <Check size={16} />
         Added to Cart!
       </button>
@@ -77,7 +110,7 @@ export function AddToCartButton({
       <button
         onClick={handleAddToCart}
         disabled={isLoading}
-        className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#2C3E50] text-white py-2 text-sm font-medium hover:bg-[#1A2A3A] transition-colors disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#2C3E50] py-2 text-sm font-medium text-white transition-colors hover:bg-[#1A2A3A] disabled:opacity-50"
       >
         {isLoading ? (
           <Loader2 size={14} className="animate-spin" />
@@ -94,7 +127,7 @@ export function AddToCartButton({
       <button
         onClick={handleAddToCart}
         disabled={isLoading}
-        className="flex items-center gap-2 rounded-lg bg-[#2C3E50] text-white px-6 py-2 text-sm font-medium hover:bg-[#1A2A3A] transition-colors shadow-sm disabled:opacity-50"
+        className="flex items-center gap-2 rounded-lg bg-[#2C3E50] px-6 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#1A2A3A] disabled:opacity-50"
       >
         {isLoading ? (
           <Loader2 size={16} className="animate-spin" />
@@ -110,7 +143,7 @@ export function AddToCartButton({
     <button
       onClick={handleAddToCart}
       disabled={isLoading}
-      className="flex items-center gap-2 rounded-lg border border-[#2C3E50] text-[#2C3E50] px-6 py-2 text-sm font-medium hover:bg-[#2C3E50]/5 transition-colors disabled:opacity-50"
+      className="flex items-center gap-2 rounded-lg border border-[#2C3E50] px-6 py-2 text-sm font-medium text-[#2C3E50] transition-colors hover:bg-[#2C3E50]/5 disabled:opacity-50"
     >
       {isLoading ? (
         <Loader2 size={16} className="animate-spin" />

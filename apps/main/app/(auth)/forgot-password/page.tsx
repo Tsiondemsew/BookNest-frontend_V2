@@ -1,141 +1,116 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
-import { apiClient } from '@/lib/api/client';
-import { BookOpen, Mail, ArrowLeft, CheckCircle, Globe } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { forgotPasswordSchema, type ForgotPasswordInput } from '@repo/validation';
+import { authApi } from '@/lib/api/client';
+import { getFriendlyAuthMessage } from '@/lib/auth/mapAuthError';
+import { AlertCircle, Loader2 } from 'lucide-react';
+import { useState } from 'react';
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState('');
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError(null);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<ForgotPasswordInput>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: { email: '' },
+    mode: 'onBlur',
+  });
 
-    if (!email || !email.includes('@')) {
-      setError('Please enter a valid email address');
-      setIsLoading(false);
-      return;
-    }
-
+  const onSubmit = async (data: ForgotPasswordInput) => {
+    setSubmitError(null);
     try {
-      await apiClient.post('/api/auth/forgot-password', { email });
+      await authApi.forgotPassword({ email: data.email });
+      setSubmittedEmail(data.email);
       setSuccess(true);
-    } catch (err: any) {
-      setError(err.message || 'Failed to send reset email');
-    } finally {
-      setIsLoading(false);
+    } catch (err: unknown) {
+      setSubmitError(getFriendlyAuthMessage(err));
     }
   };
 
   if (success) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] flex flex-col">
-        <header className="border-b border-[#E8E2D9] bg-white">
-          <div className="max-w-7xl mx-auto px-6 py-4">
-            <Link href="/" className="flex items-center gap-2">
-              <BookOpen className="w-6 h-6 text-[#B85C38]" />
-              <span className="text-xl font-bold text-[#1A2A3A]">BookNest</span>
-            </Link>
-          </div>
-        </header>
-        <div className="flex-1 flex items-center justify-center py-12 px-4">
-          <div className="max-w-md w-full text-center">
-            <div className="bg-white rounded-2xl shadow-sm border border-[#E8E2D9] p-8">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-[#2D6A4F]" />
-              </div>
-              <h1 className="text-2xl font-bold text-[#1A2A3A] mb-2">Check your email</h1>
-              <p className="text-[#4A5568] mb-6">
-                We've sent a password reset link to <strong className="text-[#1A2A3A]">{email}</strong>
-              </p>
-              <Link
-                href="/login"
-                className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#2C3E50] text-white rounded-lg font-medium hover:bg-[#1A2A3A] transition-colors"
-              >
-                <ArrowLeft size={16} />
-                Back to login
-              </Link>
-            </div>
-          </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+          <h1 className="text-2xl font-bold mb-2">Check your email</h1>
+          <p className="text-gray-600 mb-6">
+            We&apos;ve sent a password reset link to{' '}
+            <strong>{submittedEmail}</strong>
+          </p>
+          <Link
+            href="/login"
+            className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Back to login
+          </Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] flex flex-col">
-      <header className="border-b border-[#E8E2D9] bg-white">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <Link href="/" className="flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-[#B85C38]" />
-            <span className="text-xl font-bold text-[#1A2A3A]">BookNest</span>
-          </Link>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
+        <h1 className="text-2xl font-bold text-center mb-2">Reset password</h1>
+        <p className="text-center text-gray-600 mb-6 text-sm">
+          Enter your email and we&apos;ll send you a BookNest reset link.
+        </p>
 
-      <div className="flex-1 flex items-center justify-center py-12 px-4">
-        <div className="max-w-md w-full">
-          <div className="bg-white rounded-2xl shadow-sm border border-[#E8E2D9] p-8">
-            <div className="text-center mb-6">
-              <h1 className="text-2xl font-bold text-[#1A2A3A]">Reset password</h1>
-              <p className="text-[#4A5568] text-sm mt-1">
-                Enter your email and we'll send you a reset link
-              </p>
-            </div>
+        {submitError && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex gap-2">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+            <p className="text-sm text-red-700">{submitError}</p>
+          </div>
+        )}
 
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
-                {error}
-              </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              disabled={isSubmitting}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.email ? 'border-red-500' : 'border-gray-300'
+              }`}
+              placeholder="you@example.com"
+              {...register('email')}
+            />
+            {errors.email && (
+              <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>
             )}
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-[#1A2A3A] mb-1">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4A5568] w-4 h-4" />
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="w-full pl-10 pr-4 py-2.5 border border-[#E8E2D9] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#B85C38] focus:border-[#B85C38] transition-all"
-                    placeholder="you@example.com"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-2.5 bg-[#2C3E50] text-white rounded-lg font-medium hover:bg-[#1A2A3A] transition-colors disabled:opacity-50"
-              >
-                {isLoading ? 'Sending...' : 'Send reset link'}
-              </button>
-
-              <div className="text-center">
-                <Link href="/login" className="text-sm text-[#B85C38] hover:text-[#8E735B] transition-colors">
-                  Back to login
-                </Link>
-              </div>
-            </form>
           </div>
 
-          <div className="mt-4 text-center">
-            <button className="inline-flex items-center gap-1 text-sm text-[#4A5568] hover:text-[#B85C38] transition-colors">
-              <Globe size={14} />
-              <span>English</span>
-            </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium"
+          >
+            {isSubmitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Sending...
+              </span>
+            ) : (
+              'Send reset link'
+            )}
+          </button>
+
+          <div className="text-center">
+            <Link href="/login" className="text-sm text-blue-600 hover:underline">
+              Back to login
+            </Link>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );

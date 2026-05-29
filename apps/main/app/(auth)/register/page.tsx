@@ -6,34 +6,45 @@ import Link from 'next/link';
 import { RegisterForm } from '@/features/auth/components';
 import { useAuthStore } from '@/stores/authStore';
 import { BookOpen, Globe } from 'lucide-react';
+import {
+  appendPendingActionQuery,
+  buildLoginUrl,
+  readPendingActionFromSearchParams,
+} from '@/lib/auth/pendingAuthAction';
 
 function RegisterPageContent() {
-  const { isAuthenticated, isLoading } = useAuthStore();
+  const { isAuthenticated, isInitializing } = useAuthStore();
   const router = useRouter();
   const searchParams = useSearchParams();
-  
-  const redirectTo = searchParams.get('redirect') || '/onboarding/genres';
-  const action = searchParams.get('action');
-  const bookFormatId = searchParams.get('book_format_id');
+
+  const { redirect: redirectTo, action, bookFormatIds } =
+    readPendingActionFromSearchParams(searchParams);
+
+  const onboardingAfterRegister = appendPendingActionQuery('/onboarding/genres', {
+    redirect: redirectTo,
+    action,
+    bookFormatIds,
+  });
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      // Pass action and book_format_id to onboarding completion
-      let onboardingUrl = '/onboarding/genres';
-      if (action && bookFormatId) {
-        onboardingUrl += `?action=${action}&book_format_id=${bookFormatId}&redirect=${encodeURIComponent(redirectTo)}`;
-      }
-      router.push(onboardingUrl);
+    if (!isInitializing && isAuthenticated) {
+      router.push(onboardingAfterRegister);
     }
-  }, [isAuthenticated, isLoading, router, action, bookFormatId, redirectTo]);
+  }, [isAuthenticated, isInitializing, router, onboardingAfterRegister]);
 
-  if (isLoading) {
+  if (isInitializing) {
     return (
       <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
         <div className="w-10 h-10 border-4 border-[#2C3E50] border-t-[#B85C38] rounded-full animate-spin"></div>
       </div>
     );
   }
+
+  const loginHref = buildLoginUrl({
+    redirect: redirectTo,
+    action,
+    bookFormatIds,
+  });
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] flex flex-col">
@@ -51,7 +62,9 @@ function RegisterPageContent() {
           <div className="bg-white rounded-2xl shadow-sm border border-[#E8E2D9] p-8">
             <div className="text-center mb-6">
               <h1 className="text-2xl font-bold text-[#1A2A3A]">Create account</h1>
-              <p className="text-[#4A5568] text-sm mt-1">Join the BookNest community</p>
+              <p className="text-[#4A5568] text-sm mt-1">
+                Create your free reader account — no invitation needed
+              </p>
             </div>
 
             <RegisterForm />
@@ -59,8 +72,8 @@ function RegisterPageContent() {
             <div className="mt-6 text-center">
               <p className="text-sm text-[#4A5568]">
                 Already have an account?{' '}
-                <Link 
-                  href={`/login?redirect=${redirectTo}&action=${action || ''}&book_format_id=${bookFormatId || ''}`}
+                <Link
+                  href={loginHref}
                   className="text-[#B85C38] hover:text-[#8E735B] font-medium"
                 >
                   Sign in
@@ -70,7 +83,10 @@ function RegisterPageContent() {
           </div>
 
           <div className="mt-4 text-center">
-            <button className="inline-flex items-center gap-1 text-sm text-[#4A5568] hover:text-[#B85C38] transition-colors">
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 text-sm text-[#4A5568] hover:text-[#B85C38] transition-colors"
+            >
               <Globe size={14} />
               <span>English</span>
             </button>
@@ -83,11 +99,13 @@ function RegisterPageContent() {
 
 export default function RegisterPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-[#2C3E50] border-t-[#B85C38] rounded-full animate-spin"></div>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
+          <div className="w-10 h-10 border-4 border-[#2C3E50] border-t-[#B85C38] rounded-full animate-spin"></div>
+        </div>
+      }
+    >
       <RegisterPageContent />
     </Suspense>
   );

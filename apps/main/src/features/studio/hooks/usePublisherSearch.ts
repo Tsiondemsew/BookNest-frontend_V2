@@ -22,11 +22,11 @@ export function usePublisherSearch() {
 
     setIsLoading(true);
     try {
-      // ✅ Use the existing working endpoint
-      const response = await apiClient.get<{ success: boolean; data: PublisherSuggestion[] }>(
-        `/api/auth/suggest?role=publisher&q=${encodeURIComponent(query)}`
+      const response = await apiClient.get<{ success: boolean; data: Array<{ id: string; name: string; role: string }> }>(
+        `/api/users/search?role=publisher&q=${encodeURIComponent(query)}`
       );
-      setSuggestions(response.data || []);
+      const mapped = (response.data || []).map((u) => ({ id: u.id, name: u.name }));
+      setSuggestions(mapped);
       setShowSuggestions(true);
     } catch (err) {
       console.error('Failed to search publishers:', err);

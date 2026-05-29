@@ -38,7 +38,9 @@ export interface CartResponse {
 }
 
 export interface CheckoutRequest {
-  book_format_id: string;
+  book_format_id?: string;
+  book_format_ids?: string[];
+  from_cart?: boolean;
 }
 
 export interface CheckoutResponse {

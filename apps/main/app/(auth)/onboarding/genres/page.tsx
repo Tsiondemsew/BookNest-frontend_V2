@@ -1,9 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
-import { apiClient } from '@/lib/api/client';
+import { booksApi, authApi } from '@/lib/api/client';
+import {
+  completeAuthContinuation,
+  readPendingActionFromSearchParams,
+} from '@/lib/auth/pendingAuthAction';
 import { BookOpen, ChevronRight, SkipForward, Globe, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -13,9 +17,12 @@ interface Genre {
   slug: string;
 }
 
-export default function GenresPage() {
+function GenresPageContent() {
   const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading } = useAuthStore();
+  const searchParams = useSearchParams();
+  const { redirect: afterSaveRedirect, action, bookFormatIds } =
+    readPendingActionFromSearchParams(searchParams);
+  const { isAuthenticated, isInitializing: authLoading, user } = useAuthStore();
   const [genres, setGenres] = useState<Genre[]>([]);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -25,9 +32,8 @@ export default function GenresPage() {
   useEffect(() => {
     const fetchGenres = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/books/genres`);
-        const payload = await res.json();
-        setGenres(payload?.data || []);
+        const payload = await booksApi.getGenres();
+        setGenres(payload.data || []);
       } catch (err) {
         console.error('Failed to load genres:', err);
       } finally {
@@ -71,10 +77,12 @@ export default function GenresPage() {
     setError(null);
 
     try {
-      await apiClient.post('/api/auth/favorite-genres', {
-        genre_ids: selectedGenres,
-      });
-      router.push('/dashboard');
+      await authApi.favoriteGenres({ genre_ids: selectedGenres });
+      if (user) {
+        await completeAuthContinuation(router, searchParams, user);
+      } else {
+        router.push(afterSaveRedirect);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to save your preferences');
     } finally {
@@ -82,8 +90,12 @@ export default function GenresPage() {
     }
   };
 
-  const skip = () => {
-    router.push('/dashboard');
+  const skip = async () => {
+    if (user) {
+      await completeAuthContinuation(router, searchParams, user);
+    } else {
+      router.push(afterSaveRedirect);
+    }
   };
 
   if (authLoading || isLoading) {
@@ -116,7 +128,7 @@ export default function GenresPage() {
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold text-[#1A2A3A]">Choose your favorite genres</h1>
               <p className="text-[#4A5568] mt-2">
-                Select 1-5 genres to personalize your BookNest experience
+                Pick 1–5 genres so we can personalize your feed. You can skip and do this later.
               </p>
             </div>
 
@@ -188,5 +200,19 @@ export default function GenresPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function GenresPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
+          <Loader2 className="w-10 h-10 text-[#B85C38] animate-spin" />
+        </div>
+      }
+    >
+      <GenresPageContent />
+    </Suspense>
   );
 }

@@ -17,6 +17,7 @@ export interface BookFormat {
   storage_path?: string;
   file_url?: string | null; 
   is_active?: boolean;
+  status?: 'draft' | 'pending_review' | 'approved' | 'rejected' | 'archived';
 }
 
 export interface Book {
@@ -226,6 +227,24 @@ export interface BooksResponse {
       total: number;
       totalPages: number;
     };
+  };
+}
+
+export interface PersonalizedBooksResponse {
+  success: boolean;
+  data: {
+    books: Book[];
+    meta: {
+      personalized: boolean;
+    };
+  };
+}
+
+export interface BookPurchaseStatusResponse {
+  success: boolean;
+  data: {
+    isOwnBook: boolean;
+    ownedFormatIds: string[];
   };
 }
 

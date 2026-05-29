@@ -4,23 +4,27 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'BookNest',
     short_name: 'BookNest',
-    description: 'Read, buy, and track books offline-first.',
+    description: 'Read, buy, and track books — online and offline.',
     start_url: '/',
+    scope: '/',
     display: 'standalone',
-    background_color: '#ffffff',
-    theme_color: '#18181b',
+    orientation: 'portrait',
+    background_color: '#FDFBF7',
+    theme_color: '#2C3E50',
+    categories: ['books', 'entertainment'],
     icons: [
       {
-        src: '/icons/icon-192.png',
-        sizes: '192x192',
-        type: 'image/png',
+        src: '/icons/icon.svg',
+        sizes: 'any',
+        type: 'image/svg+xml',
+        purpose: 'any',
       },
       {
-        src: '/icons/icon-512.png',
-        sizes: '512x512',
-        type: 'image/png',
+        src: '/icons/icon.svg',
+        sizes: 'any',
+        type: 'image/svg+xml',
+        purpose: 'maskable',
       },
     ],
   };
 }
-

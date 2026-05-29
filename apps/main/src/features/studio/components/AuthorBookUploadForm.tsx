@@ -1,39 +1,53 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuthStore } from '@/stores/authStore';
-import { useGenres } from '@/features/books/hooks/useBooks';
+import { useGenres, useLanguages } from '@/features/books/hooks/useBooks';
 import { useBookUpload } from '../hooks/useBookUpload';
+import { useBookForEdit } from '../hooks/useBookForEdit';
 import { usePublisherSearch } from '../hooks/usePublisherSearch';
+import { AddFormatPanel } from './AddFormatPanel';
+import { useToast, AlertDialog } from '@/components/feedback';
+import { ConflictError } from '@repo/api-client';
 import type { Genre } from '@repo/types';
 import { Upload, X, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import * as pdfjsLib from 'pdfjs-dist';
 
 const bookUploadSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
+  title: z.string().optional(),
   subtitle: z.string().optional(),
   description: z.string().optional(),
-  language: z.string().min(1, 'Language is required'),
+  language: z.string().optional(),
   publication_date: z.string().optional(),
-  genre_id: z.string().min(1, 'Genre is required'),
+  genre_id: z.string().optional(),
   publisher_id: z.string().optional(),
-  publisher_name: z.string().optional(),
   pdf_price: z.number().min(0, 'Price must be 0 or greater').optional(),
-  pdf_page_count: z.number().min(1, 'Page count is required for PDF').optional(),
   audio_price: z.number().min(0, 'Price must be 0 or greater').optional(),
-  audio_duration_sec: z.number().min(1, 'Duration is required for Audio').optional(),
 });
 
 type BookUploadFormData = z.infer<typeof bookUploadSchema>;
 
-export function AuthorBookUploadForm() {
+export function AuthorBookUploadForm({ bookId }: { bookId?: string } = {}) {
   const { user } = useAuthStore();
   const { data: genresData } = useGenres();
+  const { data: languagesData } = useLanguages();
   const genres = (genresData as Genre[]) || [];
-  const { uploadBook, isSubmitting, error, clearError } = useBookUpload();
+  const languages = (languagesData as string[]) || [];
+  const { showToast } = useToast();
+  const { uploadBook, updateUploadedBook, isSubmitting, error, clearError } = useBookUpload({
+    onError: (msg) => showToast(msg, 'error'),
+  });
+  const { data: editBook, isLoading: isEditLoading, refetch: refetchEditBook } = useBookForEdit(bookId);
   const { suggestions, showSuggestions, search, setShowSuggestions, isLoading: isSearching } = usePublisherSearch();
+  const isEditMode = !!bookId;
+  const isApprovedEdit = isEditMode && editBook?.status === 'approved';
+  const existingPdf = editBook?.formats?.find((f) => f.format_type === 'PDF');
+  const existingAudio = editBook?.formats?.find((f) => f.format_type === 'Audio');
+  const showRegularPdfUploader = !(isApprovedEdit && existingPdf);
+  const showRegularAudioUploader = !(isApprovedEdit && existingAudio);
   
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
@@ -41,18 +55,74 @@ export function AuthorBookUploadForm() {
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [hasPdf, setHasPdf] = useState(false);
   const [hasAudio, setHasAudio] = useState(false);
+  const [detectedPdfPages, setDetectedPdfPages] = useState<number | null>(null);
+  const [detectedAudioSeconds, setDetectedAudioSeconds] = useState<number | null>(null);
   const [publisherSearchTerm, setPublisherSearchTerm] = useState('');
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [activeAction, setActiveAction] = useState<'draft' | 'submit' | null>(null);
+  const [duplicateBookId, setDuplicateBookId] = useState<string | null>(null);
 
   const { register, handleSubmit, formState: { errors }, setValue, watch, reset } = useForm<BookUploadFormData>({
     resolver: zodResolver(bookUploadSchema),
     defaultValues: {
-      language: 'English',
+      language: undefined,
       publication_date: new Date().toISOString().split('T')[0],
     },
   });
 
   const selectedPublisherId = watch('publisher_id');
+
+  useEffect(() => {
+    if (!hasPdf) {
+      setPdfFile(null);
+      setDetectedPdfPages(null);
+      setValue('pdf_price', undefined);
+    }
+  }, [hasPdf, setValue]);
+
+  useEffect(() => {
+    if (!hasAudio) {
+      setAudioFile(null);
+      setDetectedAudioSeconds(null);
+      setValue('audio_price', undefined);
+    }
+  }, [hasAudio, setValue]);
+
+  useEffect(() => {
+    if (!editBook) return;
+    reset({
+      title: editBook.title,
+      subtitle: editBook.subtitle || '',
+      description: editBook.description || '',
+      language: editBook.language,
+      publication_date: editBook.publication_date
+        ? String(editBook.publication_date).slice(0, 10)
+        : new Date().toISOString().split('T')[0],
+      genre_id: editBook.genre_id || editBook.genre?.id || '',
+      publisher_id: editBook.publisher_user_id || '',
+    });
+    if (editBook.cover_image_url) setCoverPreview(editBook.cover_image_url);
+    if (existingPdf) {
+      setHasPdf(true);
+      setValue('pdf_price', existingPdf.price);
+      if (existingPdf.page_count) setDetectedPdfPages(existingPdf.page_count);
+    }
+    if (existingAudio) {
+      setHasAudio(true);
+      setValue('audio_price', existingAudio.price);
+      if (existingAudio.duration_sec) setDetectedAudioSeconds(existingAudio.duration_sec);
+    }
+    if (editBook.publisher_name && !editBook.publisher_user_id) {
+      setPublisherSearchTerm(editBook.publisher_name);
+    }
+  }, [editBook, existingPdf, existingAudio, reset, setValue]);
+
+  const persistForm = async (formData: FormData) => {
+    if (isEditMode && bookId) {
+      return updateUploadedBook(bookId, formData);
+    }
+    return uploadBook(formData);
+  };
 
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -67,67 +137,219 @@ export function AuthorBookUploadForm() {
   };
 
   const onSubmit = async (data: BookUploadFormData) => {
-    if (!coverFile) {
-      alert('Cover image is required');
+    setActiveAction('submit');
+    if (!data.title || !data.title.trim()) {
+      showToast('Title is required', 'error');
+      setActiveAction(null);
+      return;
+    }
+    const hasAnyFormat = (hasPdf && (pdfFile || existingPdf)) || (hasAudio && (audioFile || existingAudio));
+    if (!hasAnyFormat) {
+      showToast('At least one format (PDF or Audio) is required', 'error');
+      setActiveAction(null);
       return;
     }
 
-    if (!hasPdf && !hasAudio) {
-      alert('At least one format (PDF or Audio) is required');
+    if (hasPdf && !pdfFile && !existingPdf) {
+      showToast('PDF file is required', 'error');
+      setActiveAction(null);
       return;
     }
 
-    if (hasPdf && !pdfFile) {
-      alert('PDF file is required');
-      return;
-    }
-
-    if (hasAudio && !audioFile) {
-      alert('Audio file is required');
+    if (hasAudio && !audioFile && !existingAudio) {
+      showToast('Audio file is required', 'error');
+      setActiveAction(null);
       return;
     }
 
     const formData = new FormData();
-    formData.append('title', data.title);
+    formData.append('title', data.title.trim());
     if (data.subtitle) formData.append('subtitle', data.subtitle);
     if (data.description) formData.append('description', data.description);
-    formData.append('language', data.language);
+    if (data.language) formData.append('language', data.language);
     if (data.publication_date) formData.append('publication_date', data.publication_date);
-    formData.append('genre_id', data.genre_id);
-    formData.append('cover', coverFile);
+    if (data.genre_id) formData.append('genre_id', data.genre_id);
+    if (coverFile) formData.append('cover', coverFile);
     
     if (data.publisher_id) {
       formData.append('publisher_user_id', data.publisher_id);
     } else if (publisherSearchTerm.trim()) {
       formData.append('publisher_name', publisherSearchTerm.trim());
     }
+
+    formData.append('submit_for_review', 'true');
     
     if (hasPdf && pdfFile) {
       formData.append('pdf', pdfFile);
       formData.append('pdf_price', String(data.pdf_price || 0));
-      if (data.pdf_page_count) formData.append('pdf_page_count', String(data.pdf_page_count));
+    } else if (hasPdf && existingPdf) {
+      formData.append('pdf_price', String(data.pdf_price ?? existingPdf.price));
     }
     
     if (hasAudio && audioFile) {
       formData.append('audio', audioFile);
       formData.append('audio_price', String(data.audio_price || 0));
-      if (data.audio_duration_sec) formData.append('audio_duration_sec', String(data.audio_duration_sec));
+    } else if (hasAudio && existingAudio) {
+      formData.append('audio_price', String(data.audio_price ?? existingAudio.price));
     }
 
-    const success = await uploadBook(formData);
-    if (success) {
+    try {
+      await persistForm(formData);
       setUploadSuccess(true);
-      setTimeout(() => {
-        setUploadSuccess(false);
-        reset();
-        setCoverFile(null);
-        setCoverPreview(null);
-        setPdfFile(null);
-        setAudioFile(null);
-        setHasPdf(false);
-        setHasAudio(false);
-        setPublisherSearchTerm('');
-      }, 2000);
+      showToast(isEditMode ? 'Book updated and submitted' : 'Book submitted for review', 'success');
+      if (!isEditMode) {
+        setTimeout(() => {
+          setUploadSuccess(false);
+          setActiveAction(null);
+          reset();
+          setCoverFile(null);
+          setCoverPreview(null);
+          setPdfFile(null);
+          setAudioFile(null);
+          setHasPdf(false);
+          setHasAudio(false);
+          setPublisherSearchTerm('');
+        }, 2000);
+      } else {
+        setActiveAction(null);
+      }
+    } catch (err) {
+      if (err instanceof ConflictError && err.existingBookId) {
+        setDuplicateBookId(err.existingBookId);
+      }
+      setActiveAction(null);
+    }
+  };
+
+  const onSaveDraft = async (data: BookUploadFormData) => {
+    setActiveAction('draft');
+    const hasAnyInput =
+      !!data.title?.trim() ||
+      !!data.subtitle?.trim() ||
+      !!data.description?.trim() ||
+      !!data.language?.trim() ||
+      !!data.genre_id?.trim() ||
+      !!coverFile ||
+      !!pdfFile ||
+      !!audioFile ||
+      !!data.publisher_id?.trim() ||
+      !!publisherSearchTerm.trim();
+
+    if (!hasAnyInput) {
+      showToast('Enter at least one field to save a draft', 'error');
+      setActiveAction(null);
+      return;
+    }
+
+    const formData = new FormData();
+    if (data.title?.trim()) formData.append('title', data.title.trim());
+    if (data.subtitle) formData.append('subtitle', data.subtitle);
+    if (data.description) formData.append('description', data.description);
+    if (data.language) formData.append('language', data.language);
+    if (data.publication_date) formData.append('publication_date', data.publication_date);
+    if (data.genre_id) formData.append('genre_id', data.genre_id);
+    if (coverFile) formData.append('cover', coverFile);
+    formData.append('save_as_draft', 'true');
+
+    // Optional publisher link while drafting
+    if (data.publisher_id) {
+      formData.append('publisher_user_id', data.publisher_id);
+    } else if (publisherSearchTerm.trim()) {
+      formData.append('publisher_name', publisherSearchTerm.trim());
+    }
+
+    // Formats are optional for drafts
+    if (hasPdf && pdfFile) {
+      formData.append('pdf', pdfFile);
+      formData.append('pdf_price', String(data.pdf_price || 0));
+    } else if (hasPdf && existingPdf) {
+      formData.append('pdf_price', String(data.pdf_price ?? existingPdf.price));
+    }
+
+    if (hasAudio && audioFile) {
+      formData.append('audio', audioFile);
+      formData.append('audio_price', String(data.audio_price || 0));
+    } else if (hasAudio && existingAudio) {
+      formData.append('audio_price', String(data.audio_price ?? existingAudio.price));
+    }
+
+    try {
+      await persistForm(formData);
+      setUploadSuccess(true);
+      showToast(isEditMode ? 'Changes saved' : 'Draft saved', 'success');
+      if (isEditMode) {
+        refetchEditBook();
+        setActiveAction(null);
+      } else {
+        setTimeout(() => {
+          setUploadSuccess(false);
+          setActiveAction(null);
+          reset();
+          setCoverFile(null);
+          setCoverPreview(null);
+          setPdfFile(null);
+          setAudioFile(null);
+          setHasPdf(false);
+          setHasAudio(false);
+          setDetectedPdfPages(null);
+          setDetectedAudioSeconds(null);
+          setPublisherSearchTerm('');
+        }, 2000);
+      }
+    } catch (err) {
+      if (err instanceof ConflictError && err.existingBookId) {
+        setDuplicateBookId(err.existingBookId);
+      }
+      setActiveAction(null);
+    }
+  };
+
+  useEffect(() => {
+    // Configure pdf.js worker (bundled)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (!(pdfjsLib as any).GlobalWorkerOptions?.workerSrc) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (pdfjsLib as any).GlobalWorkerOptions.workerSrc = new URL(
+        'pdfjs-dist/build/pdf.worker.min.mjs',
+        import.meta.url
+      ).toString();
+    }
+  }, []);
+
+  const handlePdfChange = async (file: File | null) => {
+    setPdfFile(file);
+    setDetectedPdfPages(null);
+    if (!file) return;
+    try {
+      const buf = await file.arrayBuffer();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const doc = await (pdfjsLib as any).getDocument({ data: buf }).promise;
+      setDetectedPdfPages(doc.numPages || null);
+    } catch {
+      setDetectedPdfPages(null);
+    }
+  };
+
+  const handleAudioChange = async (file: File | null) => {
+    setAudioFile(file);
+    setDetectedAudioSeconds(null);
+    if (!file) return;
+    try {
+      const url = URL.createObjectURL(file);
+      const audio = document.createElement('audio');
+      audio.preload = 'metadata';
+      audio.src = url;
+      audio.onloadedmetadata = () => {
+        const d = audio.duration;
+        URL.revokeObjectURL(url);
+        if (typeof d === 'number' && Number.isFinite(d)) setDetectedAudioSeconds(Math.max(1, Math.round(d)));
+      };
+      audio.onerror = () => {
+        URL.revokeObjectURL(url);
+        setDetectedAudioSeconds(null);
+      };
+    } catch {
+      setDetectedAudioSeconds(null);
     }
   };
 
@@ -135,22 +357,32 @@ export function AuthorBookUploadForm() {
     setPublisherSearchTerm(value);
     search(value);
     setValue('publisher_id', '');
-    setValue('publisher_name', '');
   };
 
   const selectPublisher = (publisher: { id: string; name: string }) => {
     setValue('publisher_id', publisher.id);
-    setValue('publisher_name', publisher.name);
     setPublisherSearchTerm(publisher.name);
     setShowSuggestions(false);
   };
+
+  if (isEditMode && isEditLoading) {
+    return (
+      <div className="flex justify-center py-16">
+        <Loader2 className="animate-spin text-[#B85C38]" size={32} />
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
       {/* Header */}
       <div className="border-b border-[#E8E2D9] pb-6">
-        <h1 className="text-2xl font-bold text-[#1A2A3A]">Upload New Book</h1>
-        <p className="text-[#4A5568] text-sm mt-1">Share your work with the world</p>
+        <h1 className="text-2xl font-bold text-[#1A2A3A]">
+          {isEditMode ? 'Edit Book' : 'Upload New Book'}
+        </h1>
+        <p className="text-[#4A5568] text-sm mt-1">
+          {isEditMode ? 'Update your book details and formats' : 'Share your work with the world'}
+        </p>
       </div>
 
       {/* Success Message */}
@@ -180,7 +412,7 @@ export function AuthorBookUploadForm() {
 
       {/* Basic Information Section */}
       <div className="space-y-5">
-        <h2 className="text-lg font-semibold text-[#1A2A3A]">Basic Information</h2>
+ 
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="md:col-span-2">
@@ -218,11 +450,12 @@ export function AuthorBookUploadForm() {
               {...register('language')}
               className="w-full px-4 py-2.5 border border-[#E8E2D9] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#B85C38] focus:border-[#B85C38] transition-all bg-white"
             >
-              <option value="English">English</option>
-              <option value="Amharic">አማርኛ (Amharic)</option>
-              <option value="French">Français</option>
-              <option value="Arabic">العربية</option>
-              <option value="Spanish">Español</option>
+              <option value="">Select language</option>
+              {languages.map((lang) => (
+                <option key={lang} value={lang}>
+                  {lang}
+                </option>
+              ))}
             </select>
             {errors.language && <p className="text-red-500 text-sm mt-1">{errors.language.message}</p>}
           </div>
@@ -250,15 +483,7 @@ export function AuthorBookUploadForm() {
             {errors.genre_id && <p className="text-red-500 text-sm mt-1">{errors.genre_id.message}</p>}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-[#1A2A3A] mb-1">Author Name</label>
-            <input
-              value={user?.publicName || ''}
-              disabled
-              className="w-full px-4 py-2.5 border border-[#E8E2D9] rounded-lg bg-[#F5F1EB] text-[#4A5568]"
-            />
-            <p className="text-xs text-[#4A5568] mt-1">Using your profile name</p>
-          </div>
+           
 
           <div className="relative">
             <label className="block text-sm font-medium text-[#1A2A3A] mb-1">Publisher (Optional)</label>
@@ -333,15 +558,37 @@ export function AuthorBookUploadForm() {
       {/* Formats Section */}
       <div className="space-y-5">
         <h2 className="text-lg font-semibold text-[#1A2A3A]">Formats (at least one required)</h2>
+
+        {isApprovedEdit && existingPdf && (
+          <p className="text-sm text-[#4A5568] bg-[#F5F1EB] rounded-lg px-3 py-2">
+            PDF: {existingPdf.price} ETB · {existingPdf.page_count} pages ·{' '}
+            {existingPdf.is_active === false ? 'Pending approval' : 'Active'}
+          </p>
+        )}
+        {isApprovedEdit && existingAudio && (
+          <p className="text-sm text-[#4A5568] bg-[#F5F1EB] rounded-lg px-3 py-2">
+            Audio: {existingAudio.price} ETB ·{' '}
+            {existingAudio.is_active === false ? 'Pending approval' : 'Active'}
+          </p>
+        )}
+
+        {isApprovedEdit && bookId && !existingPdf && (
+          <AddFormatPanel bookId={bookId} formatType="PDF" onAdded={() => refetchEditBook()} />
+        )}
+        {isApprovedEdit && bookId && !existingAudio && (
+          <AddFormatPanel bookId={bookId} formatType="Audio" onAdded={() => refetchEditBook()} />
+        )}
         
         {/* PDF Format */}
+        {showRegularPdfUploader && (
         <div className="bg-white rounded-xl border border-[#E8E2D9] overflow-hidden">
           <label className="flex items-center gap-3 p-4 cursor-pointer hover:bg-[#FDFBF7] transition-colors">
             <input
               type="checkbox"
               checked={hasPdf}
+              disabled={!!existingPdf && !isApprovedEdit}
               onChange={(e) => setHasPdf(e.target.checked)}
-              className="w-4 h-4 rounded border-[#E8E2D9] text-[#B85C38] focus:ring-[#B85C38]"
+              className="w-4 h-4 rounded border-[#E8E2D9] text-[#B85C38] focus:ring-[#B85C38] disabled:opacity-50"
             />
             <span className="font-medium text-[#1A2A3A]">📖 PDF Format</span>
           </label>
@@ -349,15 +596,25 @@ export function AuthorBookUploadForm() {
           {hasPdf && (
             <div className="border-t border-[#E8E2D9] p-4 space-y-4 bg-[#FDFBF7]">
               <div>
-                <label className="block text-sm font-medium text-[#1A2A3A] mb-1">PDF File *</label>
+                <label className="block text-sm font-medium text-[#1A2A3A] mb-1">
+                  PDF File {existingPdf ? '(optional — replace)' : '*'}
+                </label>
                 <div className="flex items-center gap-3">
                   <label className="flex-1 flex items-center gap-2 px-4 py-2.5 border border-[#E8E2D9] rounded-lg cursor-pointer hover:border-[#B85C38] transition-colors bg-white">
                     <Upload size={16} className="text-[#4A5568]" />
                     <span className="text-sm text-[#4A5568]">{pdfFile ? pdfFile.name : 'Choose PDF file'}</span>
-                    <input type="file" accept="application/pdf" onChange={(e) => setPdfFile(e.target.files?.[0] || null)} className="hidden" />
+                    <input type="file" accept="application/pdf" onChange={(e) => handlePdfChange(e.target.files?.[0] || null)} className="hidden" />
                   </label>
                   {pdfFile && (
-                    <button type="button" onClick={() => setPdfFile(null)} className="text-red-500 hover:text-red-600">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHasPdf(false);
+                        handlePdfChange(null);
+                        setValue('pdf_price', undefined);
+                      }}
+                      className="text-red-500 hover:text-red-600"
+                    >
                       <X size={18} />
                     </button>
                   )}
@@ -378,28 +635,27 @@ export function AuthorBookUploadForm() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#1A2A3A] mb-1">Page Count *</label>
-                  <input
-                    type="number"
-                    {...register('pdf_page_count', { valueAsNumber: true })}
-                    className="w-full px-4 py-2.5 border border-[#E8E2D9] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#B85C38] focus:border-[#B85C38] transition-all"
-                    placeholder="Number of pages"
-                  />
-                  {errors.pdf_page_count && <p className="text-red-500 text-sm mt-1">{errors.pdf_page_count.message}</p>}
+                  <label className="block text-sm font-medium text-[#1A2A3A] mb-1">Page Count</label>
+                  <div className="w-full px-4 py-2.5 border border-[#E8E2D9] rounded-lg bg-white text-sm text-[#4A5568]">
+                    {detectedPdfPages ? `${detectedPdfPages} pages` : 'Auto-detected from PDF'}
+                  </div>
                 </div>
               </div>
             </div>
           )}
         </div>
+        )}
 
         {/* Audio Format */}
+        {showRegularAudioUploader && (
         <div className="bg-white rounded-xl border border-[#E8E2D9] overflow-hidden">
           <label className="flex items-center gap-3 p-4 cursor-pointer hover:bg-[#FDFBF7] transition-colors">
             <input
               type="checkbox"
               checked={hasAudio}
+              disabled={!!existingAudio && !isApprovedEdit}
               onChange={(e) => setHasAudio(e.target.checked)}
-              className="w-4 h-4 rounded border-[#E8E2D9] text-[#B85C38] focus:ring-[#B85C38]"
+              className="w-4 h-4 rounded border-[#E8E2D9] text-[#B85C38] focus:ring-[#B85C38] disabled:opacity-50"
             />
             <span className="font-medium text-[#1A2A3A]">🎧 Audio Format</span>
           </label>
@@ -407,15 +663,25 @@ export function AuthorBookUploadForm() {
           {hasAudio && (
             <div className="border-t border-[#E8E2D9] p-4 space-y-4 bg-[#FDFBF7]">
               <div>
-                <label className="block text-sm font-medium text-[#1A2A3A] mb-1">Audio File *</label>
+                <label className="block text-sm font-medium text-[#1A2A3A] mb-1">
+                  Audio File {existingAudio ? '(optional — replace)' : '*'}
+                </label>
                 <div className="flex items-center gap-3">
                   <label className="flex-1 flex items-center gap-2 px-4 py-2.5 border border-[#E8E2D9] rounded-lg cursor-pointer hover:border-[#B85C38] transition-colors bg-white">
                     <Upload size={16} className="text-[#4A5568]" />
                     <span className="text-sm text-[#4A5568]">{audioFile ? audioFile.name : 'Choose audio file'}</span>
-                    <input type="file" accept="audio/mpeg,audio/mp3,audio/wav,audio/m4a" onChange={(e) => setAudioFile(e.target.files?.[0] || null)} className="hidden" />
+                    <input type="file" accept="audio/mpeg,audio/mp3,audio/wav,audio/m4a" onChange={(e) => handleAudioChange(e.target.files?.[0] || null)} className="hidden" />
                   </label>
                   {audioFile && (
-                    <button type="button" onClick={() => setAudioFile(null)} className="text-red-500 hover:text-red-600">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHasAudio(false);
+                        handleAudioChange(null);
+                        setValue('audio_price', undefined);
+                      }}
+                      className="text-red-500 hover:text-red-600"
+                    >
                       <X size={18} />
                     </button>
                   )}
@@ -437,39 +703,68 @@ export function AuthorBookUploadForm() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#1A2A3A] mb-1">Duration (seconds) *</label>
-                  <input
-                    type="number"
-                    {...register('audio_duration_sec', { valueAsNumber: true })}
-                    className="w-full px-4 py-2.5 border border-[#E8E2D9] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#B85C38] focus:border-[#B85C38] transition-all"
-                    placeholder="e.g., 7200 for 2 hours"
-                  />
-                  {errors.audio_duration_sec && <p className="text-red-500 text-sm mt-1">{errors.audio_duration_sec.message}</p>}
+                  <label className="block text-sm font-medium text-[#1A2A3A] mb-1">Duration</label>
+                  <div className="w-full px-4 py-2.5 border border-[#E8E2D9] rounded-lg bg-white text-sm text-[#4A5568]">
+                    {detectedAudioSeconds ? `${detectedAudioSeconds} sec` : 'Auto-detected from audio'}
+                  </div>
                 </div>
               </div>
             </div>
           )}
         </div>
+        )}
       </div>
 
-      {/* Submit Button */}
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="w-full py-3 px-4 bg-[#2C3E50] text-white rounded-lg font-medium hover:bg-[#1A2A3A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-      >
-        {isSubmitting ? (
-          <>
-            <Loader2 size={18} className="animate-spin" />
-            Uploading...
-          </>
-        ) : (
-          <>
-            <Upload size={18} />
-            Upload Book
-          </>
-        )}
-      </button>
+      {/* Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <button
+          type="button"
+          onClick={handleSubmit(onSaveDraft)}
+          disabled={isSubmitting}
+          className="w-full py-3 px-4 bg-white border border-[#E8E2D9] text-[#1A2A3A] rounded-lg font-medium hover:bg-[#FDFBF7] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          {isSubmitting && activeAction === 'draft' ? (
+            <>
+              <Loader2 size={18} className="animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>{isEditMode ? 'Save Changes' : 'Save Draft'}</>
+          )}
+        </button>
+
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="w-full py-3 px-4 bg-[#2C3E50] text-white rounded-lg font-medium hover:bg-[#1A2A3A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          {isSubmitting && activeAction === 'submit' ? (
+            <>
+              <Loader2 size={18} className="animate-spin" />
+              {isEditMode ? 'Saving...' : 'Uploading...'}
+            </>
+          ) : (
+            <>
+              <Upload size={18} />
+              {isEditMode ? 'Save & Submit for Review' : 'Submit for Review'}
+            </>
+          )}
+        </button>
+      </div>
+
+      <AlertDialog
+        open={!!duplicateBookId}
+        title="This book already exists"
+        message={
+          'You already have a book with this title and language.\n\n' +
+          'To add PDF or Audio, open your existing book and use Add format on the edit page. ' +
+          'You cannot upload the same title and language again for a different format only.'
+        }
+        actionHref={duplicateBookId ? `/studio/books/${duplicateBookId}/edit` : undefined}
+        actionLabel="Edit existing book"
+        buttonLabel="Close"
+        onClose={() => setDuplicateBookId(null)}
+      />
     </form>
   );
 }

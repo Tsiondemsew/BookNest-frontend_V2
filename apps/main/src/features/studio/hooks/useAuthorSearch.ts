@@ -22,10 +22,11 @@ export function useAuthorSearch() {
 
     setIsLoading(true);
     try {
-      const response = await apiClient.get<{ success: boolean; data: AuthorSuggestion[] }>(
-        `/api/auth/suggest?role=author&q=${encodeURIComponent(query)}`,
+      const response = await apiClient.get<{ success: boolean; data: Array<{ id: string; name: string; role: string }> }>(
+        `/api/users/search?role=author&q=${encodeURIComponent(query)}`,
       );
-      setSuggestions(response.data || []);
+      const mapped = (response.data || []).map((u) => ({ id: u.id, name: u.name }));
+      setSuggestions(mapped);
       setShowSuggestions(true);
     } catch {
       setSuggestions([]);

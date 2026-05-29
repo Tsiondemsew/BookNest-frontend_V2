@@ -1,5 +1,7 @@
 import type {
   BooksResponse,
+  PersonalizedBooksResponse,
+  BookPurchaseStatusResponse,
   BookResponse,
   GenresResponse,
   CreateBookRequest,
@@ -8,6 +10,7 @@ import type {
   UpdateBookResponse,
   DeleteBookResponse,
   MyBooksResponse,
+  Book,
 } from '@repo/types';
 import { ApiClient } from './client';
 import { endpoints } from './endpoints';
@@ -45,6 +48,23 @@ export function createBooksApi(client: ApiClient) {
     getGenres: () => 
       client.get<GenresResponse>(endpoints.books.genres),
 
+    getPurchaseStatus: (bookId: string) =>
+      client.get<BookPurchaseStatusResponse>(
+        `/api/payments/purchase-status?book_id=${encodeURIComponent(bookId)}`
+      ),
+
+    getPersonalizedBooks: (limit?: number) => {
+      const params = new URLSearchParams();
+      if (limit) params.append('limit', String(limit));
+      const url = params.toString()
+        ? `${endpoints.books.personalized}?${params.toString()}`
+        : endpoints.books.personalized;
+      return client.get<PersonalizedBooksResponse>(url);
+    },
+
+    getLanguages: () =>
+      client.get<{ success: boolean; data: string[] }>(endpoints.books.languages),
+
     // Create book
     createBook: (data: CreateBookRequest) =>
       client.post<CreateBookResponse, CreateBookRequest>(endpoints.books.list, data),
@@ -67,6 +87,33 @@ export function createBooksApi(client: ApiClient) {
         : endpoints.books.myBooks;
       return client.get<MyBooksResponse>(url);
     },
+
+    uploadBook: (formData: FormData) =>
+      client.post<{ success: boolean; data: Book; error?: { message?: string } }, FormData>(
+        endpoints.books.upload,
+        formData
+      ),
+
+    submitBookForReview: (bookId: string) =>
+      client.post<{ success: boolean; data: Book; error?: { message?: string } }, undefined>(
+        endpoints.books.submit(bookId),
+        undefined as any
+      ),
+
+    getBookForEdit: (id: string) =>
+      client.get<BookResponse>(endpoints.books.edit(id)),
+
+    updateUploadedBook: (id: string, formData: FormData) =>
+      client.put<{ success: boolean; data: Book; error?: { message?: string } }, FormData>(
+        endpoints.books.updateUpload(id),
+        formData
+      ),
+
+    addBookFormat: (id: string, formData: FormData) =>
+      client.post<{ success: boolean; data: Book; error?: { message?: string } }, FormData>(
+        endpoints.books.addFormat(id),
+        formData
+      ),
 
     // Update book cover - using PUT instead of PATCH
     updateBookCover: (id: string, coverImagePath: string, coverImageUrl: string) =>

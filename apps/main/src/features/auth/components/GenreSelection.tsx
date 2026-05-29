@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
-import { apiClient } from '@/lib/api/client';
+import { authApi, cartApi } from '@/lib/api/client';
 
 interface Genre {
   id: string;
@@ -46,7 +46,7 @@ export function GenreSelection({ genres }: GenreSelectionProps) {
   const executePendingAction = async () => {
     if (pendingAction === 'add-to-cart' && pendingBookFormatId) {
       try {
-        await apiClient.post('/api/cart/items', { book_format_id: pendingBookFormatId });
+        await cartApi.addToCart(pendingBookFormatId);
         router.push('/cart');
         return true;
       } catch (err) {
@@ -74,9 +74,7 @@ export function GenreSelection({ genres }: GenreSelectionProps) {
     setError(null);
 
     try {
-      await apiClient.post('/api/auth/favorite-genres', {
-        genre_ids: selectedGenres,
-      });
+      await authApi.favoriteGenres({ genre_ids: selectedGenres });
       
       // Execute pending action if any
       const actionExecuted = await executePendingAction();

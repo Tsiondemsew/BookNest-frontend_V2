@@ -54,6 +54,8 @@ export default function CartPage() {
     );
   }
 
+  const itemCount = cart.items.length;
+
   return (
     <div className="max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold text-[#1A2A3A] mb-6">Shopping Cart</h1>
@@ -62,8 +64,7 @@ export default function CartPage() {
         {cart.items.map((item) => {
           const book = item.book_format?.book;
           const price = item.book_format?.price || 0;
-          const bookFormatId = item.book_format_id;
-          
+
           return (
             <div key={item.id} className="flex gap-4 p-4 bg-white rounded-xl border border-[#E8E2D9] shadow-sm hover:shadow-md transition-all">
               <img
@@ -71,7 +72,7 @@ export default function CartPage() {
                 alt={book?.title || 'Book'}
                 className="w-24 h-32 object-cover rounded-lg"
               />
-              
+
               <div className="flex-1">
                 <div className="flex justify-between">
                   <div>
@@ -86,34 +87,36 @@ export default function CartPage() {
                   <button
                     onClick={() => removeItem(item.id)}
                     className="text-[#4A5568] hover:text-red-500 transition-colors"
+                    aria-label="Remove from cart"
                   >
                     <Trash2 size={18} />
                   </button>
                 </div>
-                
-                <div className="flex justify-between items-center mt-4">
-                  <p className="font-bold text-lg text-[#2C3E50]">
-                    {price.toFixed(2)} ETB
-                  </p>
-                  <Link
-                    href={`/checkout?book_format_id=${bookFormatId}`}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#B85C38] text-white rounded-lg text-sm font-medium hover:bg-[#8E735B] transition-colors"
-                  >
-                    <CreditCard size={16} />
-                    Buy Now
-                  </Link>
-                </div>
+
+                <p className="font-bold text-lg text-[#2C3E50] mt-4">
+                  {price.toFixed(2)} ETB
+                </p>
               </div>
             </div>
           );
         })}
       </div>
 
-      <div className="mt-8 border-t border-[#E8E2D9] pt-6">
+      <div className="mt-8 border-t border-[#E8E2D9] pt-6 space-y-4">
         <div className="flex justify-between text-xl font-bold text-[#1A2A3A]">
-          <span>Total</span>
+          <span>Total ({itemCount} {itemCount === 1 ? 'item' : 'items'})</span>
           <span>{cart.total.toFixed(2)} ETB</span>
         </div>
+        <p className="text-sm text-[#4A5568]">
+          All items are purchased together in one secure payment.
+        </p>
+        <Link
+          href="/checkout?from_cart=1"
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#B85C38] px-6 py-3 text-base font-medium text-white transition-colors hover:bg-[#8E735B] sm:w-auto sm:min-w-[240px]"
+        >
+          <CreditCard size={20} />
+          Proceed to checkout
+        </Link>
       </div>
     </div>
   );

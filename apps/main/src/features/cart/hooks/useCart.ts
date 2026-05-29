@@ -10,9 +10,9 @@ export function useCart() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchCart();
+      void useCartStore.getState().fetchCart();
     }
-  }, [isAuthenticated, fetchCart]);
+  }, [isAuthenticated]);
 
   return {
     cart,

@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuthStore } from '@/stores/authStore';
-import { AuthorBookUploadForm, PublisherBookUploadForm } from '@/features/studio';
+import { AuthorBookUploadForm, PublisherBookUploadForm, BookUploadInfoCallout } from '@/features/studio';
 
 export default function UploadBookPage() {
   const { user, isAuthenticated } = useAuthStore();
@@ -23,7 +23,8 @@ export default function UploadBookPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto space-y-6">
+      <BookUploadInfoCallout />
       {user?.role === 'publisher' ? <PublisherBookUploadForm /> : <AuthorBookUploadForm />}
     </div>
   );

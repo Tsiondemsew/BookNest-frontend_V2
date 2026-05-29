@@ -1,137 +1,263 @@
 import { create } from 'zustand';
 import { authApi } from '@/lib/api/client';
 import { getSession, saveSession, clearSession, isSessionValid } from '@/lib/db/authSession';
+import { getAuthFieldErrors, getFriendlyAuthMessage } from '@/lib/auth/mapAuthError';
 import type { SessionUser } from '@repo/types';
+import { ValidationError } from '@repo/api-client';
 
 interface AuthState {
   user: SessionUser | null;
-  isLoading: boolean;
+  /** App boot / fetchMe only — do not use for login/register submit */
+  isInitializing: boolean;
   isAuthenticated: boolean;
   isOfflineMode: boolean;
   error: string | null;
 
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, displayName: string) => Promise<void>;
+  login: (
+    email: string,
+    password: string,
+    rememberMe?: boolean
+  ) => Promise<{
+    success: boolean;
+    error?: string;
+    fieldErrors?: Record<string, string>;
+    needsGenreOnboarding?: boolean;
+  }>;
+  register: (
+    email: string,
+    password: string,
+    displayName: string
+  ) => Promise<{
+    success: boolean;
+    error?: string;
+    fieldErrors?: Record<string, string>;
+  }>;
   logout: () => Promise<void>;
-  fetchMe: () => Promise<void>;
+  /** First load only */
+  initializeAuth: () => Promise<void>;
+  /** After reconnect or focus — keeps UI visible */
+  refreshSession: () => Promise<void>;
   restoreOfflineSession: () => Promise<boolean>;
   clearError: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
-  isLoading: false,
+  isInitializing: true,
   isAuthenticated: false,
   isOfflineMode: false,
   error: null,
 
-  login: async (email, password) => {
-    set({ isLoading: true, error: null });
+  login: async (email, password, rememberMe = false) => {
+    set({ error: null });
+
     try {
-      const response = await authApi.login({ email, password });
+      const response = await authApi.login({
+        email,
+        password,
+        remember_me: rememberMe,
+      });
+
       const session = response.data;
-      
-      // ✅ Store only user data, not token
-      const storedData = {
+      if (!session?.user) {
+        throw new Error('Invalid response from server');
+      }
+
+      await saveSession({
         id: 'current',
         user: session.user,
         issuedAt: session.issuedAt,
         expiresAt: session.expiresAt,
-      };
-      await saveSession(storedData);
-      
-      set({ 
-        user: session.user, 
+        rememberMe: session.rememberMe ?? rememberMe,
+      });
+
+      set({
+        user: session.user,
         isAuthenticated: true,
         isOfflineMode: false,
-        isLoading: false 
+        error: null,
       });
-    } catch (error: any) {
-      set({ error: error.message || 'Login failed', isAuthenticated: false, isLoading: false });
-      throw error;
+
+      // Show install prompt at most once per login session
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('booknest:installPrompt:seen');
+      }
+
+      return {
+        success: true,
+        needsGenreOnboarding: response.data.needsGenreOnboarding,
+      };
+    } catch (error: unknown) {
+      const friendlyMessage = getFriendlyAuthMessage(error);
+      const fieldErrors = getAuthFieldErrors(error);
+
+      set({
+        error: friendlyMessage,
+        isAuthenticated: false,
+      });
+
+      return { success: false, error: friendlyMessage, fieldErrors };
     }
   },
 
   register: async (email, password, displayName) => {
-    set({ isLoading: true, error: null });
+    set({ error: null });
+
     try {
-      const response = await authApi.register({ email, password, display_name: displayName });
-      const session = response.data;
-      
-      const storedData = {
-        id: 'current',
-        user: session.user,
-        issuedAt: session.issuedAt,
-        expiresAt: session.expiresAt,
-      };
-      await saveSession(storedData);
-      
-      set({ 
-        user: session.user, 
-        isAuthenticated: true,
-        isOfflineMode: false,
-        isLoading: false 
+      await authApi.register({
+        email,
+        password,
+        display_name: displayName,
       });
-    } catch (error: any) {
-      set({ error: error.message || 'Registration failed', isAuthenticated: false, isLoading: false });
-      throw error;
+
+      set({ error: null });
+      return { success: true };
+    } catch (error: unknown) {
+      let friendlyMessage = getFriendlyAuthMessage(error);
+      let fieldErrors = getAuthFieldErrors(error);
+
+      if (error instanceof ValidationError) {
+        const lower = friendlyMessage.toLowerCase();
+        if (lower.includes('already registered')) {
+          fieldErrors = { ...fieldErrors, email: 'An account with this email already exists.' };
+        }
+        if (lower.includes('display name')) {
+          fieldErrors = { ...fieldErrors, displayName: friendlyMessage };
+        }
+      }
+
+      set({ error: friendlyMessage });
+      return { success: false, error: friendlyMessage, fieldErrors };
     }
   },
 
   logout: async () => {
-    set({ isLoading: true });
     try {
       await authApi.logout();
+    } catch {
+      // Clear local state even if API fails
+    } finally {
       await clearSession();
-      set({ user: null, isAuthenticated: false, isOfflineMode: false, error: null, isLoading: false });
-    } catch (error: any) {
-      console.error('Logout failed:', error);
-      set({ isLoading: false });
+      set({
+        user: null,
+        isAuthenticated: false,
+        isOfflineMode: false,
+        error: null,
+      });
+
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('booknest:installPrompt:seen');
+      }
     }
   },
 
-  fetchMe: async () => {
-    if (get().isOfflineMode) return;
-    
-    set({ isLoading: true });
+  initializeAuth: async () => {
+    set({ isInitializing: true });
+
+    if (!navigator.onLine) {
+      await get().restoreOfflineSession();
+      return;
+    }
+
     try {
       const response = await authApi.me();
-      if (response.data) {
-        set({ 
-          user: response.data.user, 
+      const session = response?.data;
+
+      if (session?.user) {
+        const existing = await getSession();
+        await saveSession({
+          id: 'current',
+          user: session.user,
+          issuedAt: session.issuedAt,
+          expiresAt: session.expiresAt,
+          rememberMe: existing?.rememberMe,
+        });
+
+        set({
+          user: session.user,
           isAuthenticated: true,
-          isLoading: false 
+          isOfflineMode: false,
+          isInitializing: false,
+          error: null,
         });
       } else {
-        set({ user: null, isAuthenticated: false, isLoading: false });
+        set({
+          user: null,
+          isAuthenticated: false,
+          isOfflineMode: false,
+          isInitializing: false,
+        });
       }
-    } catch (error: any) {
-      if (!navigator.onLine) {
-        const restored = await get().restoreOfflineSession();
-        if (!restored) {
-          set({ user: null, isAuthenticated: false, isLoading: false });
-        }
+    } catch {
+      const restored = await get().restoreOfflineSession();
+      if (!restored) {
+        set({
+          user: null,
+          isAuthenticated: false,
+          isOfflineMode: false,
+          isInitializing: false,
+        });
+      }
+    }
+  },
+
+  refreshSession: async () => {
+    if (!navigator.onLine) {
+      await get().restoreOfflineSession();
+      return;
+    }
+
+    try {
+      const response = await authApi.me();
+      const session = response?.data;
+
+      if (session?.user) {
+        const existing = await getSession();
+        await saveSession({
+          id: 'current',
+          user: session.user,
+          issuedAt: session.issuedAt,
+          expiresAt: session.expiresAt,
+          rememberMe: existing?.rememberMe,
+        });
+
+        set({
+          user: session.user,
+          isAuthenticated: true,
+          isOfflineMode: false,
+          error: null,
+        });
       } else {
-        set({ user: null, isAuthenticated: false, isLoading: false });
+        set({ user: null, isAuthenticated: false, isOfflineMode: false });
+      }
+    } catch {
+      const restored = await get().restoreOfflineSession();
+      if (!restored) {
+        set({ user: null, isAuthenticated: false, isOfflineMode: false });
       }
     }
   },
 
   restoreOfflineSession: async () => {
-    const isValid = await isSessionValid();
-    if (isValid) {
-      const session = await getSession();
-      if (session) {
-        set({ 
-          user: session.user,
-          isAuthenticated: true,
-          isOfflineMode: true,
-          isLoading: false 
-        });
-        return true;
-      }
+    const valid = await isSessionValid();
+    if (!valid) {
+      set({ isInitializing: false });
+      return false;
     }
-    return false;
+
+    const session = await getSession();
+    if (!session?.user) {
+      set({ isInitializing: false });
+      return false;
+    }
+
+    set({
+      user: session.user,
+      isAuthenticated: true,
+      isOfflineMode: true,
+      isInitializing: false,
+    });
+    return true;
   },
 
   clearError: () => set({ error: null }),

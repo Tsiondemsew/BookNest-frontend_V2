@@ -2,6 +2,7 @@ export * from './client';
 export * from './config';
 export * from './endpoints';
 export * from './errors';
+export * from './parseApiError';
 export * from './auth';
 export * from './books';
 export * from './wishlist';
@@ -9,9 +10,11 @@ export * from './analytics';
 export * from './seller';
 export * from './cart';      
 export * from './checkout';
-export * from './chat';  
+export * from './chat';
 export * from './feed';
 export * from './profile';
+export * from './progress';
+export * from './users';
 
 // Re-export types
 export type {

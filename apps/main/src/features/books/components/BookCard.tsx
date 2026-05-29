@@ -4,24 +4,35 @@ import Link from 'next/link';
 import type { Book } from '@repo/types';
 import { WishlistButton } from '@/features/wishlist/components/WishlistButton';
 import { AddToCartButton } from '@/features/cart/components/AddToCartButton';
-import { useQuery } from '@tanstack/react-query';
+import { useBookPurchaseStatus } from '@/features/books/hooks/useBookPurchaseStatus';
+import { useAuthStore } from '@/stores/authStore';
 
 interface BookCardProps {
   book: Book;
   showWishlistButton?: boolean;
   showQuickAdd?: boolean;
 }
-// Add to BookCard
 
 export function BookCard({ book, showWishlistButton = true, showQuickAdd = true }: BookCardProps) {
-  const hasPdf = book.formats?.some(f => f.format_type === 'PDF');
-  const hasAudio = book.formats?.some(f => f.format_type === 'Audio');
-  const minPrice = book.formats?.length 
-    ? Math.min(...book.formats.map(f => f.price))
-    : 0;
-  const priceDisplay = minPrice > 0 ? `${minPrice} ETB` : 'Free';
-  
-  const cheapestFormat = book.formats?.reduce((min, f) => f.price < min.price ? f : min, book.formats[0]);
+  const { isAuthenticated } = useAuthStore();
+  const { isOwnBook, ownedFormatIds } = useBookPurchaseStatus(book.id);
+
+  const hasPdf = book.formats?.some((f) => f.format_type === 'PDF');
+  const hasAudio = book.formats?.some((f) => f.format_type === 'Audio');
+  const minPrice = book.formats?.length ? Math.min(...book.formats.map((f) => f.price)) : 0;
+
+  const cheapestFormat = book.formats?.reduce(
+    (min, f) => (f.price < min.price ? f : min),
+    book.formats[0]
+  );
+
+  const cheapestOwned = cheapestFormat
+    ? ownedFormatIds.includes(cheapestFormat.id)
+    : false;
+  const hideQuickAdd =
+    !showQuickAdd ||
+    !cheapestFormat ||
+    (isAuthenticated && (isOwnBook || cheapestOwned));
 
   return (
     <div className="group relative bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 border border-[#E8E2D9]">
@@ -47,7 +58,7 @@ export function BookCard({ book, showWishlistButton = true, showQuickAdd = true 
           </div>
         </div>
         
-        <div className={`p-4 ${showQuickAdd && cheapestFormat ? 'pb-16' : ''}`}>
+        <div className={`p-4 ${!hideQuickAdd ? 'pb-16' : ''}`}>
           <h3 className="font-semibold text-[#1A2A3A] text-base line-clamp-1">
             {book.title}
           </h3>
@@ -75,13 +86,16 @@ export function BookCard({ book, showWishlistButton = true, showQuickAdd = true 
       )}
       
       {/* Quick Add to Cart Button - EXACT same logic, just restyled */}
-      {showQuickAdd && cheapestFormat && (
+      {!hideQuickAdd && cheapestFormat && (
         <div className="absolute bottom-2 left-2 right-2">
           <AddToCartButton
+            bookId={book.id}
             bookFormatId={cheapestFormat.id}
             formatType={cheapestFormat.format_type}
             price={cheapestFormat.price}
             variant="small"
+            isOwned={cheapestOwned}
+            isOwnBook={isOwnBook}
           />
         </div>
       )}

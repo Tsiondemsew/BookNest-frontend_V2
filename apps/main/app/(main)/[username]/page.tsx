@@ -4,8 +4,8 @@ import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { ProfileHeader } from '@/features/community';
 import { Feed } from '@/features/community';
-import { profileApi } from '@/lib/api/profile';
-import { feedApi } from '@/lib/api/feed';
+import { profileApi } from '@/lib/api/client';
+import { feedApi } from '@/lib/api/client';
 import { Loader2 } from 'lucide-react';
 import type { PublicProfile, Post } from '@repo/types';
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Feed, CreatePost } from '@/features/community';
-import { feedApi } from '@/lib/api/feed';
+import { feedApi } from '@/lib/api/client';
 import type { Post } from '@repo/types';
 
 export default function CommunityPage() {

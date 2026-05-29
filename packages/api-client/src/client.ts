@@ -2,12 +2,14 @@ import type { ApiErrorCode } from '@repo/types';
 import { createApiConfig, type ApiConfig } from './config';
 import {
   ApiClientError,
+  ConflictError,
   ForbiddenError,
   InternalServerError,
   NotFoundError,
   UnauthorizedError,
   ValidationError,
 } from './errors';
+import { parseApiErrorBody } from './parseApiError';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
@@ -29,12 +31,6 @@ export interface RequestOptions<TBody = unknown> {
   signal?: AbortSignal;
   credentials?: RequestCredentials;
 }
-
-type ErrorPayload = {
-  code?: string;
-  error?: string;
-  message?: string;
-};
 
 export class ApiClient {
   private config: Required<ApiConfig>;
@@ -105,33 +101,30 @@ export class ApiClient {
         : rawText;
 
     if (!response.ok) {
-      const message =
-        typeof parsedBody === 'object' && parsedBody !== null && 'message' in parsedBody
-          ? String((parsedBody as { message: unknown }).message)
-          : response.statusText || 'API request failed';
+      const { message, code, details, existingBookId } = parseApiErrorBody(parsedBody);
 
-      const errorCode =
-        typeof parsedBody === 'object' &&
-        parsedBody !== null &&
-        'code' in parsedBody &&
-        typeof (parsedBody as ErrorPayload).code === 'string'
-          ? ((parsedBody as ErrorPayload).code as ApiErrorCode)
-          : 'INTERNAL_ERROR';
-
-switch (response.status) {
-  case 401:
-    throw new UnauthorizedError();
-  case 403:
-    throw new ForbiddenError();
-  case 404:
-    throw new NotFoundError();
-  case 422:
-    throw new ValidationError(message);
-  case 500:
-    throw new InternalServerError(message);
-  default:
-    throw new ApiClientError(errorCode, response.status, message);
-}
+      switch (response.status) {
+        case 401:
+          throw new UnauthorizedError(message, details);
+        case 403:
+          throw new ForbiddenError(message, details);
+        case 404:
+          throw new NotFoundError(message, details);
+        case 409:
+          throw new ConflictError(message, existingBookId);
+        case 400:
+        case 422:
+          throw new ValidationError(message, details);
+        case 500:
+          throw new InternalServerError(message);
+        default:
+          throw new ApiClientError(
+            (code as ApiErrorCode) || 'INTERNAL_ERROR',
+            response.status,
+            message,
+            details
+          );
+      }
     }
 
     return parsedBody as TResponse;

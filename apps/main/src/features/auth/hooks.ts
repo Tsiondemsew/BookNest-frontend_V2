@@ -3,7 +3,7 @@
 import type { LoginRequest, RegisterRequest } from '@repo/types';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { authApi } from '@/features/auth/api';
+import { authApi } from '@/lib/api/client';
 import { useAuthStore } from '@/stores/authStore';
 
 export function useLoginMutation() {
@@ -53,6 +53,12 @@ export function useLogoutMutation() {
 }
 
 export function useAuth() {
-  const { user, isAuthenticated, isLoading } = useAuthStore();
-  return { user, isAuthenticated, isLoading };
+  const { user, isAuthenticated, isInitializing } = useAuthStore();
+  return {
+    user,
+    isAuthenticated,
+    /** @deprecated Use isInitializing */
+    isLoading: isInitializing,
+    isInitializing,
+  };
 }

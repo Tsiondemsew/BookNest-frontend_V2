@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Genre } from '@repo/types';
 
 interface BookFiltersProps {
   genres: Genre[];
   selectedGenre?: string;
   selectedFormat?: string;
+  initialSearch?: string;
   onGenreChange: (genre: string) => void;
   onFormatChange: (format: string) => void;
   onSearchChange: (search: string) => void;
@@ -16,14 +17,23 @@ export function BookFilters({
   genres,
   selectedGenre,
   selectedFormat,
+  initialSearch = '',
   onGenreChange,
   onFormatChange,
   onSearchChange,
 }: BookFiltersProps) {
-  const [searchInput, setSearchInput] = useState('');
+  const [searchInput, setSearchInput] = useState(initialSearch);
+  const lastEmittedSearch = useRef(initialSearch);
+
+  useEffect(() => {
+    setSearchInput(initialSearch);
+    lastEmittedSearch.current = initialSearch;
+  }, [initialSearch]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
+      if (searchInput === lastEmittedSearch.current) return;
+      lastEmittedSearch.current = searchInput;
       onSearchChange(searchInput);
     }, 500);
     return () => clearTimeout(timer);
@@ -32,7 +42,6 @@ export function BookFilters({
   return (
     <div className="bg-white rounded-xl border border-[#E8E2D9] p-5 mb-6">
       <div className="flex flex-col md:flex-row gap-4">
-        {/* Search Input */}
         <div className="flex-1">
           <input
             type="text"
@@ -43,7 +52,6 @@ export function BookFilters({
           />
         </div>
 
-        {/* Genre Filter */}
         <div className="w-full md:w-48">
           <select
             value={selectedGenre || ''}
@@ -59,7 +67,6 @@ export function BookFilters({
           </select>
         </div>
 
-        {/* Format Filter */}
         <div className="w-full md:w-32">
           <select
             value={selectedFormat || ''}

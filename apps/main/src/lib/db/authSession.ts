@@ -1,16 +1,19 @@
 import { openDB } from 'idb';
 import type { SessionUser } from '@repo/types';
 
-// ✅ Remove token - we don't store tokens in IndexedDB for security
 interface StoredSession {
   id: string;
-  user: SessionUser;  // Use the full SessionUser type
+  user: SessionUser;
   issuedAt: string;
   expiresAt: string;
+  rememberMe?: boolean;
 }
 
 const DB_NAME = 'BookNestAuth';
 const STORE_NAME = 'sessions';
+
+/** Extra offline grace after cookie expiry when "Keep me signed in" is enabled */
+const OFFLINE_GRACE_REMEMBER_MS = 7 * 24 * 60 * 60 * 1000;
 
 async function getAuthDB() {
   return openDB(DB_NAME, 1, {
@@ -41,8 +44,9 @@ export async function clearSession(): Promise<void> {
 export async function isSessionValid(): Promise<boolean> {
   const session = await getSession();
   if (!session) return false;
-  
-  const now = new Date();
-  const expiresAt = new Date(session.expiresAt);
-  return expiresAt > now;
+
+  const expiresAt = new Date(session.expiresAt).getTime();
+  const grace = session.rememberMe ? OFFLINE_GRACE_REMEMBER_MS : 0;
+
+  return Date.now() < expiresAt + grace;
 }

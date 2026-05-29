@@ -3,8 +3,8 @@
 import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { Image as ImageIcon, X, Send, Save, Loader2 } from 'lucide-react';
-import { useAuthStore } from '@/stores/authStore';
-import { feedApi } from '@/lib/api/feed';
+import { useAuthStore } from '@/stores/authStore'; 
+import { feedApi } from '@/lib/api/client';
 import type { Post } from '@repo/types';
 
 interface CreatePostProps {

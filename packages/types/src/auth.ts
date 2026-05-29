@@ -32,13 +32,33 @@ export interface AuthSession {
 export interface LoginRequest {
   email: string;
   password: string;
+  remember_me?: boolean;
 }
 
 // ✅ FIXED: Add the 'data' wrapper
 export interface LoginResponse {
   success: boolean;
   message?: string;
-  data: AuthSession;
+  data: AuthSession & {
+    rememberMe?: boolean;
+    needsGenreOnboarding?: boolean;
+  };
+}
+
+export interface ConfirmEmailRequest {
+  access_token: string;
+}
+
+export interface ConfirmEmailResponse {
+  success: boolean;
+  message?: string;
+  data?: { email: string };
+}
+
+export interface FavoriteGenresListResponse {
+  success: boolean;
+  data: Array<{ id: string; slug?: string; name: string }>;
+  message?: string;
 }
 
 export interface RegisterRequest {
@@ -47,11 +67,51 @@ export interface RegisterRequest {
   display_name: string;
 }
 
+export interface ResendVerificationRequest {
+  email: string;
+}
+
+export interface ResendVerificationResponse {
+  success: boolean;
+  message?: string;
+}
+
+export interface FavoriteGenresRequest {
+  genre_ids: string[];
+}
+
+export interface FavoriteGenresResponse {
+  success: boolean;
+  message?: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  success: boolean;
+  message?: string;
+}
+
+export interface ResetPasswordRequest {
+  access_token: string;
+  password: string;
+  refresh_token?: string;
+}
+
+export interface ResetPasswordResponse {
+  success: boolean;
+  message?: string;
+}
+
 // ✅ FIXED: Add the 'data' wrapper
 export interface RegisterResponse {
   success: boolean;
   message?: string;
-  data: AuthSession;
+  data: {
+    email: string;
+  };
 }
 
 export interface LogoutResponse {
