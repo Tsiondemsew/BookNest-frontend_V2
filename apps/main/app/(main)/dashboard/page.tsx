@@ -12,7 +12,7 @@ export default function DashboardPage() {
   const { data: gamificationRes } = useQuery({
     queryKey: ['gamification', 'me'],
     queryFn: () => gamificationApi.getMe(),
-    enabled: !!user,
+    enabled: !!user && user.role !== 'author' && user.role !== 'publisher',
   });
 
   const { data: analyticsRes } = useQuery({
@@ -62,16 +62,16 @@ export default function DashboardPage() {
       { label: 'Minutes Today', value: String(g?.today.minutes_read ?? 0), icon: Clock, color: '#8E735B', change: 'min' },
     ],
     author: [
-      { label: 'Reading Streak', value: String(g?.streak.current ?? 0), icon: Award, color: '#B85C38', change: 'days' },
-      { label: 'Books Sold', value: String(analytics?.summary.total_copies_sold ?? 0), icon: TrendingUp, color: '#2C3E50', change: 'copies' },
+      { label: 'Digital Sales', value: String(analytics?.summary.total_copies_sold ?? 0), icon: TrendingUp, color: '#2C3E50', change: 'sales' },
       { label: 'Revenue', value: String(Number(analytics?.summary.total_revenue ?? 0).toFixed(0)), icon: Heart, color: '#B85C38', change: 'ETB' },
       { label: 'Wallet', value: String(Number(analytics?.wallet?.available_balance ?? 0).toFixed(0)), icon: Award, color: '#8E735B', change: 'ETB avail.' },
+      { label: 'Catalog', value: String(analytics?.summary.total_books ?? 0), icon: BookOpen, color: '#2D6A4F', change: 'books' },
     ],
     publisher: [
       { label: 'Total Revenue', value: String(Number(analytics?.summary.total_revenue ?? 0).toFixed(0)), icon: TrendingUp, color: '#2C3E50', change: 'ETB' },
       { label: 'Catalog', value: String(analytics?.summary.total_books ?? 0), icon: Library, color: '#B85C38', change: 'books' },
-      { label: 'Copies Sold', value: String(analytics?.summary.total_copies_sold ?? 0), icon: Users, color: '#2D6A4F', change: 'total' },
-      { label: 'Streak', value: String(g?.streak.current ?? 0), icon: Award, color: '#8E735B', change: 'days' },
+      { label: 'Digital Sales', value: String(analytics?.summary.total_copies_sold ?? 0), icon: Users, color: '#2D6A4F', change: 'total' },
+      { label: 'Pending', value: String(analytics?.summary.pending_approval ?? 0), icon: Clock, color: '#8E735B', change: 'review' },
     ],
   };
 
@@ -192,6 +192,12 @@ export default function DashboardPage() {
               <Library size={16} className="text-[#2C3E50]" />
               <span className="text-sm">My Library</span>
             </Link>
+            {userRole === 'reader' && (
+              <Link href="/dashboard/reading" className="flex items-center gap-2 p-3 rounded-lg border border-[#E8E2D9] hover:border-[#B85C38]/30 hover:shadow-sm transition-all">
+                <TrendingUp size={16} className="text-[#B85C38]" />
+                <span className="text-sm">Reading Journey</span>
+              </Link>
+            )}
             {(userRole === 'author' || userRole === 'publisher') && (
               <Link href="/studio/upload" className="flex items-center gap-2 p-3 rounded-lg border border-[#E8E2D9] hover:border-[#B85C38]/30 hover:shadow-sm transition-all">
                 <BookOpen size={16} className="text-[#2D6A4F]" />

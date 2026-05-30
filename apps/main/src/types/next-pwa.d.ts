@@ -16,6 +16,7 @@ declare module 'next-pwa' {
     disable?: boolean;
     runtimeCaching?: RuntimeCaching[];
     buildExcludes?: RegExp[];
+    customWorkerDir?: string;
     fallbacks?: Record<string, string>;
   }
 

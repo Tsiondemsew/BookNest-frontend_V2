@@ -44,8 +44,7 @@ const navigationGroups = {
       title: 'Reading',
       items: [
         { name: 'My Library', href: '/library', icon: Library },
-        { name: 'Reading Stats', href: '/dashboard/stats', icon: TrendingUp },
-        { name: 'Achievements', href: '/dashboard/achievements', icon: Award },
+        { name: 'Reading Journey', href: '/dashboard/reading', icon: TrendingUp },
       ]
     },
     {
@@ -73,11 +72,9 @@ const navigationGroups = {
       ]
     },
     {
-      title: 'Reading',
+      title: 'Library',
       items: [
         { name: 'My Library', href: '/library', icon: Library },
-        { name: 'Reading Stats', href: '/dashboard/stats', icon: TrendingUp },
-        { name: 'Achievements', href: '/dashboard/achievements', icon: Award },
       ]
     },
     {
@@ -118,8 +115,7 @@ const navigationGroups = {
         { name: 'Dashboard', href: '/studio', icon: Crown },
         { name: 'Catalog', href: '/studio/books', icon: Library },
         { name: 'Analytics', href: '/studio/analytics', icon: BarChart3 },
-        { name: 'Payouts', href: '/studio/earnings', icon: DollarSign },
-        { name: 'Authors', href: '/studio/authors', icon: Users },
+        { name: 'Payouts', href: '/studio/earnings', icon: DollarSign }, 
       ]
     },
     {
@@ -150,7 +146,11 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
 
   useEffect(() => {
     if (!isAuthenticated && pathname && !isPublicAppPath(pathname)) {
-      router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        router.push(`/login?redirect=${encodeURIComponent(pathname)}&offline=1`);
+      } else {
+        router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+      }
     }
   }, [isAuthenticated, pathname, router]);
 
@@ -178,10 +178,11 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
     if (pathname === '/studio') return 'Studio Overview';
     if (pathname === '/studio/upload') return 'Upload Book';
     if (pathname === '/studio/books') return userRole === 'publisher' ? 'Catalog' : 'My Books';
-    if (pathname === '/studio/analytics') return 'Analytics';
+    if (pathname === '/studio/analytics') return 'Analytics & Reports';
     if (pathname === '/studio/earnings') return userRole === 'publisher' ? 'Payouts' : 'Earnings';
-    if (pathname?.startsWith('/dashboard/stats')) return 'Reading Statistics';
-    if (pathname?.startsWith('/dashboard/achievements')) return 'Achievements';
+    if (pathname?.startsWith('/dashboard/reading')) return 'Reading Journey';
+    if (pathname?.startsWith('/dashboard/stats')) return 'Reading Journey';
+    if (pathname?.startsWith('/dashboard/achievements')) return 'Reading Journey';
     return 'Dashboard';
   };
 

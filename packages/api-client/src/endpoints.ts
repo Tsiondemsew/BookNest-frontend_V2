@@ -21,11 +21,14 @@ export const endpoints = {
   analytics: {
     sales: '/api/analytics/sales',
     salesReport: '/api/analytics/sales/report',
+    performance: '/api/analytics/performance',
+    reviews: '/api/analytics/reviews',
   },
   seller: {
     profile: (userId: string) => `/api/seller/${userId}`,
     wallet: '/api/seller/wallet',
     earnings: '/api/seller/earnings',
+    earningsSummary: '/api/seller/earnings/summary',
     withdrawals: '/api/seller/withdrawals',
   },
   library: {
@@ -42,6 +45,12 @@ export const endpoints = {
   },
   gamification: {
     me: '/api/gamification/me',
+    activity: '/api/gamification/activity',
+  },
+  notifications: {
+    vapidPublicKey: '/api/notifications/vapid-public-key',
+    subscribe: '/api/notifications/subscribe',
+    unsubscribe: '/api/notifications/unsubscribe',
   },
   // NEW: Cart endpoints
   cart: {

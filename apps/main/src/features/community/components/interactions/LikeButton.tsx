@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Heart } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { cn, ui } from '../../ui';
 
 interface LikeButtonProps {
   postId: string;
@@ -17,11 +18,7 @@ export function LikeButton({ postId, initialLiked, initialCount, size = 'md' }: 
   const [likeCount, setLikeCount] = useState(initialCount);
   const [isPending, setIsPending] = useState(false);
 
-  const sizes = {
-    xs: { icon: 12, text: 'text-xs', gap: 'gap-0.5' },
-    sm: { icon: 16, text: 'text-sm', gap: 'gap-1' },
-    md: { icon: 18, text: 'text-sm', gap: 'gap-1' },
-  };
+  const iconSize = size === 'xs' ? 12 : size === 'sm' ? 16 : 18;
 
   const handleLike = async () => {
     if (!isAuthenticated) {
@@ -30,30 +27,27 @@ export function LikeButton({ postId, initialLiked, initialCount, size = 'md' }: 
     }
 
     setIsPending(true);
-    // Optimistic update
-    if (isLiked) {
-      setLikeCount(prev => prev - 1);
-      setIsLiked(false);
-    } else {
-      setLikeCount(prev => prev + 1);
-      setIsLiked(true);
-    }
-
-    // TODO: API call
-    await new Promise(resolve => setTimeout(resolve, 300));
+    const next = !isLiked;
+    setIsLiked(next);
+    setLikeCount((prev) => prev + (next ? 1 : -1));
+    await new Promise((resolve) => setTimeout(resolve, 300));
     setIsPending(false);
+    void postId;
   };
 
   return (
     <button
-      onClick={handleLike}
+      type="button"
+      onClick={() => void handleLike()}
       disabled={isPending}
-      className={`flex items-center ${sizes[size].gap} ${sizes[size].text} transition-colors ${
-        isLiked ? 'text-red-500' : 'text-[#4A5568] hover:text-red-500'
-      }`}
+      className={cn(
+        ui.actionChip,
+        size === 'xs' && '!text-xs !px-1',
+        isLiked && ui.actionChipActive
+      )}
     >
-      <Heart size={sizes[size].icon} fill={isLiked ? 'currentColor' : 'none'} />
-      <span>{likeCount > 0 ? likeCount : ''}</span>
+      <Heart size={iconSize} fill={isLiked ? 'currentColor' : 'none'} />
+      <span>{likeCount > 0 ? likeCount : size === 'xs' ? '' : 'Like'}</span>
     </button>
   );
 }

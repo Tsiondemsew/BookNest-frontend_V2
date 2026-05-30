@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { apiClient } from '@/lib/api/client';
+import { subscribeToStreakPush, unsubscribeFromStreakPush } from '@/lib/notifications/subscribePush';
 import { Camera, Save, Loader2,TrendingUp,Eye, EyeOff, Lock, Globe, Bell, Shield, User, Mail, MapPin, Link as LinkIcon } from 'lucide-react';
 
 interface UserProfile {
@@ -158,6 +159,12 @@ export default function ProfilePage() {
           marketing_emails: formData.marketing_emails,
         },
       });
+
+      if (formData.push_notifications) {
+        await subscribeToStreakPush();
+      } else {
+        await unsubscribeFromStreakPush();
+      }
       
       setSuccessMessage('Profile updated successfully');
       setTimeout(() => setSuccessMessage(null), 3000);

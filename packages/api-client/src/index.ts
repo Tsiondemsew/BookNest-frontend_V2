@@ -19,6 +19,7 @@ export * from './download';
 export * from './reviews';
 export * from './sellerFinance';
 export * from './gamification';
+export * from './notifications';
 export * from './users';
 
 export { createLibraryApi } from './library';
@@ -26,6 +27,7 @@ export { createDownloadApi } from './download';
 export { createReviewsApi } from './reviews';
 export { createSellerFinanceApi } from './sellerFinance';
 export { createGamificationApi } from './gamification';
+export { createNotificationsApi } from './notifications';
 export { createProgressApi } from './progress';
 export { createAnalyticsApi } from './analytics';
 

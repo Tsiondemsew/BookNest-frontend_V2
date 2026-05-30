@@ -10,9 +10,12 @@ const withPWA = withPWAInit({
   dest: 'public',
   register: true,
   skipWaiting: true,
+  customWorkerDir: 'worker',
   /** Service worker is for production builds; use `pnpm build && pnpm start` to test PWA. */
   disable: process.env.NODE_ENV === 'development',
-  /** Offline document is handled via runtime NetworkFirst + public/offline.html */
+  fallbacks: {
+    document: '/offline.html',
+  },
   runtimeCaching: pwaRuntimeCaching,
   buildExcludes: [/middleware-manifest\.json$/],
 });

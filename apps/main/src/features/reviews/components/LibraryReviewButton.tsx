@@ -1,7 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { Star } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Star, CheckCircle2 } from 'lucide-react';
+import { reviewsApi } from '@/lib/api/client';
+import { markBookReviewSubmitted } from '@/lib/reader/reviewPrompt';
 import { BookReviewModal } from './BookReviewModal';
 
 interface LibraryReviewButtonProps {
@@ -12,6 +15,36 @@ interface LibraryReviewButtonProps {
 
 export function LibraryReviewButton({ bookId, bookTitle, className = '' }: LibraryReviewButtonProps) {
   const [open, setOpen] = useState(false);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['reviews', 'can', bookId],
+    queryFn: () => reviewsApi.canReview(bookId),
+    staleTime: 60_000,
+  });
+
+  const existingReview = data?.data?.existing_review;
+  const canReview = data?.data?.can_review === true;
+
+  useEffect(() => {
+    if (existingReview) markBookReviewSubmitted(bookId);
+  }, [bookId, existingReview]);
+
+  if (isLoading) return null;
+
+  if (existingReview || !canReview) {
+    if (existingReview) {
+      return (
+        <span
+          className={`inline-flex items-center gap-1 text-xs font-medium text-[#2D6A4F] ${className}`}
+          title="You already reviewed this book"
+        >
+          <CheckCircle2 size={12} />
+          Reviewed
+        </span>
+      );
+    }
+    return null;
+  }
 
   return (
     <>

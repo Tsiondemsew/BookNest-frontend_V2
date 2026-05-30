@@ -18,6 +18,7 @@ import {
   createReviewsApi,
   createSellerFinanceApi,
   createGamificationApi,
+  createNotificationsApi,
 } from '@repo/api-client';
 import { apiConfig } from './config';
 import { useAuthStore } from '@/stores/authStore';
@@ -36,7 +37,7 @@ apiClient.request = async (...args: Parameters<typeof _request>) => {
       const path = typeof window !== 'undefined' ? window.location.pathname : '';
       const isMeCheck = typeof args[0] === 'string' && args[0].includes('/api/auth/me');
 
-      if (!isPublicAppPath(path) && !isMeCheck) {
+      if (!isPublicAppPath(path) && !isMeCheck && navigator.onLine) {
         try {
           await useAuthStore.getState().logout();
         } catch {
@@ -66,6 +67,7 @@ export const downloadApi = createDownloadApi(apiConfig);
 export const reviewsApi = createReviewsApi(apiClient);
 export const sellerFinanceApi = createSellerFinanceApi(apiClient);
 export const gamificationApi = createGamificationApi(apiClient);
+export const notificationsApi = createNotificationsApi(apiClient);
 
 // Re-export types for convenience
 

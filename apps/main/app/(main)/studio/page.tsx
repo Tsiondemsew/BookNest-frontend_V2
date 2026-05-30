@@ -34,7 +34,7 @@ export default function StudioDashboard() {
       bgColor: '#2C3E5010',
     },
     {
-      label: 'Copies Sold',
+      label: 'Digital Sales',
       value: analyticsLoading ? '...' : totalCopiesSold,
       icon: TrendingUp,
       color: '#2D6A4F',

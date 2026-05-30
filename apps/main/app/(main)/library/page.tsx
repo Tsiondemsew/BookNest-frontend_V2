@@ -11,10 +11,12 @@ import type { LibraryItem } from '@repo/types';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getLocalProgressForBook, syncProgressToBackend } from '@/lib/progress/progressService';
 import { downloadBookForOffline, isBookDownloaded, removeOfflineBook, checkStorageSpace } from '@/lib/offline/downloadService';
-import { consumePendingReview, wasReviewPromptShown } from '@/lib/reader/reviewPrompt';
+import { consumePendingReview, wasReviewPromptShown, markReviewPromptShown, hasSubmittedReviewLocally, type PendingReview } from '@/lib/reader/reviewPrompt';
 import { ExitReviewPrompt } from '@/features/reviews/components/ExitReviewPrompt';
 import { LibraryReviewButton } from '@/features/reviews/components/LibraryReviewButton';
-import type { PendingReview } from '@/lib/reader/reviewPrompt';
+import { reviewsApi } from '@/lib/api/client';
+import { saveLibraryCache, getLibraryCache } from '@/lib/offline/libraryCache';
+import { OfflinePageNotice } from '@/components/OfflinePageNotice';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -33,8 +35,17 @@ interface DownloadStatus {
 }
 
 const fetchLibrary = async (): Promise<LibraryItem[]> => {
-  const response = await libraryApi.getLibrary();
-  return response.data;
+  try {
+    const response = await libraryApi.getLibrary();
+    saveLibraryCache(response.data);
+    return response.data;
+  } catch (error) {
+    if (!navigator.onLine) {
+      const cached = getLibraryCache();
+      if (cached) return cached;
+    }
+    throw error;
+  }
 };
 
 export default function LibraryPage() {
@@ -47,15 +58,37 @@ export default function LibraryPage() {
 
   useEffect(() => {
     const pending = consumePendingReview();
-    if (pending && !wasReviewPromptShown(pending.bookId)) {
-      setExitReview(pending);
+    if (!pending || wasReviewPromptShown(pending.bookId) || hasSubmittedReviewLocally(pending.bookId)) {
+      return;
     }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await reviewsApi.canReview(pending.bookId);
+        if (cancelled) return;
+        if (res.data?.existing_review || !res.data?.can_review) {
+          markReviewPromptShown(pending.bookId);
+          return;
+        }
+        setExitReview(pending);
+      } catch {
+        if (!cancelled) setExitReview(pending);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const { data: library, isLoading, isError, refetch } = useQuery({
     queryKey: ['library'],
     queryFn: fetchLibrary,
     enabled: isAuthenticated,
+    networkMode: 'offlineFirst',
+    staleTime: 5 * 60 * 1000,
+    retry: (count) => navigator.onLine && count < 1,
   });
 
   // Load storage info
@@ -226,13 +259,19 @@ const handleDownload = async (bookFormatId: string, bookTitle: string, formatTyp
     );
   }
 
-  if (isError) {
+  if (isError && !library) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-16 text-center">
-        <p className="text-red-500">Failed to load your library. Please try again.</p>
-        <button onClick={() => refetch()} className="mt-4 px-4 py-2 bg-[#2C3E50] text-white rounded-lg text-sm hover:bg-[#1A2A3A] transition-colors">
-          Try Again
-        </button>
+        <p className="text-red-500">
+          {!navigator.onLine
+            ? 'You are offline and no saved library was found. Connect once while signed in, then reopen.'
+            : 'Failed to load your library. Please try again.'}
+        </p>
+        {navigator.onLine && (
+          <button onClick={() => refetch()} className="mt-4 px-4 py-2 bg-[#2C3E50] text-white rounded-lg text-sm hover:bg-[#1A2A3A] transition-colors">
+            Try Again
+          </button>
+        )}
       </div>
     );
   }
@@ -266,6 +305,7 @@ const handleDownload = async (bookFormatId: string, bookTitle: string, formatTyp
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
+      <OfflinePageNotice label="library list is from your last online visit" />
       {exitReview && (
         <ExitReviewPrompt pending={exitReview} onDismiss={() => setExitReview(null)} />
       )}
@@ -325,28 +365,13 @@ const handleDownload = async (bookFormatId: string, bookTitle: string, formatTyp
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-[#E8E2D9] p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-[#4A5568]/10 rounded-lg">
-              <Download size={20} className="text-[#4A5568]" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-[#1A2A3A]">{storageInfo.available}MB</p>
-              <p className="text-xs text-[#4A5568]">Storage Free</p>
-            </div>
-          </div>
-        </div>
+       
       </div>
 
       {/* Recently Added Section */}
       {recentlyPurchased.length > 0 && (
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-[#1A2A3A]">Recently Added</h2>
-            <Link href="/library/all" className="text-sm text-[#B85C38] hover:text-[#8E735B] transition-colors">
-              View all →
-            </Link>
-          </div>
+        
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {recentlyPurchased.map((item) => {
               const progress = getDisplayProgress(item);

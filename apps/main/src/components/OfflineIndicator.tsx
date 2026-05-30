@@ -38,7 +38,7 @@ export function OfflineIndicator() {
           <p className="font-medium">You&apos;re offline</p>
           <p className="text-white/80 text-xs mt-0.5">
             {user
-              ? `Signed in as ${user.publicName}. Downloaded books in Library still work.`
+              ? 'Browsing works from cache. Downloaded books and saved pages still work — connect to refresh data.'
               : 'Sign in requires an internet connection.'}
           </p>
         </div>

@@ -5,6 +5,17 @@ export interface SellerWallet {
   currency: string;
 }
 
+export interface SellerEarningsSummary {
+  gross_sales: number;
+  platform_fees: number;
+  net_earnings: number;
+  platform_fee_percent: number;
+  available_balance: number;
+  pending_withdrawal: number;
+  currency: string;
+  sale_count: number;
+}
+
 export interface SellerEarning {
   id: string;
   gross_amount: number;

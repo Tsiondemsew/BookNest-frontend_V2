@@ -44,10 +44,10 @@ const pages: RuntimeCaching = {
   options: {
     cacheName: 'booknest-pages',
     expiration: {
-      maxEntries: 32,
-      maxAgeSeconds: 24 * 60 * 60,
+      maxEntries: 96,
+      maxAgeSeconds: 7 * 24 * 60 * 60,
     },
-    networkTimeoutSeconds: 10,
+    networkTimeoutSeconds: 8,
   },
 };
 

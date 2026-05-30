@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, type LoginInput } from '@repo/validation';
 import { useAuthStore } from '@/stores/authStore';
 import { completeAuthContinuation } from '@/lib/auth/pendingAuthAction';
-import { Eye, EyeOff, AlertCircle, Loader2, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, Loader2, CheckCircle, WifiOff } from 'lucide-react';
 
 export function LoginForm() {
   const router = useRouter();
@@ -19,7 +19,19 @@ export function LoginForm() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
   const { login } = useAuthStore();
+
+  useEffect(() => {
+    const sync = () => setIsOffline(!navigator.onLine);
+    sync();
+    window.addEventListener('online', sync);
+    window.addEventListener('offline', sync);
+    return () => {
+      window.removeEventListener('online', sync);
+      window.removeEventListener('offline', sync);
+    };
+  }, []);
 
   const {
     register,
@@ -38,6 +50,11 @@ export function LoginForm() {
 
   const onSubmit = async (data: LoginInput) => {
     setGeneralError(null);
+
+    if (!navigator.onLine) {
+      setGeneralError('You must be online to sign in. Open a downloaded book from Library if you are offline.');
+      return;
+    }
 
     const result = await login(data.email, data.password, data.remember_me);
 
@@ -80,6 +97,16 @@ export function LoginForm() {
           <p className="text-sm text-green-800">
             Your password was updated. Sign in with your new password.
           </p>
+        </div>
+      )}
+
+      {isOffline && (
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
+          <WifiOff className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-amber-900">
+            <p className="font-medium">You are offline</p>
+            <p className="mt-1">Sign in requires an internet connection. If you were signed in before, reopen the app — your session may still work offline.</p>
+          </div>
         </div>
       )}
 
@@ -166,7 +193,7 @@ export function LoginForm() {
             className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
             {...register('remember_me')}
           />
-          <span className="text-sm text-gray-600">Keep me signed in</span>
+          <span className="text-sm text-gray-600">Keep me signed in for 30 days</span>
         </label>
         <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
           Forgot password?
@@ -175,7 +202,7 @@ export function LoginForm() {
 
       <button
         type="submit"
-        disabled={isSubmitting}
+        disabled={isSubmitting || isOffline}
         className="w-full py-2.5 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 font-medium"
       >
         {isSubmitting ? (

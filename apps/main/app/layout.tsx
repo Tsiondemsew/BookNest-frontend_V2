@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { bootstrapAuth, refreshAuthWhenOnline } from '@/lib/auth/bootstrapAuth';
 import { initOfflineSync } from '@/lib/progress/progressService';
+import { flushReadingActivity } from '@/lib/reading/recordActivity';
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { AppProviders } from '@/providers/app-providers';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
@@ -14,9 +15,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     bootstrapAuth();
     initOfflineSync();
+    void flushReadingActivity();
 
     const handleOnline = () => {
       refreshAuthWhenOnline();
+      void flushReadingActivity();
     };
 
     const handleVisibility = () => {
@@ -28,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     window.addEventListener('online', handleOnline);
     document.addEventListener('visibilitychange', handleVisibility);
     const handleUnauthorized = () => {
+      if (!navigator.onLine) return;
       const path = window.location.pathname;
       if (isPublicAppPath(path) || path === '/login') return;
       window.location.assign(`/login?redirect=${encodeURIComponent(path)}`);

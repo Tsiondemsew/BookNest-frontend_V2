@@ -61,7 +61,11 @@ export default function MainLayout({
       }
 
       if (!isAuthenticated && isProtectedRoute && !isPublicRoute) {
-        router.push(`/login?redirect=${encodeURIComponent(pathname || '/')}`);
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+          router.push(`/login?redirect=${encodeURIComponent(pathname || '/')}&offline=1`);
+        } else {
+          router.push(`/login?redirect=${encodeURIComponent(pathname || '/')}`);
+        }
         return;
       }
 

@@ -12,8 +12,8 @@ interface StoredSession {
 const DB_NAME = 'BookNestAuth';
 const STORE_NAME = 'sessions';
 
-/** Extra offline grace after cookie expiry when "Keep me signed in" is enabled */
-const OFFLINE_GRACE_REMEMBER_MS = 7 * 24 * 60 * 60 * 1000;
+/** Session validity follows backend expiresAt (30 days with remember-me, 24h otherwise). */
+const CLOCK_SKEW_MS = 5 * 60 * 1000;
 
 async function getAuthDB() {
   return openDB(DB_NAME, 1, {
@@ -46,7 +46,5 @@ export async function isSessionValid(): Promise<boolean> {
   if (!session) return false;
 
   const expiresAt = new Date(session.expiresAt).getTime();
-  const grace = session.rememberMe ? OFFLINE_GRACE_REMEMBER_MS : 0;
-
-  return Date.now() < expiresAt + grace;
+  return Date.now() < expiresAt + CLOCK_SKEW_MS;
 }

@@ -24,3 +24,6 @@ export { CreateGroupModal } from './components/chat/CreateGroupModal';
 // Profile
 export { ProfileHeader } from './components/profile/ProfileHeader';
 export { FollowButton } from './components/profile/FollowButton';
+
+// UI kit
+export * from './ui';

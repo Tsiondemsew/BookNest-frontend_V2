@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { analyticsApi, sellerFinanceApi } from '@/lib/api/client';
-import { Loader2, DollarSign } from 'lucide-react';
+import { sellerFinanceApi } from '@/lib/api/client';
+import { Loader2, DollarSign, TrendingDown, Wallet, Receipt } from 'lucide-react';
 import Link from 'next/link';
 
 export default function StudioEarningsPage() {
@@ -14,9 +14,9 @@ export default function StudioEarningsPage() {
   const [accountNumber, setAccountNumber] = useState('');
   const [mobileMoney, setMobileMoney] = useState('');
 
-  const { data: walletRes, isLoading: walletLoading } = useQuery({
-    queryKey: ['seller', 'wallet'],
-    queryFn: () => sellerFinanceApi.getWallet(),
+  const { data: summaryRes, isLoading: summaryLoading } = useQuery({
+    queryKey: ['seller', 'earnings', 'summary'],
+    queryFn: () => sellerFinanceApi.getEarningsSummary(),
   });
 
   const { data: earningsRes } = useQuery({
@@ -48,11 +48,12 @@ export default function StudioEarningsPage() {
     onError: (e: Error) => alert(e.message || 'Withdrawal failed'),
   });
 
-  const wallet = walletRes?.data;
+  const summary = summaryRes?.data;
   const earnings = earningsRes?.data || [];
   const withdrawals = withdrawalsRes?.data || [];
+  const currency = summary?.currency || 'ETB';
 
-  if (walletLoading) {
+  if (summaryLoading) {
     return (
       <div className="flex justify-center py-20">
         <Loader2 className="animate-spin text-[#B85C38]" size={40} />
@@ -65,27 +66,53 @@ export default function StudioEarningsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[#1A2A3A]">Earnings</h1>
-          <p className="text-[#4A5568]">Wallet balance and withdrawal requests</p>
+          <p className="text-[#4A5568]">
+            What you earn after BookNest&apos;s {summary?.platform_fee_percent ?? 15}% platform fee
+          </p>
         </div>
         <Link href="/studio/analytics" className="text-sm text-[#B85C38] hover:underline">
-          ← Analytics
+          ← Sales analytics
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white border border-[#E8E2D9] rounded-xl p-5">
-          <DollarSign className="text-[#B85C38] mb-2" />
-          <p className="text-2xl font-bold">{Number(wallet?.available_balance || 0).toFixed(2)}</p>
-          <p className="text-xs text-[#4A5568]">Available ({wallet?.currency || 'ETB'})</p>
-        </div>
-        <div className="bg-white border border-[#E8E2D9] rounded-xl p-5">
-          <p className="text-2xl font-bold">{Number(wallet?.pending_balance || 0).toFixed(2)}</p>
-          <p className="text-xs text-[#4A5568]">Pending withdrawal</p>
-        </div>
-        <div className="bg-white border border-[#E8E2D9] rounded-xl p-5">
-          <p className="text-2xl font-bold">{earnings.length}</p>
-          <p className="text-xs text-[#4A5568]">Earning records</p>
-        </div>
+      <div className="rounded-xl bg-[#FDFBF7] border border-[#E8E2D9] px-4 py-3 text-sm text-[#4A5568]">
+        <strong className="text-[#1A2A3A]">Analytics vs Earnings:</strong> Sales analytics shows{' '}
+        <em>gross</em> buyer payments. This page shows your <em>net</em> share after the platform
+        fee — that is what lands in your wallet.
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <SummaryCard
+          icon={Receipt}
+          label="Gross sales"
+          sub="Total buyers paid"
+          value={`${Number(summary?.gross_sales || 0).toFixed(2)} ${currency}`}
+        />
+        <SummaryCard
+          icon={TrendingDown}
+          label={`Platform fee (${summary?.platform_fee_percent ?? 15}%)`}
+          sub="BookNest service charge"
+          value={`−${Number(summary?.platform_fees || 0).toFixed(2)} ${currency}`}
+          accent="#8E735B"
+        />
+        <SummaryCard
+          icon={DollarSign}
+          label="Your net earnings"
+          sub={`${summary?.sale_count ?? 0} sale(s) recorded`}
+          value={`${Number(summary?.net_earnings || 0).toFixed(2)} ${currency}`}
+          accent="#2D6A4F"
+        />
+        <SummaryCard
+          icon={Wallet}
+          label="Available to withdraw"
+          sub={
+            Number(summary?.pending_withdrawal || 0) > 0
+              ? `${Number(summary?.pending_withdrawal).toFixed(2)} pending`
+              : 'Ready for payout'
+          }
+          value={`${Number(summary?.available_balance || 0).toFixed(2)} ${currency}`}
+          accent="#B85C38"
+        />
       </div>
 
       <div className="bg-white border border-[#E8E2D9] rounded-xl p-6">
@@ -100,7 +127,7 @@ export default function StudioEarningsPage() {
           <input
             type="number"
             step="0.01"
-            placeholder="Amount (ETB)"
+            placeholder={`Amount (${currency})`}
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             className="w-full border rounded-lg px-3 py-2"
@@ -142,16 +169,31 @@ export default function StudioEarningsPage() {
       </div>
 
       <div className="bg-white border border-[#E8E2D9] rounded-xl p-6">
-        <h2 className="font-semibold mb-4">Recent earnings</h2>
-        <ul className="space-y-2 text-sm">
-          {earnings.slice(0, 10).map((e) => (
-            <li key={e.id} className="flex justify-between border-b pb-2">
-              <span>{e.book_format?.book?.title || 'Sale'}</span>
-              <span className="text-[#4A5568]">
-                +{Number(e.net_amount).toFixed(2)} ETB · {new Date(e.created_at).toLocaleDateString()}
-              </span>
+        <h2 className="font-semibold mb-4">Earnings ledger</h2>
+        <p className="text-xs text-[#4A5568] mb-4">
+          Each row is one sale: gross → platform fee → your net credit.
+        </p>
+        <ul className="space-y-3 text-sm">
+          {earnings.slice(0, 15).map((e) => (
+            <li key={e.id} className="border-b border-[#E8E2D9] pb-3">
+              <div className="flex justify-between gap-4">
+                <span className="font-medium text-[#1A2A3A]">
+                  {e.book_format?.book?.title || 'Sale'}
+                </span>
+                <span className="text-[#2D6A4F] font-semibold shrink-0">
+                  +{Number(e.net_amount).toFixed(2)} {currency}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-x-4 text-xs text-[#4A5568] mt-1">
+                <span>Gross {Number(e.gross_amount).toFixed(2)}</span>
+                <span>Fee −{Number(e.platform_fee).toFixed(2)}</span>
+                <span>{new Date(e.created_at).toLocaleDateString()}</span>
+              </div>
             </li>
           ))}
+          {!earnings.length && (
+            <p className="text-[#4A5568]">No earnings yet — sales appear here after checkout completes.</p>
+          )}
         </ul>
       </div>
 
@@ -170,6 +212,29 @@ export default function StudioEarningsPage() {
           {!withdrawals.length && <p className="text-[#4A5568]">No withdrawals yet.</p>}
         </ul>
       </div>
+    </div>
+  );
+}
+
+function SummaryCard({
+  icon: Icon,
+  label,
+  sub,
+  value,
+  accent = '#2C3E50',
+}: {
+  icon: typeof DollarSign;
+  label: string;
+  sub: string;
+  value: string;
+  accent?: string;
+}) {
+  return (
+    <div className="bg-white border border-[#E8E2D9] rounded-xl p-5">
+      <Icon className="mb-2" size={20} style={{ color: accent }} />
+      <p className="text-xl font-bold text-[#1A2A3A] tabular-nums">{value}</p>
+      <p className="text-sm font-medium text-[#1A2A3A] mt-1">{label}</p>
+      <p className="text-xs text-[#4A5568]">{sub}</p>
     </div>
   );
 }

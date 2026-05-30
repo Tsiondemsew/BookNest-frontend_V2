@@ -38,12 +38,22 @@ export interface PublicProfile {
   bio?: string | null;
   location?: string | null;
   website?: string | null;
+  email?: string;
   joinedAt: string;
-  followerCount: number;
-  followingCount: number;
-  postCount: number;
+  followerCount?: number;
+  followingCount?: number;
+  postCount?: number;
   isPrivate: boolean;
   isFollowing?: boolean;
+  isOwnProfile?: boolean;
+  readingStats?: {
+    current_streak: number;
+    longest_streak?: number;
+    books_completed: number;
+    total_pages: number;
+    total_minutes: number;
+  };
+  achievements?: Array<{ id: string; title: string; icon?: string; earned_at: string }>;
 }
 
 export interface PublicProfileResponse {

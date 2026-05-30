@@ -24,3 +24,21 @@ export interface CanReviewResponse {
     existing_review: BookReview | null;
   };
 }
+
+export interface SellerCatalogReview extends BookReview {
+  book_id: string;
+  book_title: string;
+  book_cover_url: string | null;
+}
+
+export interface SellerReviewsResponse {
+  success: boolean;
+  data: {
+    reviews: SellerCatalogReview[];
+    total: number;
+    summary: {
+      total_reviews: number;
+      avg_rating: number;
+    };
+  };
+}

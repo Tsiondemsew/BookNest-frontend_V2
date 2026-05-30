@@ -198,6 +198,34 @@ export interface BookSalesData {
   revenue: number;
 }
 
+export interface BookPerformanceItem {
+  book_id: string;
+  title: string;
+  cover_image_url: string;
+  status: string;
+  copies_sold: number;
+  revenue: number;
+  avg_rating: number;
+  review_count: number;
+  wishlist_count: number;
+  sales_share_percent: number;
+  engagement_score: number;
+  created_at: string;
+}
+
+export interface BookPerformanceResponse {
+  success: boolean;
+  data: {
+    summary: {
+      total_books: number;
+      total_wishlists: number;
+      total_reviews: number;
+      avg_catalog_rating: number;
+    };
+    books: BookPerformanceItem[];
+  };
+}
+
 export interface AnalyticsResponse {
   success: boolean;
   data: {

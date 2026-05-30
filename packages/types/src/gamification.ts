@@ -10,6 +10,17 @@ export interface GamificationToday {
   books_active: number;
 }
 
+export interface DailyReadingActivity {
+  date: string;
+  pages_read: number;
+  minutes_read: number;
+}
+
+export interface GamificationLifetime {
+  total_pages: number;
+  total_minutes: number;
+}
+
 export interface AchievementDefinition {
   id: string;
   title: string;
@@ -26,6 +37,8 @@ export interface UserAchievement {
 export interface GamificationProfile {
   streak: GamificationStreak;
   today: GamificationToday;
+  lifetime: GamificationLifetime;
+  weekly_activity: DailyReadingActivity[];
   total_books_completed: number;
   achievements: UserAchievement[];
   achievement_definitions: AchievementDefinition[];

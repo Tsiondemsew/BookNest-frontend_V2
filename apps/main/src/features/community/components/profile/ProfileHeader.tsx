@@ -2,10 +2,12 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { MapPin, Link as LinkIcon, Calendar, Settings, MessageCircle } from 'lucide-react';
+import Link from 'next/link';
+import { MapPin, Link as LinkIcon, Calendar, Settings, MessageCircle, Lock } from 'lucide-react';
 import { FollowButton } from './FollowButton';
 import { formatRelativeTime } from '../../utils/timeFormat';
-import Link from 'next/link';
+import { CommunityAvatar, CommunityCard, cn, ui } from '../../ui';
+
 interface ProfileHeaderProps {
   profile: {
     id: string;
@@ -23,57 +25,56 @@ interface ProfileHeaderProps {
     isFollowing?: boolean;
     isOwnProfile: boolean;
     isPrivate: boolean;
+    readingStats?: {
+      current_streak: number;
+      books_completed: number;
+      total_pages: number;
+      total_minutes: number;
+    };
+    achievements?: Array<{ id: string; title: string; earned_at: string }>;
   };
-  onMessage?: () => void;
   onEdit?: () => void;
   onSettings?: () => void;
 }
 
-export function ProfileHeader({ profile, onMessage, onEdit, onSettings }: ProfileHeaderProps) {
+export function ProfileHeader({ profile, onEdit, onSettings }: ProfileHeaderProps) {
   const [coverImageError, setCoverImageError] = useState(false);
 
   return (
-    <div className="bg-white rounded-xl border border-[#E8E2D9] overflow-hidden">
-      {/* Cover Photo */}
-      <div className="relative h-40 bg-gradient-to-r from-[#2C3E50] to-[#B85C38]">
+    <CommunityCard className="overflow-hidden">
+      <div className="relative h-32 sm:h-44 bg-gradient-to-br from-bn-accent via-bn-accent/90 to-bn-primary">
         {profile.coverUrl && !coverImageError && (
           <Image
             src={profile.coverUrl}
-            alt="Cover"
+            alt=""
             fill
-            className="object-cover"
+            className="object-cover opacity-90"
             onError={() => setCoverImageError(true)}
           />
         )}
+        <div className="absolute inset-0 bg-gradient-to-t from-bn-ink/20 to-transparent" />
       </div>
 
-      {/* Avatar & Actions */}
-      <div className="relative px-4 pb-4">
-        <div className="flex justify-between items-start">
-          <div className="relative -mt-12">
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#2C3E50] to-[#B85C38] border-4 border-white flex items-center justify-center text-white text-2xl font-bold shadow-lg">
-              {profile.avatarUrl ? (
-                <Image src={profile.avatarUrl} alt={profile.name} width={96} height={96} className="rounded-full object-cover" />
-              ) : (
-                profile.name.charAt(0).toUpperCase()
-              )}
-            </div>
+      <div className="relative px-4 sm:px-6 pb-5 sm:pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 -mt-12 sm:-mt-14">
+          <div className="relative">
+            <CommunityAvatar
+              name={profile.name}
+              src={profile.avatarUrl}
+              size="xl"
+              ring
+              className="border-4 border-white"
+            />
           </div>
 
-          <div className="flex gap-2 pt-2">
+          <div className="flex flex-wrap gap-2 sm:pb-1">
             {profile.isOwnProfile ? (
               <>
-                <button
-                  onClick={onEdit}
-                  className="px-4 py-1.5 text-sm font-medium border border-[#E8E2D9] rounded-full hover:bg-[#F5F1EB] transition-colors"
-                >
-                  Edit Profile
+                <button type="button" onClick={onEdit} className={ui.btnSecondary}>
+                  Edit profile
                 </button>
-                <button
-                  onClick={onSettings}
-                  className="p-1.5 border border-[#E8E2D9] rounded-full hover:bg-[#F5F1EB] transition-colors"
-                >
-                  <Settings size={16} />
+                <button type="button" onClick={onSettings} className={ui.btnIcon} aria-label="Settings">
+                  <Settings size={18} />
                 </button>
               </>
             ) : (
@@ -83,37 +84,26 @@ export function ProfileHeader({ profile, onMessage, onEdit, onSettings }: Profil
                   initialIsFollowing={profile.isFollowing || false}
                   initialFollowerCount={profile.followerCount}
                 />
-                <button
-                  onClick={onMessage}
-                  className="p-1.5 border border-[#E8E2D9] rounded-full hover:bg-[#F5F1EB] transition-colors"
-                >
-                  <MessageCircle size={16} />
-                </button>
-              
-  <Link
-    href={`/messages/new?user=${profile.id}`}
-    className="p-1.5 border border-[#E8E2D9] rounded-full hover:bg-[#F5F1EB] transition-colors"
-  >
-    <MessageCircle size={16} />
-  </Link>
+                <Link href={`/messages/new?user=${profile.id}`} className={ui.btnIcon} aria-label="Message">
+                  <MessageCircle size={18} />
+                </Link>
               </>
             )}
           </div>
         </div>
 
-        {/* Profile Info */}
-        <div className="mt-3">
-          <h1 className="text-xl font-bold text-[#1A2A3A]">{profile.name}</h1>
-          <p className="text-sm text-[#4A5568]">@{profile.username}</p>
-          
-          {profile.bio && (
-            <p className="mt-2 text-[#1A2A3A]">{profile.bio}</p>
-          )}
+        <div className="mt-4 space-y-3">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-bn-ink tracking-tight">{profile.name}</h1>
+            <p className={ui.caption}>@{profile.username}</p>
+          </div>
 
-          <div className="flex flex-wrap gap-3 mt-3 text-sm text-[#4A5568]">
+          {profile.bio && <p className={ui.body}>{profile.bio}</p>}
+
+          <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-bn-muted">
             {profile.location && (
-              <span className="flex items-center gap-1">
-                <MapPin size={14} />
+              <span className="inline-flex items-center gap-1.5">
+                <MapPin size={14} className="text-bn-primary/70" />
                 {profile.location}
               </span>
             )}
@@ -122,42 +112,83 @@ export function ProfileHeader({ profile, onMessage, onEdit, onSettings }: Profil
                 href={profile.website}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 text-[#B85C38] hover:underline"
+                className="inline-flex items-center gap-1.5 text-bn-primary hover:underline"
               >
                 <LinkIcon size={14} />
                 {profile.website.replace(/^https?:\/\//, '')}
               </a>
             )}
-            <span className="flex items-center gap-1">
-              <Calendar size={14} />
+            <span className="inline-flex items-center gap-1.5">
+              <Calendar size={14} className="text-bn-primary/70" />
               Joined {formatRelativeTime(profile.joinedAt)}
             </span>
           </div>
 
-          {/* Stats */}
-          <div className="flex gap-4 mt-3 pt-3 border-t border-[#E8E2D9]">
-            <div>
-              <span className="font-semibold text-[#1A2A3A]">{profile.postCount}</span>
-              <span className="text-sm text-[#4A5568] ml-1">posts</span>
-            </div>
-            <div>
-              <span className="font-semibold text-[#1A2A3A]">{profile.followerCount}</span>
-              <span className="text-sm text-[#4A5568] ml-1">followers</span>
-            </div>
-            <div>
-              <span className="font-semibold text-[#1A2A3A]">{profile.followingCount}</span>
-              <span className="text-sm text-[#4A5568] ml-1">following</span>
-            </div>
+          <div className="flex gap-6 pt-3 border-t border-bn-border/60">
+            {[
+              { n: profile.postCount, label: 'Posts' },
+              { n: profile.followerCount, label: 'Followers' },
+              { n: profile.followingCount, label: 'Following' },
+            ].map(({ n, label }) => (
+              <div key={label}>
+                <span className="font-bold text-bn-ink tabular-nums">{n}</span>
+                <span className="text-sm text-bn-muted ml-1.5">{label}</span>
+              </div>
+            ))}
           </div>
 
-          {/* Private Account Badge */}
+          {profile.readingStats && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+              <div className="rounded-xl bg-bn-surface border border-bn-border px-3 py-2">
+                <p className="text-lg font-bold text-bn-ink tabular-nums">{profile.readingStats.current_streak}</p>
+                <p className="text-xs text-bn-muted">Day streak</p>
+              </div>
+              <div className="rounded-xl bg-bn-surface border border-bn-border px-3 py-2">
+                <p className="text-lg font-bold text-bn-ink tabular-nums">{profile.readingStats.books_completed}</p>
+                <p className="text-xs text-bn-muted">Books done</p>
+              </div>
+              <div className="rounded-xl bg-bn-surface border border-bn-border px-3 py-2">
+                <p className="text-lg font-bold text-bn-ink tabular-nums">{profile.readingStats.total_pages}</p>
+                <p className="text-xs text-bn-muted">Pages read</p>
+              </div>
+              <div className="rounded-xl bg-bn-surface border border-bn-border px-3 py-2">
+                <p className="text-lg font-bold text-bn-ink tabular-nums">{profile.readingStats.total_minutes}</p>
+                <p className="text-xs text-bn-muted">Minutes listened</p>
+              </div>
+            </div>
+          )}
+
+          {profile.achievements && profile.achievements.length > 0 && (
+            <div className="pt-2">
+              <p className="text-sm font-medium text-bn-ink mb-2">Recent achievements</p>
+              <div className="flex flex-wrap gap-2">
+                {profile.achievements.slice(0, 6).map((a) => (
+                  <span
+                    key={a.id}
+                    className="text-xs px-2.5 py-1 rounded-full bg-bn-accent/10 text-bn-accent border border-bn-accent/20"
+                  >
+                    {a.title}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {profile.isPrivate && !profile.isOwnProfile && !profile.isFollowing && (
+            <div className="flex items-center gap-2 mt-2 px-3.5 py-2.5 rounded-xl bg-amber-50 border border-amber-200/80 text-sm text-amber-900">
+              <Lock size={16} className="shrink-0" />
+              Private account — follow to see posts
+            </div>
+          )}
+
           {profile.isPrivate && profile.isOwnProfile && (
-            <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-lg p-2 text-sm text-yellow-800">
+            <div className="flex items-center gap-2 mt-2 px-3.5 py-2.5 rounded-xl bg-bn-surface border border-bn-border text-sm text-bn-muted">
+              <Lock size={16} className="shrink-0 text-bn-primary" />
               Your account is private. Only followers can see your posts.
             </div>
           )}
         </div>
       </div>
-    </div>
+    </CommunityCard>
   );
 }

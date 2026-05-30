@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react
 import { useRouter } from 'next/navigation';
 import { useReadingProgress } from '@/hooks/useReadingProgress';
 import { loadBookFileBytes } from '@/lib/reader/loadBookFile';
+import { recordPageRead, flushReadingActivity } from '@/lib/reading/recordActivity';
 import { handleReaderExitReview } from '@/lib/reader/reviewPrompt';
 import {
   PdfPageCache,
@@ -85,6 +86,17 @@ export function PDFReader({
       },
     });
 
+  const furthestPageFromProgress = useCallback(
+    (pages: number) => {
+      if (progressPercent >= 100) return pages;
+      return Math.max(
+        lastPosition,
+        pages > 0 ? Math.ceil((progressPercent / 100) * pages) : lastPosition
+      );
+    },
+    [progressPercent, lastPosition]
+  );
+
   const getRenderParams = useCallback((): RenderParams => {
     const containerW = viewportRef.current?.clientWidth ?? window.innerWidth;
     return {
@@ -146,10 +158,16 @@ export function PDFReader({
   useEffect(() => {
     return () => {
       handleReaderExitReview(bookId, bookTitle, completedSessionRef.current);
+      flushReadingActivity();
       pageCacheRef.current.clear();
       if (renderSlowTimerRef.current) clearTimeout(renderSlowTimerRef.current);
     };
   }, [bookId, bookTitle]);
+
+  const handleExit = useCallback(async () => {
+    await flushReadingActivity();
+    router.back();
+  }, [router]);
 
   useEffect(() => {
     let cancelled = false;
@@ -170,12 +188,13 @@ export function PDFReader({
         pdfDocRef.current = doc;
         const pages = doc.numPages;
         const start = lastPosition > 0 && lastPosition <= pages ? lastPosition : 1;
+        const furthestAlreadyRead = furthestPageFromProgress(pages);
 
         setPdfDoc(doc);
         setNumPages(pages);
         setCurrentPage(start);
         setPageInput(String(start));
-        maxPageReachedRef.current = start;
+        maxPageReachedRef.current = Math.max(start, furthestAlreadyRead);
         setFromCache(cached);
 
         const params = {
@@ -208,16 +227,28 @@ export function PDFReader({
     return () => {
       cancelled = true;
     };
-  }, [bookFormatId, progressLoading, lastPosition]);
+  }, [bookFormatId, progressLoading, lastPosition, furthestPageFromProgress]);
+
+  const prevPageRef = useRef<number | null>(null);
 
   useLayoutEffect(() => {
     if (!pdfDoc || isLoading) return;
     void displayPage(currentPage);
 
+    if (prevPageRef.current === currentPage) return;
+
+    if (prevPageRef.current !== null) {
+      // Daily stats: count only new pages (forward), not re-reading earlier pages
+      if (currentPage > maxPageReachedRef.current) {
+        recordPageRead(currentPage - maxPageReachedRef.current);
+      }
+    }
+    prevPageRef.current = currentPage;
+
     if (currentPage > maxPageReachedRef.current) {
       maxPageReachedRef.current = currentPage;
-      void updateProgress(currentPage);
     }
+    void updateProgress(currentPage, { forcePositionSave: true });
   }, [pdfDoc, currentPage, isLoading, displayPage, updateProgress]);
 
   const themeZoomMountedRef = useRef(false);
@@ -305,7 +336,7 @@ export function PDFReader({
         style={{ background: theme.pageBg }}
       >
         <p className="text-center" style={{ color: theme.text }}>{loadError || 'Could not open this book.'}</p>
-        <button type="button" onClick={() => router.back()} className="px-4 py-2 rounded-lg text-white" style={{ background: theme.accent }}>
+        <button type="button" onClick={() => void handleExit()} className="px-4 py-2 rounded-lg text-white" style={{ background: theme.accent }}>
           Go back
         </button>
       </div>
@@ -324,7 +355,7 @@ export function PDFReader({
         style={{ background: theme.chromeBg, borderColor: theme.chromeBorder }}
       >
         <div className="flex items-center gap-2 px-3 py-2.5">
-          <button type="button" onClick={() => router.back()} className="p-2 rounded-lg" aria-label="Back">
+          <button type="button" onClick={() => void handleExit()} className="p-2 rounded-lg" aria-label="Back">
             <ArrowLeft size={22} />
           </button>
           <div className="flex-1 min-w-0">

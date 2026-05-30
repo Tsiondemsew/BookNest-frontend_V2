@@ -1,7 +1,9 @@
 'use client';
 
+import { Users } from 'lucide-react';
 import { FeedPost } from './FeedPost';
 import { PostSkeleton } from './PostSkeleton';
+import { CommunityCard, EmptyState, ui } from '../../ui';
 import type { Post } from '@repo/types';
 
 interface FeedProps {
@@ -23,9 +25,13 @@ export function Feed({ posts, isLoading = false, onLikeToggle }: FeedProps) {
 
   if (posts.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-[#E8E2D9] p-8 text-center">
-        <p className="text-[#4A5568]">No posts yet. Follow authors and publishers to see their updates!</p>
-      </div>
+      <CommunityCard>
+        <EmptyState
+          icon={Users}
+          title="Your feed is quiet"
+          description="Follow authors, publishers, and readers to see their posts here."
+        />
+      </CommunityCard>
     );
   }
 

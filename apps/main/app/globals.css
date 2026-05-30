@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #faf8f5;
+  --foreground: #1a2a3a;
 }
 
 @theme inline {
@@ -10,6 +10,16 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* BookNest brand palette */
+  --color-bn-primary: #b85c38;
+  --color-bn-primary-dark: #8e735b;
+  --color-bn-ink: #1a2a3a;
+  --color-bn-muted: #4a5568;
+  --color-bn-border: #e8e2d9;
+  --color-bn-surface: #f5f1eb;
+  --color-bn-accent: #2c3e50;
+  --color-bn-canvas: #faf8f5;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,7 +32,8 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Custom scrollbar - clean and minimal */

@@ -9,6 +9,8 @@ export interface ReadingProgress {
   total: number;
   updatedAt: string;
   synced: number; // 0 = not synced, 1 = synced
+  pendingPagesDelta?: number;
+  pendingMinutesDelta?: number;
 }
 
 export interface OfflineQueueItem {
@@ -109,11 +111,17 @@ export async function getAllUnsyncedProgress(): Promise<ReadingProgress[]> {
   return allProgress.filter(p => p.synced === 0);
 }
 
-export async function markProgressSynced(id: string): Promise<void> {
+export async function markProgressSynced(id: string, clearPending = true): Promise<void> {
   const db = await getDB();
   const progress = await db.get('reading_progress', id);
   if (progress) {
-    await db.put('reading_progress', { ...progress, synced: 1 });
+    await db.put('reading_progress', {
+      ...progress,
+      synced: 1,
+      ...(clearPending
+        ? { pendingPagesDelta: 0, pendingMinutesDelta: 0 }
+        : {}),
+    });
   }
 }
 

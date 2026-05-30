@@ -1,4 +1,5 @@
 const PROMPTED_KEY = (bookId: string) => `booknest_review_prompted_${bookId}`;
+const SUBMITTED_KEY = (bookId: string) => `booknest_review_submitted_${bookId}`;
 const PENDING_KEY = 'booknest_pending_review';
 
 export type PendingReview = {
@@ -30,6 +31,17 @@ export function markReviewPromptShown(bookId: string) {
   clearCompletedSession(bookId);
 }
 
+export function markBookReviewSubmitted(bookId: string) {
+  if (typeof localStorage === 'undefined') return;
+  localStorage.setItem(SUBMITTED_KEY(bookId), '1');
+  markReviewPromptShown(bookId);
+}
+
+export function hasSubmittedReviewLocally(bookId: string): boolean {
+  if (typeof localStorage === 'undefined') return false;
+  return localStorage.getItem(SUBMITTED_KEY(bookId)) === '1';
+}
+
 export function queuePendingReview(pending: PendingReview) {
   if (typeof sessionStorage === 'undefined') return;
   sessionStorage.setItem(PENDING_KEY, JSON.stringify(pending));
@@ -50,7 +62,7 @@ export function consumePendingReview(): PendingReview | null {
 /** Call when leaving reader after finishing — queues one-time prompt for library */
 export function handleReaderExitReview(bookId: string, bookTitle: string, completed: boolean) {
   if (!completed) return;
-  if (wasReviewPromptShown(bookId)) return;
+  if (wasReviewPromptShown(bookId) || hasSubmittedReviewLocally(bookId)) return;
   markBookCompletedSession(bookId);
   queuePendingReview({ bookId, bookTitle });
 }
