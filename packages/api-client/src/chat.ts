@@ -68,5 +68,19 @@ export function createChatApi(client: ApiClient) {
 
     removeGroupMember: (chatId: string, memberId: string) =>
       client.delete<{ success: boolean }>(endpoints.chat.member(chatId, memberId)),
+
+    leaveGroup: (chatId: string) =>
+      client.delete<{ success: boolean }>(endpoints.chat.leaveGroup(chatId)),
+
+    deleteGroup: (chatId: string) =>
+      client.delete<{ success: boolean }>(endpoints.chat.deleteGroup(chatId)),
+
+    deleteDirectChat: (chatId: string) =>
+      client.delete<{ success: boolean }>(endpoints.chat.deleteDirectChat(chatId)),
+
+    getGroupMembers: (chatId: string) =>
+      client.get<{ success: boolean; data: import('@repo/types').GroupMembersResponse }>(
+        endpoints.chat.members(chatId)
+      ),
   };
 }

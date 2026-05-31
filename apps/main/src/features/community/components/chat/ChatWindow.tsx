@@ -12,6 +12,8 @@ import {
   Check,
   RefreshCw,
   User,
+  Users,
+  LogOut,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRealtimeChat } from '@/hooks/useRealtimeChat';
@@ -21,30 +23,35 @@ import { useAuthStore } from '@/stores/authStore';
 import { formatRelativeTime } from '@/features/community/utils/timeFormat';
 import { SharedPostCard } from './SharedPostCard';
 import { EmojiQuickPicker } from './EmojiQuickPicker';
+import { GroupManageModal } from './GroupManageModal';
 import type { ChatMessage } from '@repo/types';
 
 interface ChatWindowProps {
   chatId: string;
   chatName?: string;
   chatType?: 'direct' | 'group';
+  isGroupAdmin?: boolean;
   otherUserId?: string;
   otherUsername?: string | null;
   otherUserOnline?: boolean;
   onBack?: () => void;
   onMessageSent?: () => void;
   onRefreshMeta?: () => void;
+  onChatRemoved?: () => void;
 }
 
 export function ChatWindow({
   chatId,
   chatName,
   chatType = 'direct',
+  isGroupAdmin = false,
   otherUserId,
   otherUsername,
   otherUserOnline = false,
   onBack,
   onMessageSent,
   onRefreshMeta,
+  onChatRemoved,
 }: ChatWindowProps) {
   const { user } = useAuthStore();
   const currentUserId = user?.id;
@@ -61,6 +68,9 @@ export function ChatWindow({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(otherUserOnline);
   const [showEmoji, setShowEmoji] = useState(false);
+  const [showGroupManage, setShowGroupManage] = useState(false);
+  const [groupAdmin, setGroupAdmin] = useState(isGroupAdmin);
+  const [isDeletingChat, setIsDeletingChat] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -69,6 +79,20 @@ export function ChatWindow({
   useEffect(() => {
     setIsOnline(otherUserOnline);
   }, [otherUserOnline, chatId]);
+
+  useEffect(() => {
+    setGroupAdmin(isGroupAdmin);
+  }, [isGroupAdmin, chatId]);
+
+  useEffect(() => {
+    if (chatType !== 'group') return;
+    void chatApi
+      .getChat(chatId)
+      .then((response) => setGroupAdmin(Boolean(response.data.isAdmin)))
+      .catch(() => {
+        /* keep prop fallback */
+      });
+  }, [chatId, chatType]);
 
   useEffect(() => {
     if (chatType !== 'direct') return;
@@ -241,6 +265,53 @@ export function ChatWindow({
     setTimeout(() => setCopiedInvite(false), 2000);
   };
 
+  const deleteDirectConversation = async () => {
+    if (!window.confirm('Delete this conversation from your inbox?')) return;
+    setIsDeletingChat(true);
+    setHeaderError(null);
+    try {
+      await chatApi.deleteDirectChat(chatId);
+      setMenuOpen(false);
+      onChatRemoved?.();
+    } catch (error) {
+      setHeaderError(
+        getFriendlyNetworkMessage(error, 'Could not delete conversation. Please try again.')
+      );
+    } finally {
+      setIsDeletingChat(false);
+    }
+  };
+
+  const leaveGroup = async () => {
+    if (!window.confirm('Leave this group?')) return;
+    setIsDeletingChat(true);
+    setHeaderError(null);
+    try {
+      await chatApi.leaveGroup(chatId);
+      setMenuOpen(false);
+      onChatRemoved?.();
+    } catch (error) {
+      setHeaderError(getFriendlyNetworkMessage(error, 'Could not leave group. Please try again.'));
+    } finally {
+      setIsDeletingChat(false);
+    }
+  };
+
+  const deleteGroup = async () => {
+    if (!window.confirm('Delete this group for everyone? This cannot be undone.')) return;
+    setIsDeletingChat(true);
+    setHeaderError(null);
+    try {
+      await chatApi.deleteGroup(chatId);
+      setMenuOpen(false);
+      onChatRemoved?.();
+    } catch (error) {
+      setHeaderError(getFriendlyNetworkMessage(error, 'Could not delete group. Please try again.'));
+    } finally {
+      setIsDeletingChat(false);
+    }
+  };
+
   const insertEmoji = (emoji: string) => {
     setInputValue((prev) => prev + emoji);
     setShowEmoji(false);
@@ -337,14 +408,65 @@ export function ChatWindow({
                 </Link>
               )}
               {chatType === 'group' && (
+                <>
+                  <button
+                    type="button"
+                    data-chat-menu-trigger
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setShowGroupManage(true);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-bn-surface touch-manipulation"
+                  >
+                    <Users size={16} />
+                    {groupAdmin ? 'Manage group' : 'View members'}
+                  </button>
+                  {groupAdmin ? (
+                    <>
+                      <button
+                        type="button"
+                        data-chat-menu-trigger
+                        onClick={() => void createInviteLink()}
+                        className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-bn-surface touch-manipulation"
+                      >
+                        <Link2 size={16} />
+                        Create invite link
+                      </button>
+                      <button
+                        type="button"
+                        data-chat-menu-trigger
+                        disabled={isDeletingChat}
+                        onClick={() => void deleteGroup()}
+                        className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-red-50 text-red-600 touch-manipulation"
+                      >
+                        <Trash2 size={16} />
+                        Delete group
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      data-chat-menu-trigger
+                      disabled={isDeletingChat}
+                      onClick={() => void leaveGroup()}
+                      className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-red-50 text-red-600 touch-manipulation"
+                    >
+                      <LogOut size={16} />
+                      Leave group
+                    </button>
+                  )}
+                </>
+              )}
+              {chatType === 'direct' && (
                 <button
                   type="button"
                   data-chat-menu-trigger
-                  onClick={() => void createInviteLink()}
-                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-bn-surface touch-manipulation"
+                  disabled={isDeletingChat}
+                  onClick={() => void deleteDirectConversation()}
+                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-red-50 text-red-600 touch-manipulation"
                 >
-                  <Link2 size={16} />
-                  Create invite link
+                  <Trash2 size={16} />
+                  Delete conversation
                 </button>
               )}
             </div>
@@ -524,6 +646,19 @@ export function ChatWindow({
           </button>
         </div>
       </div>
+
+      <GroupManageModal
+        isOpen={showGroupManage}
+        chatId={chatId}
+        groupName={chatName}
+        isAdmin={groupAdmin}
+        onClose={() => setShowGroupManage(false)}
+        onUpdated={() => {
+          onRefreshMeta?.();
+          onMessageSent?.();
+        }}
+        onLeftOrDeleted={() => onChatRemoved?.()}
+      />
     </div>
   );
 }

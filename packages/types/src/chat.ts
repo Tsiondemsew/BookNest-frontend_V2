@@ -1,9 +1,28 @@
 export interface ChatParticipant {
   id: string;
   name: string;
-  email: string;
+  email?: string;
   avatarUrl?: string;
   isOnline?: boolean;
+  isSelf?: boolean;
+  isAdmin?: boolean;
+}
+
+export interface ChatMember {
+  id: string;
+  name: string;
+  avatarUrl?: string | null;
+  isOnline?: boolean;
+  isSelf?: boolean;
+  isAdmin?: boolean;
+}
+
+export interface GroupMembersResponse {
+  chatId: string;
+  groupName?: string | null;
+  createdBy?: string | null;
+  isAdmin: boolean;
+  members: ChatMember[];
 }
 
 export interface Chat {
@@ -11,6 +30,9 @@ export interface Chat {
   type: 'direct' | 'group';
   name?: string;
   participants: ChatParticipant[];
+  members?: ChatMember[];
+  createdBy?: string | null;
+  isAdmin?: boolean;
   participantCount?: number;
   lastMessage?: {
     content: string;

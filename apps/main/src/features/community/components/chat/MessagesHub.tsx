@@ -58,6 +58,11 @@ export function MessagesHub({ initialChatId }: MessagesHubProps) {
     }
   }, []);
 
+  const handleChatRemoved = () => {
+    router.push('/messages', { scroll: false });
+    void loadChats();
+  };
+
   const selectChat = (chatId: string) => {
     router.push(`/messages?chat=${chatId}`, { scroll: false });
   };
@@ -300,11 +305,13 @@ export function MessagesHub({ initialChatId }: MessagesHubProps) {
               chatId={selectedChatId}
               chatName={activeChatName}
               chatType={activeChat?.type || 'direct'}
+              isGroupAdmin={activeChat?.isAdmin}
               otherUserId={activeChat?.participants[0]?.id}
               otherUserOnline={activeChat?.participants[0]?.isOnline}
               onBack={() => router.push('/messages', { scroll: false })}
               onMessageSent={loadChats}
               onRefreshMeta={loadChats}
+              onChatRemoved={handleChatRemoved}
             />
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
