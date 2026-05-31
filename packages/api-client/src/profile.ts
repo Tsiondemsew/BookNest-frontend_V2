@@ -38,6 +38,11 @@ export function createProfileApi(client: ApiClient) {
       marketing_emails: boolean;
     }) => client.put<{ success: boolean }>(endpoints.profile.settings, settings),
 
+    deleteAccount: () =>
+      client.delete<{ success: boolean; data: { deleted: boolean } }>(
+        endpoints.profile.deleteAccount
+      ),
+
     // Get public profile by username
     getPublicProfile: (username: string) =>
       client.get<PublicProfileResponse>(endpoints.profile.public(username)),

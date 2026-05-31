@@ -1,41 +1,60 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { ProfileHeader } from '@/features/community';
-import { Feed } from '@/features/community';
-import { profileApi } from '@/lib/api/client';
-import { feedApi } from '@/lib/api/client';
+import Link from 'next/link';
+import { ProfileHeader, Feed } from '@/features/community';
+import { profileApi, feedApi } from '@/lib/api/client';
+import { useAuthStore } from '@/stores/authStore';
 import { Loader2 } from 'lucide-react';
 import type { PublicProfile, Post } from '@repo/types';
 
 export default function PublicProfilePage() {
   const params = useParams();
-  const username = params.username as string;
+  const router = useRouter();
+  const { user } = useAuthStore();
+  const rawUsername = params.username as string;
+  const username = decodeURIComponent(rawUsername?.replace(/^@/, '') || '')
+    .trim()
+    .toLowerCase();
+
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [postsPrivate, setPostsPrivate] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchProfile = async () => {
+      if (!username) return;
+      setIsLoading(true);
       try {
         const profileResponse = await profileApi.getPublicProfile(username);
-        setProfile(profileResponse.data);
-        
-        // Fetch user's posts
-        const postsResponse = await feedApi.getUserPosts(profileResponse.data.id);
-        setPosts(postsResponse.data.posts);
-      } catch (error) {
-        console.error('Failed to fetch profile:', error);
+        const p = profileResponse.data;
+        setProfile(p);
+
+        const canSeePosts = p.isOwnProfile || !p.isPrivate || p.isFollowing;
+        if (canSeePosts) {
+          try {
+            const postsResponse = await feedApi.getUserPosts(p.id);
+            setPosts(postsResponse.data.posts);
+            setPostsPrivate(false);
+          } catch {
+            setPosts([]);
+            setPostsPrivate(true);
+          }
+        } else {
+          setPosts([]);
+          setPostsPrivate(true);
+        }
+      } catch {
+        setProfile(null);
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (username) {
-      fetchProfile();
-    }
-  }, [username]);
+    void fetchProfile();
+  }, [username, user?.id]);
 
   if (isLoading) {
     return (
@@ -48,25 +67,20 @@ export default function PublicProfilePage() {
   if (!profile) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold text-[#1A2A3A] mb-2">Profile Not Found</h1>
-        <p className="text-[#4A5568]">The user you're looking for doesn't exist.</p>
+        <h1 className="text-2xl font-bold text-[#1A2A3A] mb-2">Profile not found</h1>
+        <p className="text-[#4A5568]">The user you are looking for does not exist.</p>
+        <Link href="/community" className="inline-block mt-4 text-[#B85C38] hover:underline">
+          Back to community
+        </Link>
       </div>
     );
   }
 
-  if (profile.isPrivate && !profile.isFollowing) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center">
-        <div className="w-24 h-24 rounded-full bg-gray-200 mx-auto mb-4"></div>
-        <h1 className="text-xl font-bold text-[#1A2A3A] mb-2">This account is private</h1>
-        <p className="text-[#4A5568]">Follow to see their posts and stories.</p>
-      </div>
-    );
-  }
+  const canSeePosts = profile.isOwnProfile || !profile.isPrivate || profile.isFollowing;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-      <ProfileHeader 
+      <ProfileHeader
         profile={{
           id: profile.id,
           name: profile.name,
@@ -77,15 +91,37 @@ export default function PublicProfilePage() {
           location: profile.location,
           website: profile.website,
           joinedAt: profile.joinedAt,
-          followerCount: profile.followerCount,
-          followingCount: profile.followingCount,
-          postCount: profile.postCount,
+          followerCount: profile.followerCount ?? 0,
+          followingCount: profile.followingCount ?? 0,
+          postCount: profile.postCount ?? 0,
           isFollowing: profile.isFollowing,
-          isOwnProfile: false,
+          isOwnProfile: profile.isOwnProfile ?? profile.id === user?.id,
           isPrivate: profile.isPrivate,
+          readingStats: profile.readingStats,
+          achievements: profile.achievements,
         }}
+        onEdit={() => router.push('/profile')}
+        onSettings={() => router.push('/profile')}
       />
-      <Feed posts={posts} />
+
+      {profile.email && (
+        <p className="text-sm text-[#4A5568] px-1">
+          Contact: <span className="text-[#1A2A3A]">{profile.email}</span>
+        </p>
+      )}
+
+      {!canSeePosts || postsPrivate ? (
+        <div className="text-center py-12 rounded-2xl border border-[#E8E2D9] bg-white">
+          <p className="text-[#1A2A3A] font-medium">Posts are private</p>
+          <p className="text-sm text-[#4A5568] mt-1">
+            {profile.isPrivate && !profile.isFollowing
+              ? 'Follow this account to see their posts.'
+              : 'This user has not shared posts yet.'}
+          </p>
+        </div>
+      ) : (
+        <Feed posts={posts} />
+      )}
     </div>
   );
 }

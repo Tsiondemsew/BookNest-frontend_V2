@@ -27,6 +27,8 @@ export { createDownloadApi } from './download';
 export { createReviewsApi } from './reviews';
 export { createSellerFinanceApi } from './sellerFinance';
 export { createGamificationApi } from './gamification';
+export * from './follow';
+export { createFollowApi } from './follow';
 export { createNotificationsApi } from './notifications';
 export { createProgressApi } from './progress';
 export { createAnalyticsApi } from './analytics';

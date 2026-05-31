@@ -39,7 +39,7 @@ export function CommentItem({ comment, onReplyAdded, isReply = false }: CommentI
     <div className={`${!isReply && 'border-b border-[#E8E2D9] pb-3'} ${isReply && 'ml-8 mt-2'}`}>
       <div className="flex gap-2">
         {/* Avatar */}
-        <Link href={`/@${comment.author.username}`} className="flex-shrink-0">
+        <Link href={`/@${encodeURIComponent(comment.author.username)}`} className="flex-shrink-0">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#2C3E50] to-[#B85C38] flex items-center justify-center text-white text-xs font-semibold">
             {comment.author.avatarUrl ? (
               <img src={comment.author.avatarUrl} alt="" className="w-full h-full rounded-full object-cover" />
@@ -53,7 +53,7 @@ export function CommentItem({ comment, onReplyAdded, isReply = false }: CommentI
         <div className="flex-1">
           <div className="bg-[#F5F1EB] rounded-lg px-3 py-2">
             <div className="flex items-center justify-between">
-              <Link href={`/@${comment.author.username}`} className="font-semibold text-sm text-[#1A2A3A] hover:text-[#B85C38]">
+              <Link href={`/@${encodeURIComponent(comment.author.username)}`} className="font-semibold text-sm text-[#1A2A3A] hover:text-[#B85C38]">
                 {comment.author.name}
               </Link>
               <div className="flex items-center gap-1">

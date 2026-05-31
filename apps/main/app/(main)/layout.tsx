@@ -22,6 +22,11 @@ const PUBLIC_ROUTE_PREFIXES = [
   '/checkout/result',
 ];
 
+function isPublicProfilePath(pathname: string | null | undefined): boolean {
+  if (!pathname?.startsWith('/@') || pathname.length <= 2) return false;
+  return true;
+}
+
 // Routes that require authentication
 const PROTECTED_ROUTES = [
   '/dashboard',
@@ -33,7 +38,6 @@ const PROTECTED_ROUTES = [
   '/messages',
   '/profile',
   '/studio',
-  '/@',
 ];
 
 export default function MainLayout({
@@ -49,8 +53,12 @@ export default function MainLayout({
   useEffect(() => {
     if (!isInitializing) {
       const isGuestOnlyRoute = GUEST_ONLY_ROUTES.some((route) => pathname?.startsWith(route));
-      const isPublicRoute = PUBLIC_ROUTE_PREFIXES.some((route) => pathname?.startsWith(route));
-      const isProtectedRoute = PROTECTED_ROUTES.some((route) => pathname?.startsWith(route));
+      const isPublicRoute =
+        PUBLIC_ROUTE_PREFIXES.some((route) => pathname?.startsWith(route)) ||
+        isPublicProfilePath(pathname);
+      const isProtectedRoute =
+        PROTECTED_ROUTES.some((route) => pathname?.startsWith(route)) &&
+        !isPublicProfilePath(pathname);
 
       if (isAuthenticated && isGuestOnlyRoute && user) {
         resolvePostLoginPath(user, '/dashboard').then((path) => {

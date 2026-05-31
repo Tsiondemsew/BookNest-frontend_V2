@@ -22,6 +22,7 @@ export interface Profile {
   following_count: number;
   post_count: number;
   settings: ProfileSettings;
+  profile_data?: Record<string, string> | null;
 }
 
 export interface ProfileResponse {

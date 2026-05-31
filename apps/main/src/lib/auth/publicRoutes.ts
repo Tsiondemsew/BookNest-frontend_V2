@@ -15,6 +15,7 @@ export const PUBLIC_ROUTE_PREFIXES = [
 export function isPublicAppPath(pathname: string | null | undefined): boolean {
   if (!pathname) return false;
   if (pathname === '/') return true;
+  if (pathname.startsWith('/@') && pathname.length > 2) return true;
 
   return PUBLIC_ROUTE_PREFIXES.some((prefix) => {
     if (prefix === '/') return false;

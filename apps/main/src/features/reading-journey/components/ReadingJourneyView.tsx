@@ -48,7 +48,7 @@ export function ReadingJourneyView() {
     },
     placeholderData: () => {
       const cached = getGamificationCache();
-      return cached ? { data: cached } : undefined;
+      return cached ? { success: true, data: cached } : undefined;
     },
     refetchOnWindowFocus: () =>
       typeof navigator !== 'undefined' && navigator.onLine,
@@ -109,13 +109,16 @@ export function ReadingJourneyView() {
   const streak = profile.streak.current;
   const lifetimePages = profile.lifetime.total_pages;
   const lifetimeMinutes = profile.lifetime.total_minutes;
+  const readToday = profile.today.pages_read > 0 || profile.today.minutes_read > 0;
   const streakMessage =
     streak >= 30
       ? 'Legendary consistency — you are on fire!'
       : streak >= 7
         ? 'A full week strong. Keep the momentum!'
         : streak >= 1
-          ? 'Your streak is alive. Read today to extend it.'
+          ? readToday
+            ? 'Streak extended today — keep it going!'
+            : 'Your streak is still alive. Read today so you don’t lose it.'
           : 'Start a streak — read a page today.';
 
   return (

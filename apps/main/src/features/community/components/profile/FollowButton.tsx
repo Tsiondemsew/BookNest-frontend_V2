@@ -3,15 +3,23 @@
 import { useState } from 'react';
 import { UserPlus, UserCheck, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { followApi } from '@/lib/api/client';
 
 interface FollowButtonProps {
   userId: string;
   initialIsFollowing: boolean;
   initialFollowerCount: number;
   size?: 'sm' | 'md';
+  onFollowChange?: (isFollowing: boolean, followerCount: number) => void;
 }
 
-export function FollowButton({ userId, initialIsFollowing, initialFollowerCount, size = 'md' }: FollowButtonProps) {
+export function FollowButton({
+  userId,
+  initialIsFollowing,
+  initialFollowerCount,
+  size = 'md',
+  onFollowChange,
+}: FollowButtonProps) {
   const { isAuthenticated } = useAuthStore();
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
   const [followerCount, setFollowerCount] = useState(initialFollowerCount);
@@ -29,23 +37,31 @@ export function FollowButton({ userId, initialIsFollowing, initialFollowerCount,
     }
 
     setIsPending(true);
-    
-    if (isFollowing) {
-      setFollowerCount(prev => prev - 1);
-      setIsFollowing(false);
-    } else {
-      setFollowerCount(prev => prev + 1);
-      setIsFollowing(true);
-    }
+    const nextFollowing = !isFollowing;
+    const nextCount = nextFollowing ? followerCount + 1 : Math.max(0, followerCount - 1);
 
-    // TODO: API call to follow/unfollow
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setIsPending(false);
+    setIsFollowing(nextFollowing);
+    setFollowerCount(nextCount);
+
+    try {
+      if (nextFollowing) {
+        await followApi.follow(userId);
+      } else {
+        await followApi.unfollow(userId);
+      }
+      onFollowChange?.(nextFollowing, nextCount);
+    } catch {
+      setIsFollowing(isFollowing);
+      setFollowerCount(followerCount);
+    } finally {
+      setIsPending(false);
+    }
   };
 
   return (
     <button
-      onClick={handleFollow}
+      type="button"
+      onClick={() => void handleFollow()}
       disabled={isPending}
       className={`flex items-center gap-1.5 rounded-full font-medium transition-colors ${
         isFollowing

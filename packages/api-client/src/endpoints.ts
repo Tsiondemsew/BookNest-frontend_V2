@@ -84,11 +84,19 @@ export const endpoints = {
     userPosts: (userId: string) => `/api/feed/users/${userId}/posts`,
   },
   profile: {
-    me: '/api/users/profile',
-    avatar: '/api/users/profile/avatar',
-    settings: '/api/users/profile/settings',
-    public: (username: string) => `/api/users/profile/public/${username}`,
+    me: '/api/profile',
+    avatar: '/api/profile/avatar',
+    settings: '/api/profile/settings',
+    deleteAccount: '/api/profile/account',
+    public: (username: string) => `/api/public/profile/${encodeURIComponent(username)}`,
     userPosts: (userId: string) => `/api/feed/users/${userId}/posts`,
+  },
+  follow: {
+    follow: (userId: string) => `/api/follow/${userId}/follow`,
+    unfollow: (userId: string) => `/api/follow/${userId}/follow`,
+    isFollowing: (userId: string) => `/api/follow/${userId}/is-following`,
+    followers: (userId: string) => `/api/follow/${userId}/followers`,
+    following: (userId: string) => `/api/follow/${userId}/following`,
   },
   progress: {
     list: '/api/progress',

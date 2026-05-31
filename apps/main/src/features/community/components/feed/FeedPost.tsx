@@ -42,7 +42,7 @@ export function FeedPost({ post, onLikeToggle, showComments = false }: FeedPostP
       {/* Header */}
       <div className="p-4 pb-2">
         <div className="flex items-start justify-between">
-          <Link href={`/@${post.author.username}`} className="flex items-center gap-3">
+          <Link href={`/@${encodeURIComponent(post.author.username)}`} className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#2C3E50] to-[#B85C38] flex items-center justify-center text-white font-semibold overflow-hidden">
               {post.author.avatarUrl ? (
                 <img src={post.author.avatarUrl} alt={post.author.name} className="w-full h-full object-cover" />

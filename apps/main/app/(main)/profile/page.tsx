@@ -3,42 +3,20 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
-import { apiClient } from '@/lib/api/client';
+import { profileApi } from '@/lib/api/client';
+import { authApi } from '@/lib/api/client';
 import { subscribeToStreakPush, unsubscribeFromStreakPush } from '@/lib/notifications/subscribePush';
-import { Camera, Save, Loader2,TrendingUp,Eye, EyeOff, Lock, Globe, Bell, Shield, User, Mail, MapPin, Link as LinkIcon } from 'lucide-react';
-
-interface UserProfile {
-  id: string;
-  email: string;
-  role: string;
-  profile: {
-    display_name?: string;
-    pen_name?: string;
-    company_name?: string;
-    full_name?: string;
-    bio?: string;
-    avatar_url?: string;
-    website_url?: string;
-    location?: string;
-    privacy: {
-      is_public: boolean;
-      show_email: boolean;
-      show_reading_stats: boolean;
-    };
-    notification_preferences: {
-      email_notifications: boolean;
-      push_notifications: boolean;
-      marketing_emails: boolean;
-    };
-  };
-}
+import type { Profile } from '@repo/types';
+import { Camera, Save, Loader2, TrendingUp, Globe, Bell, Shield, User, Mail, MapPin, Link as LinkIcon, ExternalLink, Trash2 } from 'lucide-react';
+import Link from 'next/link';
 
 export default function ProfilePage() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'privacy' | 'notifications'>('profile');
@@ -71,25 +49,24 @@ export default function ProfilePage() {
 
   const fetchProfile = async () => {
     try {
-      const response = await apiClient.get<{ success: boolean; data: UserProfile }>('/api/users/profile');
+      const response = await profileApi.getProfile();
       const data = response.data;
       setProfile(data);
-      
-      // Populate form
-      const profileData = data.profile;
+
+      const roleData = data.profile_data as Record<string, string> | null;
       setFormData({
-        display_name: profileData?.display_name || '',
-        pen_name: profileData?.pen_name || '',
-        company_name: profileData?.company_name || '',
-        bio: profileData?.bio || '',
-        website_url: profileData?.website_url || '',
-        location: profileData?.location || '',
-        is_public: profileData?.privacy?.is_public ?? true,
-        show_email: profileData?.privacy?.show_email ?? false,
-        show_reading_stats: profileData?.privacy?.show_reading_stats ?? true,
-        email_notifications: profileData?.notification_preferences?.email_notifications ?? true,
-        push_notifications: profileData?.notification_preferences?.push_notifications ?? true,
-        marketing_emails: profileData?.notification_preferences?.marketing_emails ?? false,
+        display_name: roleData?.display_name || data.publicName || '',
+        pen_name: roleData?.pen_name || '',
+        company_name: roleData?.company_name || '',
+        bio: data.bio || '',
+        website_url: data.website_url || '',
+        location: data.location || '',
+        is_public: data.settings?.is_public ?? true,
+        show_email: data.settings?.show_email ?? false,
+        show_reading_stats: data.settings?.show_reading_stats ?? true,
+        email_notifications: data.settings?.email_notifications ?? true,
+        push_notifications: data.settings?.push_notifications ?? true,
+        marketing_emails: data.settings?.marketing_emails ?? false,
       });
     } catch (error) {
       console.error('Failed to fetch profile:', error);
@@ -117,16 +94,9 @@ export default function ProfilePage() {
     formData.append('avatar', file);
 
     try {
-      const response = await apiClient.post<{ success: boolean; data: { avatar_url: string } }>(
-        '/api/users/avatar',
-        formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
-      );
-      
-      setProfile(prev => prev ? {
-        ...prev,
-        profile: { ...prev.profile, avatar_url: response.data.avatar_url }
-      } : null);
+      const response = await profileApi.uploadAvatar(file);
+      const avatarUrl = response.data.avatar_url;
+      setProfile((prev) => (prev ? { ...prev, avatar_url: avatarUrl } : null));
       
       setSuccessMessage('Avatar updated successfully');
       setTimeout(() => setSuccessMessage(null), 3000);
@@ -141,31 +111,57 @@ export default function ProfilePage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await apiClient.put('/api/users/profile', {
-        display_name: formData.display_name,
-        pen_name: formData.pen_name,
-        company_name: formData.company_name,
+      const profilePayload: Parameters<typeof profileApi.updateProfile>[0] = {
         bio: formData.bio,
-        website_url: formData.website_url,
         location: formData.location,
-        privacy: {
+      };
+      if (isAuthor) {
+        profilePayload.pen_name = formData.pen_name;
+        profilePayload.website_url = formData.website_url;
+      } else if (isPublisher) {
+        profilePayload.company_name = formData.company_name;
+        profilePayload.website_url = formData.website_url;
+      } else {
+        profilePayload.display_name = formData.display_name;
+      }
+
+      await Promise.all([
+        profileApi.updateProfile(profilePayload),
+        profileApi.updateSettings({
           is_public: formData.is_public,
           show_email: formData.show_email,
           show_reading_stats: formData.show_reading_stats,
-        },
-        notifications: {
           email_notifications: formData.email_notifications,
           push_notifications: formData.push_notifications,
           marketing_emails: formData.marketing_emails,
-        },
-      });
+        }),
+      ]);
+
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              bio: formData.bio,
+              location: formData.location,
+              website_url: isAuthor || isPublisher ? formData.website_url : prev.website_url,
+              settings: {
+                is_public: formData.is_public,
+                show_email: formData.show_email,
+                show_reading_stats: formData.show_reading_stats,
+                email_notifications: formData.email_notifications,
+                push_notifications: formData.push_notifications,
+                marketing_emails: formData.marketing_emails,
+              },
+            }
+          : prev
+      );
 
       if (formData.push_notifications) {
-        await subscribeToStreakPush();
+        void subscribeToStreakPush();
       } else {
-        await unsubscribeFromStreakPush();
+        void unsubscribeFromStreakPush();
       }
-      
+
       setSuccessMessage('Profile updated successfully');
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
@@ -173,6 +169,25 @@ export default function ProfilePage() {
       alert('Failed to save profile');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm(
+      'Delete your account permanently? This cannot be undone. Your profile and login will be removed.'
+    );
+    if (!confirmed) return;
+
+    setIsDeleting(true);
+    try {
+      await profileApi.deleteAccount();
+      await authApi.logout();
+      router.push('/login');
+    } catch (error) {
+      console.error('Failed to delete account:', error);
+      alert('Could not delete account. Try again or contact support.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -191,9 +206,20 @@ export default function ProfilePage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-[#1A2A3A]">Profile Settings</h1>
-        <p className="text-[#4A5568] mt-1">Manage your profile information and preferences</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1A2A3A]">Profile Settings</h1>
+          <p className="text-[#4A5568] mt-1">Manage your profile information and preferences</p>
+        </div>
+        {profile?.id && (
+          <Link
+            href="/@me"
+            className="inline-flex items-center gap-2 text-sm font-medium text-[#B85C38] hover:text-[#8E735B]"
+          >
+            <ExternalLink size={16} />
+            View public profile
+          </Link>
+        )}
       </div>
 
       {/* Success Message */}
@@ -208,8 +234,8 @@ export default function ProfilePage() {
         <div className="flex items-center gap-6">
           <div className="relative">
             <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#2C3E50] to-[#B85C38] flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
-              {profile?.profile?.avatar_url ? (
-                <img src={profile.profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
                 formData.display_name?.charAt(0)?.toUpperCase() || 
                 formData.pen_name?.charAt(0)?.toUpperCase() || 
@@ -339,8 +365,8 @@ export default function ProfilePage() {
             <p className="text-xs text-[#4A5568] mt-1">{formData.bio.length} characters</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+          <div className={isAuthor || isPublisher ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : ''}>
+            <div className={!(isAuthor || isPublisher) ? '' : undefined}>
               <label className="block text-sm font-medium text-[#1A2A3A] mb-1">Location</label>
               <div className="relative">
                 <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4A5568]" />
@@ -354,19 +380,21 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-[#1A2A3A] mb-1">Website</label>
-              <div className="relative">
-                <LinkIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4A5568]" />
-                <input
-                  type="url"
-                  value={formData.website_url}
-                  onChange={(e) => setFormData(prev => ({ ...prev, website_url: e.target.value }))}
-                  className="w-full pl-10 pr-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38]"
-                  placeholder="https://yourwebsite.com"
-                />
+            {(isAuthor || isPublisher) && (
+              <div>
+                <label className="block text-sm font-medium text-[#1A2A3A] mb-1">Website</label>
+                <div className="relative">
+                  <LinkIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4A5568]" />
+                  <input
+                    type="url"
+                    value={formData.website_url}
+                    onChange={(e) => setFormData(prev => ({ ...prev, website_url: e.target.value }))}
+                    className="w-full pl-10 pr-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38]"
+                    placeholder="https://yourwebsite.com"
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}
@@ -505,8 +533,17 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* Save Button */}
-      <div className="flex justify-end">
+      {/* Save + danger zone */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <button
+          type="button"
+          onClick={() => void handleDeleteAccount()}
+          disabled={isDeleting}
+          className="inline-flex items-center gap-2 px-4 py-2 text-red-600 border border-red-200 rounded-lg hover:bg-red-50 disabled:opacity-50"
+        >
+          {isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+          Delete account
+        </button>
         <button
           onClick={handleSave}
           disabled={isSaving}
