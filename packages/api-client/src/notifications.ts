@@ -12,9 +12,12 @@ export function createNotificationsApi(client: ApiClient) {
   const tz = () => -new Date().getTimezoneOffset();
 
   return {
-    list: (params?: { page?: number; limit?: number }) =>
+    list: (params?: { page?: number; limit?: number; unreadOnly?: boolean }) =>
       client.get<{ success: boolean; data: NotificationsResponse }>(endpoints.notifications.list, {
-        params,
+        params: {
+          ...params,
+          unreadOnly: params?.unreadOnly ? 'true' : undefined,
+        },
       }),
 
     getUnreadCount: () =>

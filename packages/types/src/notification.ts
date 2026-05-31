@@ -15,6 +15,7 @@ export interface AppNotification {
   url?: string | null;
   isRead: boolean;
   createdAt: string;
+  actorId?: string | null;
   actor?: NotificationActor | null;
   metadata?: Record<string, unknown>;
 }

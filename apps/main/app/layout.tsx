@@ -5,8 +5,10 @@ import { bootstrapAuth, refreshAuthWhenOnline } from '@/lib/auth/bootstrapAuth';
 import { initOfflineSync } from '@/lib/progress/progressService';
 import { flushReadingActivity } from '@/lib/reading/recordActivity';
 import { InstallPrompt } from '@/components/InstallPrompt';
+import { NotificationNavListener } from '@/components/NotificationNavListener';
 import { AppProviders } from '@/providers/app-providers';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
+import { OfflineBootstrapRedirect } from '@/components/OfflineBootstrapRedirect';
 import { AuthHashRedirect } from '@/components/AuthHashRedirect';
 import { isPublicAppPath } from '@/lib/auth/publicRoutes';
 import './globals.css';
@@ -50,6 +52,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <AuthHashRedirect />
         <AppProviders>{children}</AppProviders>
+        <NotificationNavListener />
+        <OfflineBootstrapRedirect />
         <OfflineIndicator />
         <InstallPrompt />
       </body>

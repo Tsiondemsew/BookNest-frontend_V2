@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Bell, CheckCheck, Loader2, MessageCircle, UserPlus } from 'lucide-react';
 import { notificationsApi } from '@/lib/api/client';
+import { getNotificationHref } from '@/lib/notifications/navigation';
 import { formatRelativeTime } from '@/features/community/utils/timeFormat';
 import type { AppNotification } from '@repo/types';
 
@@ -24,7 +25,7 @@ export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const panelRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const loadUnreadCount = useCallback(async () => {
     try {
@@ -38,9 +39,9 @@ export function NotificationBell() {
   const loadNotifications = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await notificationsApi.list({ page: 1, limit: 15 });
+      const response = await notificationsApi.list({ page: 1, limit: 15, unreadOnly: true });
       setNotifications(response.data.notifications);
-      setUnreadCount(response.data.notifications.filter((n) => !n.isRead).length);
+      setUnreadCount(response.data.notifications.length);
     } catch {
       setNotifications([]);
     } finally {
@@ -61,55 +62,95 @@ export function NotificationBell() {
 
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
+      if (rootRef.current?.contains(event.target as Node)) return;
+      setOpen(false);
     };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
   }, []);
 
-  const handleOpen = () => {
-    setOpen((value) => !value);
+  const dismissNotification = (notification: AppNotification) => {
+    setNotifications((prev) => prev.filter((item) => item.id !== notification.id));
+    setUnreadCount((count) => Math.max(0, count - 1));
+    void notificationsApi.markAsRead(notification.id).catch(() => {
+      void loadUnreadCount();
+    });
   };
 
-  const handleNotificationClick = async (notification: AppNotification) => {
-    if (!notification.isRead) {
-      try {
-        await notificationsApi.markAsRead(notification.id);
-        setNotifications((prev) =>
-          prev.map((item) =>
-            item.id === notification.id ? { ...item, isRead: true } : item
-          )
-        );
-        setUnreadCount((count) => Math.max(0, count - 1));
-      } catch {
-        /* continue navigation */
-      }
-    }
-
+  const handleNotificationClick = (notification: AppNotification) => {
+    const href = getNotificationHref(notification);
     setOpen(false);
-    if (notification.url) {
-      router.push(notification.url);
+    dismissNotification(notification);
+
+    if (href) {
+      router.push(href);
     }
   };
 
   const handleMarkAllRead = async () => {
     try {
       await notificationsApi.markAllAsRead();
-      setNotifications((prev) => prev.map((item) => ({ ...item, isRead: true })));
+      setNotifications([]);
       setUnreadCount(0);
     } catch {
       /* ignore */
     }
   };
 
-  return (
-    <div className="relative" ref={panelRef}>
+  const renderNotificationItem = (notification: AppNotification) => {
+    const href = getNotificationHref(notification);
+    const content = (
+      <div className="flex gap-3">
+        <div className="mt-0.5 flex-shrink-0">
+          {notification.actor?.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={notification.actor.avatarUrl}
+              alt=""
+              className="w-9 h-9 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-9 h-9 rounded-full bg-[#2C3E50]/10 flex items-center justify-center">
+              <NotificationIcon type={notification.type} />
+            </div>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-[#1A2A3A] truncate">{notification.title}</p>
+          <p className="text-sm text-[#4A5568] line-clamp-2 mt-0.5">{notification.body}</p>
+          <p className="text-xs text-[#4A5568]/80 mt-1">
+            {formatRelativeTime(notification.createdAt)}
+          </p>
+        </div>
+        <span className="w-2 h-2 rounded-full bg-[#B85C38] flex-shrink-0 mt-2" />
+      </div>
+    );
+
+    return (
       <button
         type="button"
-        onClick={handleOpen}
-        className="relative p-2 rounded-lg text-[#4A5568] hover:bg-[#F5F1EB] hover:text-[#1A2A3A] transition-colors"
+        onClick={(e) => {
+          e.stopPropagation();
+          handleNotificationClick(notification);
+        }}
+        className={`block w-full text-left px-4 py-3 hover:bg-[#FDFBF7] transition-colors touch-manipulation active:bg-[#F5F1EB] bg-[#B85C38]/[0.04] ${
+          href ? 'cursor-pointer' : 'cursor-default opacity-70'
+        }`}
+      >
+        {content}
+      </button>
+    );
+  };
+
+  return (
+    <div className="relative" ref={rootRef}>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((value) => !value);
+        }}
+        className="relative p-2 rounded-lg text-[#4A5568] hover:bg-[#F5F1EB] hover:text-[#1A2A3A] transition-colors touch-manipulation"
         aria-label="Notifications"
         aria-expanded={open}
       >
@@ -122,17 +163,17 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-[min(92vw,360px)] bg-white border border-[#E8E2D9] rounded-2xl shadow-xl z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-[min(92vw,360px)] bg-white border border-[#E8E2D9] rounded-2xl shadow-xl z-[100] overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-[#E8E2D9]">
             <h2 className="font-semibold text-[#1A2A3A]">Notifications</h2>
             {unreadCount > 0 && (
               <button
                 type="button"
                 onClick={() => void handleMarkAllRead()}
-                className="text-xs font-medium text-[#B85C38] hover:underline flex items-center gap-1"
+                className="text-xs font-medium text-[#B85C38] hover:underline flex items-center gap-1 touch-manipulation"
               >
                 <CheckCheck size={14} />
-                Mark all read
+                Clear all
               </button>
             )}
           </div>
@@ -144,51 +185,12 @@ export function NotificationBell() {
               </div>
             ) : notifications.length === 0 ? (
               <div className="py-10 px-4 text-center text-sm text-[#4A5568]">
-                No notifications yet.
+                No new notifications.
               </div>
             ) : (
               <ul className="divide-y divide-[#E8E2D9]/70">
                 {notifications.map((notification) => (
-                  <li key={notification.id}>
-                    <button
-                      type="button"
-                      onClick={() => void handleNotificationClick(notification)}
-                      className={`w-full text-left px-4 py-3 hover:bg-[#FDFBF7] transition-colors ${
-                        !notification.isRead ? 'bg-[#B85C38]/[0.04]' : ''
-                      }`}
-                    >
-                      <div className="flex gap-3">
-                        <div className="mt-0.5 flex-shrink-0">
-                          {notification.actor?.avatarUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={notification.actor.avatarUrl}
-                              alt=""
-                              className="w-9 h-9 rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-9 h-9 rounded-full bg-[#2C3E50]/10 flex items-center justify-center">
-                              <NotificationIcon type={notification.type} />
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-[#1A2A3A] truncate">
-                            {notification.title}
-                          </p>
-                          <p className="text-sm text-[#4A5568] line-clamp-2 mt-0.5">
-                            {notification.body}
-                          </p>
-                          <p className="text-xs text-[#4A5568]/80 mt-1">
-                            {formatRelativeTime(notification.createdAt)}
-                          </p>
-                        </div>
-                        {!notification.isRead && (
-                          <span className="w-2 h-2 rounded-full bg-[#B85C38] flex-shrink-0 mt-2" />
-                        )}
-                      </div>
-                    </button>
-                  </li>
+                  <li key={notification.id}>{renderNotificationItem(notification)}</li>
                 ))}
               </ul>
             )}

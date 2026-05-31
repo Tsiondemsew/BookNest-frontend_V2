@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { WifiOff } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { canUseOfflineSession } from '@/lib/offline/offlineAccess';
 
 export function OfflineIndicator() {
   const [isOnline, setIsOnline] = useState(true);
@@ -38,8 +39,12 @@ export function OfflineIndicator() {
           <p className="font-medium">You&apos;re offline</p>
           <p className="text-white/80 text-xs mt-0.5">
             {user
-              ? 'Browsing works from cache. Downloaded books and saved pages still work — connect to refresh data.'
-              : 'Sign in requires an internet connection.'}
+              ? canUseOfflineSession()
+                ? 'Downloaded books in Library still work. Connect to refresh feeds, messages, and marketplace.'
+                : 'Install the BookNest app to read downloaded books offline. Connect to refresh data.'
+              : canUseOfflineSession()
+                ? 'Connect to the internet to sign in.'
+                : 'Sign in requires an internet connection.'}
           </p>
         </div>
       </div>

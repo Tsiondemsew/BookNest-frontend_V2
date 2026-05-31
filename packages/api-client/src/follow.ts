@@ -1,4 +1,5 @@
 import { ApiClient } from './client';
+import type { FollowListResponse } from '@repo/types';
 
 export function createFollowApi(client: ApiClient) {
   return {
@@ -15,7 +16,7 @@ export function createFollowApi(client: ApiClient) {
       if (page) params.append('page', String(page));
       if (limit) params.append('limit', String(limit));
       const qs = params.toString();
-      return client.get<{ success: boolean; data: unknown }>(
+      return client.get<{ success: boolean; data: FollowListResponse }>(
         qs ? `/api/follow/${userId}/followers?${qs}` : `/api/follow/${userId}/followers`
       );
     },
@@ -24,7 +25,7 @@ export function createFollowApi(client: ApiClient) {
       if (page) params.append('page', String(page));
       if (limit) params.append('limit', String(limit));
       const qs = params.toString();
-      return client.get<{ success: boolean; data: unknown }>(
+      return client.get<{ success: boolean; data: FollowListResponse }>(
         qs ? `/api/follow/${userId}/following?${qs}` : `/api/follow/${userId}/following`
       );
     },

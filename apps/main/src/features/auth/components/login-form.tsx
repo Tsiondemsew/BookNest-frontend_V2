@@ -16,6 +16,8 @@ export function LoginForm() {
   const redirectTo = searchParams.get('redirect') || '/dashboard';
   const verified = searchParams.get('verified') === '1';
   const passwordReset = searchParams.get('reset') === '1';
+  const sessionExpired = searchParams.get('session') === 'expired';
+  const offlineParam = searchParams.get('offline') === '1';
 
   const [showPassword, setShowPassword] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
@@ -52,7 +54,11 @@ export function LoginForm() {
     setGeneralError(null);
 
     if (!navigator.onLine) {
-      setGeneralError('You must be online to sign in. Open a downloaded book from Library if you are offline.');
+      setGeneralError(
+        sessionExpired
+          ? 'Your session has ended. Please connect to the internet to sign in again.'
+          : 'You must be online to sign in. If you were signed in before, reopen the installed BookNest app — your session may still work offline.'
+      );
       return;
     }
 
@@ -100,12 +106,21 @@ export function LoginForm() {
         </div>
       )}
 
-      {isOffline && (
+      {(isOffline || offlineParam) && (
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
           <WifiOff className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-amber-900">
             <p className="font-medium">You are offline</p>
-            <p className="mt-1">Sign in requires an internet connection. If you were signed in before, reopen the app — your session may still work offline.</p>
+            {sessionExpired ? (
+              <p className="mt-1">
+                Your session has ended. Connect to the internet to sign in again.
+              </p>
+            ) : (
+              <p className="mt-1">
+                Sign in requires an internet connection. If you still have a valid session, reopen the
+                installed BookNest app to read downloaded books offline.
+              </p>
+            )}
           </div>
         </div>
       )}

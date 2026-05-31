@@ -5,8 +5,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { MapPin, Link as LinkIcon, Calendar, Settings, MessageCircle, Lock } from 'lucide-react';
 import { FollowButton } from './FollowButton';
+import { FollowListModal } from './FollowListModal';
 import { formatRelativeTime } from '../../utils/timeFormat';
 import { CommunityAvatar, CommunityCard, cn, ui } from '../../ui';
+
+type FollowListKind = 'followers' | 'following';
 
 interface ProfileHeaderProps {
   profile: {
@@ -40,6 +43,7 @@ interface ProfileHeaderProps {
 
 export function ProfileHeader({ profile, onEdit, onSettings }: ProfileHeaderProps) {
   const [coverImageError, setCoverImageError] = useState(false);
+  const [followList, setFollowList] = useState<FollowListKind | null>(null);
   const isReader = !profile.role || profile.role === 'reader';
   const roleBadge =
     profile.role === 'author'
@@ -140,16 +144,26 @@ export function ProfileHeader({ profile, onEdit, onSettings }: ProfileHeaderProp
           </div>
 
           <div className="flex gap-6 pt-3 border-t border-bn-border/60">
-            {[
-              { n: profile.postCount, label: 'Posts' },
-              { n: profile.followerCount, label: 'Followers' },
-              { n: profile.followingCount, label: 'Following' },
-            ].map(({ n, label }) => (
-              <div key={label}>
-                <span className="font-bold text-bn-ink tabular-nums">{n}</span>
-                <span className="text-sm text-bn-muted ml-1.5">{label}</span>
-              </div>
-            ))}
+            <div>
+              <span className="font-bold text-bn-ink tabular-nums">{profile.postCount}</span>
+              <span className="text-sm text-bn-muted ml-1.5">Posts</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setFollowList('followers')}
+              className="text-left hover:opacity-80 transition-opacity touch-manipulation"
+            >
+              <span className="font-bold text-bn-ink tabular-nums">{profile.followerCount}</span>
+              <span className="text-sm text-bn-muted ml-1.5">Followers</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFollowList('following')}
+              className="text-left hover:opacity-80 transition-opacity touch-manipulation"
+            >
+              <span className="font-bold text-bn-ink tabular-nums">{profile.followingCount}</span>
+              <span className="text-sm text-bn-muted ml-1.5">Following</span>
+            </button>
           </div>
 
           {isReader && profile.readingStats && (
@@ -204,6 +218,14 @@ export function ProfileHeader({ profile, onEdit, onSettings }: ProfileHeaderProp
           )}
         </div>
       </div>
+
+      <FollowListModal
+        userId={profile.id}
+        kind={followList || 'followers'}
+        title={followList === 'following' ? 'Following' : 'Followers'}
+        isOpen={followList !== null}
+        onClose={() => setFollowList(null)}
+      />
     </CommunityCard>
   );
 }

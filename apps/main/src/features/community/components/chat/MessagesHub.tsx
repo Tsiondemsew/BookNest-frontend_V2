@@ -93,6 +93,11 @@ export function MessagesHub({ initialChatId }: MessagesHubProps) {
   }, [loadChats]);
 
   useEffect(() => {
+    if (!selectedChatId) return;
+    void loadChats();
+  }, [selectedChatId, loadChats]);
+
+  useEffect(() => {
     const startUserId = searchParams.get('startUser');
     if (!startUserId || handledStartUser.current === startUserId) return;
     handledStartUser.current = startUserId;

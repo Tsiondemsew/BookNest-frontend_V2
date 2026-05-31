@@ -6,6 +6,10 @@ import { useAuthStore } from '@/stores/authStore';
 import GuestLayout from './GuestLayout';
 import DashboardLayout from './DashboardLayout';
 import { resolvePostLoginPath } from '@/lib/auth/postLoginRedirect';
+import {
+  canUseOfflineSession,
+  offlineLoginPath,
+} from '@/lib/offline/offlineAccess';
 
 // Routes that should ALWAYS use guest layout (even if logged in)
 const GUEST_ONLY_ROUTES = ['/login', '/register', '/onboarding'];
@@ -69,7 +73,10 @@ export default function MainLayout({
       }
 
       if (!isAuthenticated && isProtectedRoute && !isPublicRoute) {
-        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        const offline = typeof navigator !== 'undefined' && !navigator.onLine;
+        if (offline && canUseOfflineSession()) {
+          router.push(offlineLoginPath(true));
+        } else if (offline) {
           router.push(`/login?redirect=${encodeURIComponent(pathname || '/')}&offline=1`);
         } else {
           router.push(`/login?redirect=${encodeURIComponent(pathname || '/')}`);

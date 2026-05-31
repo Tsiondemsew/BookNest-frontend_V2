@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { authApi } from '@/lib/api/client';
 import { getSession, saveSession, clearSession, isSessionValid } from '@/lib/db/authSession';
 import { getAuthFieldErrors, getFriendlyAuthMessage } from '@/lib/auth/mapAuthError';
+import { canUseOfflineSession } from '@/lib/offline/offlineAccess';
 import type { SessionUser } from '@repo/types';
 import { ValidationError } from '@repo/api-client';
 
@@ -166,6 +167,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isInitializing: true });
 
     if (!navigator.onLine) {
+      if (!canUseOfflineSession()) {
+        set({
+          user: null,
+          isAuthenticated: false,
+          isOfflineMode: false,
+          isInitializing: false,
+        });
+        return;
+      }
       await get().restoreOfflineSession();
       return;
     }
@@ -200,6 +210,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         });
       }
     } catch {
+      if (!canUseOfflineSession()) {
+        set({
+          user: null,
+          isAuthenticated: false,
+          isOfflineMode: false,
+          isInitializing: false,
+        });
+        return;
+      }
       const restored = await get().restoreOfflineSession();
       if (!restored) {
         set({
@@ -214,7 +233,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   refreshSession: async () => {
     if (!navigator.onLine) {
-      await get().restoreOfflineSession();
+      if (canUseOfflineSession()) {
+        await get().restoreOfflineSession();
+      }
       return;
     }
 
@@ -242,14 +263,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ user: null, isAuthenticated: false, isOfflineMode: false });
       }
     } catch {
-      const restored = await get().restoreOfflineSession();
-      if (!restored) {
+      if (canUseOfflineSession()) {
+        const restored = await get().restoreOfflineSession();
+        if (!restored) {
+          set({ user: null, isAuthenticated: false, isOfflineMode: false });
+        }
+      } else {
         set({ user: null, isAuthenticated: false, isOfflineMode: false });
       }
     }
   },
 
   restoreOfflineSession: async () => {
+    if (!canUseOfflineSession()) {
+      set({ isInitializing: false });
+      return false;
+    }
+
     const valid = await isSessionValid();
     if (!valid) {
       set({ isInitializing: false });

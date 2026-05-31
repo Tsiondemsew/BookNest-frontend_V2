@@ -122,15 +122,6 @@ export default function CommunityPage() {
 
         <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
           <CommunityUserSearch />
-
-          <div className="bg-white rounded-2xl border border-[#E8E2D9] p-4 shadow-sm">
-            <h3 className="font-semibold text-[#1A2A3A] mb-3">Tips</h3>
-            <ul className="space-y-2 text-sm text-[#4A5568]">
-              <li>Every published post is visible to everyone</li>
-              <li>Follow people you like — their posts show a Following badge</li>
-              <li>Tag books from the market to recommend reads</li>
-            </ul>
-          </div>
         </aside>
       </div>
     </div>

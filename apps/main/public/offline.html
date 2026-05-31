@@ -29,35 +29,92 @@
   <div class="container">
     <div class="spinner" aria-hidden="true"></div>
     <h1>Opening BookNest…</h1>
-    <p id="status">Loading your offline session</p>
+    <p id="status">Checking your offline session</p>
   </div>
   <script>
     (function () {
       var status = document.getElementById('status');
-      var routes = ['/library', '/dashboard', '/market', '/login', '/'];
-      if (!('caches' in window)) {
-        status.textContent = 'You are offline. Open BookNest once while online, then try again.';
+      var CLOCK_SKEW_MS = 5 * 60 * 1000;
+
+      function isStandalonePwa() {
+        var mq = window.matchMedia('(display-mode: standalone)').matches;
+        var ios = typeof navigator.standalone === 'boolean' && navigator.standalone === true;
+        return mq || ios;
+      }
+
+      function openAuthDb() {
+        return new Promise(function (resolve, reject) {
+          var req = indexedDB.open('BookNestAuth', 1);
+          req.onerror = function () { reject(req.error); };
+          req.onsuccess = function () { resolve(req.result); };
+        });
+      }
+
+      function getCachedSession() {
+        return openAuthDb().then(function (db) {
+          return new Promise(function (resolve) {
+            try {
+              var tx = db.transaction('sessions', 'readonly');
+              var store = tx.objectStore('sessions');
+              var req = store.get('current');
+              req.onsuccess = function () { resolve(req.result || null); };
+              req.onerror = function () { resolve(null); };
+            } catch (e) {
+              resolve(null);
+            }
+          });
+        }).catch(function () { return null; });
+      }
+
+      function sessionIsValid(session) {
+        if (!session || !session.expiresAt) return false;
+        return Date.now() < new Date(session.expiresAt).getTime() + CLOCK_SKEW_MS;
+      }
+
+      function tryCachedRoutes() {
+        if (!('caches' in window)) {
+          status.textContent = 'You are offline. Open BookNest once while online, then try again.';
+          return;
+        }
+        var routes = ['/library', '/dashboard', '/login', '/'];
+        caches.open('booknest-pages').then(function (cache) {
+          var i = 0;
+          function tryNext() {
+            if (i >= routes.length) {
+              status.textContent = 'You are offline. Visit BookNest online first to cache the app.';
+              return;
+            }
+            var route = routes[i++];
+            cache.match(route, { ignoreSearch: true }).then(function (res) {
+              if (res) {
+                window.location.replace(route);
+              } else {
+                tryNext();
+              }
+            }).catch(tryNext);
+          }
+          tryNext();
+        }).catch(function () {
+          status.textContent = 'You are offline. Connect to load BookNest for the first time.';
+        });
+      }
+
+      if (!isStandalonePwa()) {
+        status.textContent = 'Offline mode works in the installed BookNest app. Install the app while online first.';
+        tryCachedRoutes();
         return;
       }
-      caches.open('booknest-pages').then(function (cache) {
-        var i = 0;
-        function tryNext() {
-          if (i >= routes.length) {
-            status.textContent = 'You are offline. Visit BookNest online first to cache the app.';
-            return;
-          }
-          var route = routes[i++];
-          cache.match(route, { ignoreSearch: true }).then(function (res) {
-            if (res) {
-              window.location.replace(route);
-            } else {
-              tryNext();
-            }
-          }).catch(tryNext);
+
+      getCachedSession().then(function (session) {
+        if (sessionIsValid(session)) {
+          window.location.replace('/library');
+          return;
         }
-        tryNext();
-      }).catch(function () {
-        status.textContent = 'You are offline. Connect to load BookNest for the first time.';
+        if (!navigator.onLine) {
+          window.location.replace('/login?offline=1&session=expired');
+          return;
+        }
+        tryCachedRoutes();
       });
     })();
   </script>

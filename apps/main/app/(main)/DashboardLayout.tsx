@@ -27,6 +27,7 @@ import {
   DollarSign
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { canUseOfflineSession, offlineLoginPath } from '@/lib/offline/offlineAccess';
 import { isPublicAppPath } from '@/lib/auth/publicRoutes';
 import { usePresenceHeartbeat } from '@/hooks/usePresenceHeartbeat';
 import { NotificationBell } from '@/components/NotificationBell';
@@ -150,7 +151,10 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
 
   useEffect(() => {
     if (!isAuthenticated && pathname && !isPublicAppPath(pathname)) {
-      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      const offline = typeof navigator !== 'undefined' && !navigator.onLine;
+      if (offline && canUseOfflineSession()) {
+        router.push(offlineLoginPath(true));
+      } else if (offline) {
         router.push(`/login?redirect=${encodeURIComponent(pathname)}&offline=1`);
       } else {
         router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
