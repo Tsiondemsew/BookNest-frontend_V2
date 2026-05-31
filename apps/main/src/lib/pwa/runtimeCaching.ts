@@ -4,7 +4,10 @@ function escapeRegex(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const apiBase =
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  'http://localhost:5000';
 const apiPattern = new RegExp(`^${escapeRegex(apiBase)}/api/.*`, 'i');
 
 /** Never cache auth or API traffic — offline data uses IndexedDB instead. */

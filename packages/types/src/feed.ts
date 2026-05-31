@@ -67,7 +67,7 @@ export interface FeedResponse {
 
 export interface CreatePostRequest {
   content: string;
-  image_url?: string;
+  image_url?: string | null;
   tagged_users?: string[];
   tagged_books?: string[];
 }

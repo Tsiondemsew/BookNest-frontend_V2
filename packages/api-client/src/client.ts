@@ -13,7 +13,9 @@ import { parseApiErrorBody } from './parseApiError';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
-const envApiUrl = (globalThis as any).process?.env?.NEXT_PUBLIC_API_URL;
+const envApiUrl =
+  (globalThis as any).process?.env?.NEXT_PUBLIC_API_URL ||
+  (globalThis as any).process?.env?.NEXT_PUBLIC_API_BASE_URL;
 
 export const apiConfig: ApiConfig = {
   baseUrl: envApiUrl || 'http://localhost:5000',

@@ -28,20 +28,25 @@ function GenresPageContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchGenres = async () => {
       try {
         const payload = await booksApi.getGenres();
         setGenres(payload.data || []);
+        setLoadError(null);
       } catch (err) {
         console.error('Failed to load genres:', err);
+        setLoadError(
+          'Could not reach the BookNest server. Make sure the backend is running and NEXT_PUBLIC_API_URL is set correctly.'
+        );
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchGenres();
+    void fetchGenres();
   }, []);
 
   useEffect(() => {
@@ -131,6 +136,12 @@ function GenresPageContent() {
                 Pick 1–5 genres so we can personalize your feed. You can skip and do this later.
               </p>
             </div>
+
+            {loadError && (
+              <div className="mb-6 p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-lg text-sm text-center">
+                {loadError}
+              </div>
+            )}
 
             {error && (
               <div className="mb-6 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm text-center">
