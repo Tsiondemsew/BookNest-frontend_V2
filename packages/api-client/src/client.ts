@@ -93,7 +93,21 @@ export class ApiClient {
         : JSON.stringify(options.body);
     }
 
-    const response = await fetch(url, init);
+    let response;
+    try {
+      response = await fetch(url, init);
+    } catch {
+      const isLocalDev =
+        process.env.NODE_ENV === 'development' &&
+        (url.includes('localhost') || url.includes('127.0.0.1'));
+      throw new ApiClientError(
+        'NETWORK_ERROR',
+        0,
+        isLocalDev
+          ? 'Could not reach the server. Is the backend running on port 5000?'
+          : 'Unable to connect right now. Please try again in a moment.'
+      );
+    }
     const rawText = await response.text();
     const contentType = response.headers.get('content-type');
 

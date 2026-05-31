@@ -28,6 +28,8 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { isPublicAppPath } from '@/lib/auth/publicRoutes';
+import { usePresenceHeartbeat } from '@/hooks/usePresenceHeartbeat';
+import { NotificationBell } from '@/components/NotificationBell';
 
 // Navigation structure - clean, grouped
 // Updated navigation structure - Community FIRST
@@ -143,6 +145,8 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
   const router = useRouter();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { logout, isAuthenticated } = useAuthStore();
+
+  usePresenceHeartbeat();
 
   useEffect(() => {
     if (!isAuthenticated && pathname && !isPublicAppPath(pathname)) {
@@ -286,7 +290,9 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
               <h1 className="text-xl font-semibold text-[#1A2A3A]">{getPageTitle()}</h1>
             </div>
             
-            <div className="flex items-center gap-3" />
+            <div className="flex items-center gap-3">
+              <NotificationBell />
+            </div>
           </div>
         </header>
 

@@ -154,6 +154,7 @@ export function FeedPost({ post, onLikeToggle, showComments = false }: FeedPostP
 
           <ShareButton
             postId={post.id}
+            post={post}
             shareCount={shareCount}
             onShareCountChange={setShareCount}
           />

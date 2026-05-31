@@ -1,14 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Search, Users, Loader2 } from 'lucide-react';
-import { useAuthStore } from '@/stores/authStore';
+import { X, Search, Loader2 } from 'lucide-react';
+import { usersApi } from '@/lib/api/client';
+import { CommunityAvatar, cn, ui } from '@/features/community/ui';
 
-interface User {
+interface SearchUser {
   id: string;
   name: string;
-  username: string;
-  avatarUrl?: string;
+  username?: string;
+  avatarUrl?: string | null;
 }
 
 interface CreateGroupModalProps {
@@ -18,109 +19,101 @@ interface CreateGroupModalProps {
 }
 
 export function CreateGroupModal({ isOpen, onClose, onCreateGroup }: CreateGroupModalProps) {
-  const { user } = useAuthStore();
   const [step, setStep] = useState<'info' | 'members'>('info');
   const [groupName, setGroupName] = useState('');
-  const [groupAvatar, setGroupAvatar] = useState<File | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMembers, setSelectedMembers] = useState<User[]>([]);
-  const [searchResults, setSearchResults] = useState<User[]>([]);
+  const [selectedMembers, setSelectedMembers] = useState<SearchUser[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
+  const reset = () => {
+    setStep('info');
+    setGroupName('');
+    setSearchQuery('');
+    setSelectedMembers([]);
+    setSearchResults([]);
+  };
+
   const searchUsers = async (query: string) => {
+    setSearchQuery(query);
     if (!query.trim() || query.length < 2) {
       setSearchResults([]);
       return;
     }
     setIsSearching(true);
-    // TODO: API call to search users
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setSearchResults([
-      { id: '2', name: 'Jane Smith', username: 'janesmith' },
-      { id: '3', name: 'Bob Johnson', username: 'bobjohnson' },
-    ]);
-    setIsSearching(false);
-  };
-
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    searchUsers(query);
-  };
-
-  const toggleMember = (member: User) => {
-    if (selectedMembers.find(m => m.id === member.id)) {
-      setSelectedMembers(prev => prev.filter(m => m.id !== member.id));
-    } else {
-      setSelectedMembers(prev => [...prev, member]);
+    try {
+      const response = await usersApi.searchCommunityUsers(query.trim());
+      setSearchResults(response.data || []);
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
     }
+  };
+
+  const toggleMember = (member: SearchUser) => {
+    setSelectedMembers((prev) =>
+      prev.some((m) => m.id === member.id)
+        ? prev.filter((m) => m.id !== member.id)
+        : [...prev, member]
+    );
   };
 
   const handleCreate = async () => {
     if (!groupName.trim()) return;
     setIsCreating(true);
-    await onCreateGroup(groupName, selectedMembers.map(m => m.id));
-    setIsCreating(false);
-    onClose();
-    setGroupName('');
-    setSelectedMembers([]);
-    setStep('info');
+    try {
+      await onCreateGroup(groupName.trim(), selectedMembers.map((m) => m.id));
+      reset();
+      onClose();
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-md w-full">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[#E8E2D9]">
-          <h2 className="text-lg font-semibold text-[#1A2A3A]">
-            {step === 'info' ? 'Create New Group' : 'Add Members'}
+      <div className="bg-white rounded-2xl max-w-md w-full border border-bn-border shadow-xl">
+        <div className="flex items-center justify-between p-4 border-b border-bn-border/70">
+          <h2 className="text-lg font-semibold text-bn-ink">
+            {step === 'info' ? 'Create group' : 'Add members'}
           </h2>
-          <button onClick={onClose} className="p-1 text-[#4A5568] hover:text-[#1A2A3A]">
+          <button
+            type="button"
+            onClick={() => {
+              reset();
+              onClose();
+            }}
+            className="p-1 text-bn-muted hover:text-bn-ink"
+          >
             <X size={20} />
           </button>
         </div>
 
-        {/* Step 1: Group Info */}
         {step === 'info' && (
           <div className="p-4 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-[#1A2A3A] mb-1">
-                Group Name *
-              </label>
+              <label className="block text-sm font-medium text-bn-ink mb-1">Group name</label>
               <input
                 type="text"
                 value={groupName}
                 onChange={(e) => setGroupName(e.target.value)}
-                placeholder="e.g., Book Lovers Club"
-                className="w-full px-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38] focus:ring-1 focus:ring-[#B85C38]"
+                placeholder="e.g. Fantasy Book Club"
+                className={ui.input}
               />
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[#1A2A3A] mb-1">
-                Group Avatar (optional)
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setGroupAvatar(e.target.files?.[0] || null)}
-                className="w-full"
-              />
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <button
-                onClick={onClose}
-                className="flex-1 px-4 py-2 border border-[#E8E2D9] text-[#4A5568] rounded-lg hover:bg-[#F5F1EB] transition-colors"
-              >
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={onClose} className={cn(ui.btnSecondary, 'flex-1')}>
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={() => setStep('members')}
                 disabled={!groupName.trim()}
-                className="flex-1 px-4 py-2 bg-[#B85C38] text-white rounded-lg hover:bg-[#8E735B] transition-colors disabled:opacity-50"
+                className={cn(ui.btnPrimary, 'flex-1')}
               >
                 Next
               </button>
@@ -128,88 +121,83 @@ export function CreateGroupModal({ isOpen, onClose, onCreateGroup }: CreateGroup
           </div>
         )}
 
-        {/* Step 2: Add Members */}
         {step === 'members' && (
           <div className="p-4 space-y-4">
-            {/* Search */}
             <div className="relative">
-              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4A5568]" />
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-bn-muted" />
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                placeholder="Search users..."
-                className="w-full pl-10 pr-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38]"
+                onChange={(e) => searchUsers(e.target.value)}
+                placeholder="Search members to add…"
+                className={cn(ui.input, 'pl-10')}
               />
             </div>
 
-            {/* Selected Members */}
             {selectedMembers.length > 0 && (
-              <div>
-                <p className="text-sm text-[#4A5568] mb-2">Selected ({selectedMembers.length})</p>
-                <div className="flex flex-wrap gap-2">
-                  {selectedMembers.map((member) => (
-                    <span
-                      key={member.id}
-                      className="flex items-center gap-1 px-2 py-1 bg-[#F5F1EB] rounded-full text-sm"
-                    >
-                      {member.name}
-                      <button
-                        onClick={() => toggleMember(member)}
-                        className="ml-1 text-[#4A5568] hover:text-red-500"
-                      >
-                        <X size={12} />
-                      </button>
-                    </span>
-                  ))}
-                </div>
+              <div className="flex flex-wrap gap-2">
+                {selectedMembers.map((member) => (
+                  <span
+                    key={member.id}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-bn-surface rounded-full text-sm"
+                  >
+                    {member.name}
+                    <button type="button" onClick={() => toggleMember(member)}>
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
               </div>
             )}
 
-            {/* Search Results */}
-            {isSearching ? (
-              <div className="flex justify-center py-8">
-                <Loader2 size={24} className="animate-spin text-[#B85C38]" />
-              </div>
-            ) : searchResults.length > 0 ? (
-              <div className="space-y-2">
-                {searchResults.map((result) => (
-                  <div
-                    key={result.id}
-                    onClick={() => toggleMember(result)}
-                    className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
-                      selectedMembers.find(m => m.id === result.id)
-                        ? 'bg-[#F5F1EB] border border-[#B85C38]'
-                        : 'hover:bg-[#F5F1EB]'
-                    }`}
-                  >
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#2C3E50] to-[#B85C38] flex items-center justify-center text-white">
-                      {result.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="font-medium text-[#1A2A3A]">{result.name}</p>
-                      <p className="text-xs text-[#4A5568]">@{result.username}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : searchQuery.length >= 2 ? (
-              <p className="text-center text-[#4A5568] py-8">No users found</p>
-            ) : null}
+            <div className="max-h-48 overflow-y-auto space-y-1">
+              {isSearching ? (
+                <div className="flex justify-center py-6">
+                  <Loader2 size={22} className="animate-spin text-bn-primary" />
+                </div>
+              ) : searchResults.length > 0 ? (
+                searchResults.map((result) => {
+                  const selected = selectedMembers.some((m) => m.id === result.id);
+                  return (
+                    <button
+                      key={result.id}
+                      type="button"
+                      onClick={() => toggleMember(result)}
+                      className={cn(
+                        'w-full flex items-center gap-3 p-2 rounded-xl text-left transition-colors',
+                        selected ? 'bg-bn-primary/10 border border-bn-primary/30' : 'hover:bg-bn-surface'
+                      )}
+                    >
+                      <CommunityAvatar name={result.name} src={result.avatarUrl || undefined} size="sm" />
+                      <div>
+                        <p className="font-medium text-sm text-bn-ink">{result.name}</p>
+                        {result.username && (
+                          <p className="text-xs text-bn-muted">@{result.username}</p>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })
+              ) : searchQuery.length >= 2 ? (
+                <p className="text-center text-bn-muted py-6 text-sm">No users found</p>
+              ) : null}
+            </div>
 
-            <div className="flex gap-3 pt-4">
-              <button
-                onClick={() => setStep('info')}
-                className="flex-1 px-4 py-2 border border-[#E8E2D9] text-[#4A5568] rounded-lg hover:bg-[#F5F1EB] transition-colors"
-              >
+            <p className="text-xs text-bn-muted">
+              You can also invite more people later with a group link.
+            </p>
+
+            <div className="flex gap-3">
+              <button type="button" onClick={() => setStep('info')} className={cn(ui.btnSecondary, 'flex-1')}>
                 Back
               </button>
               <button
-                onClick={handleCreate}
+                type="button"
+                onClick={() => void handleCreate()}
                 disabled={isCreating}
-                className="flex-1 px-4 py-2 bg-[#B85C38] text-white rounded-lg hover:bg-[#8E735B] transition-colors disabled:opacity-50"
+                className={cn(ui.btnPrimary, 'flex-1')}
               >
-                {isCreating ? <Loader2 size={16} className="animate-spin mx-auto" /> : 'Create Group'}
+                {isCreating ? <Loader2 size={16} className="animate-spin mx-auto" /> : 'Create group'}
               </button>
             </div>
           </div>

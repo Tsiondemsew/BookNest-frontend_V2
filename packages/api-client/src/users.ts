@@ -27,5 +27,11 @@ export function createUsersApi(client: ApiClient) {
         `${endpoints.users.search}?${searchParams.toString()}`
       );
     },
+
+    updatePresence: () =>
+      client.post<{ success: boolean; data: { lastSeenAt: string } }>(
+        endpoints.users.presence,
+        {}
+      ),
   };
 }

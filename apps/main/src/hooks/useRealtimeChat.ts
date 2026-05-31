@@ -11,6 +11,8 @@ export interface RealtimeMessage {
   sender_id: string;
   chat_id: string;
   is_read: boolean;
+  post_id?: string | null;
+  deleted_for_everyone_at?: string | null;
   created_at: string;
   users?: {
     id: string;
@@ -43,11 +45,9 @@ export function useRealtimeChat(chatId: string | null) {
           filter: `chat_id=eq.${chatId}`,
         },
         (payload: RealtimePostgresChangesPayload<RealtimeMessage>) => {
-          console.log('New message payload:', payload);
           const newMessage = payload.new;
-          // Check if newMessage exists and has sender_id
           if (newMessage && 'sender_id' in newMessage && newMessage.sender_id !== user.id) {
-            setNewMessages(prev => [...prev, newMessage]);
+            setNewMessages((prev) => [...prev, newMessage]);
           }
         }
       )
@@ -60,14 +60,12 @@ export function useRealtimeChat(chatId: string | null) {
           filter: `chat_id=eq.${chatId}`,
         },
         (payload: RealtimePostgresChangesPayload<RealtimeMessage>) => {
-          console.log('Message update payload:', payload);
           const updated = payload.new;
-          if (updated && 'id' in updated && 'is_read' in updated) {
-            setNewMessages(prev =>
-              prev.map(msg =>
-                msg.id === updated.id ? { ...msg, is_read: updated.is_read } : msg
-              )
-            );
+          if (updated && 'id' in updated) {
+            setNewMessages((prev) => {
+              const without = prev.filter((m) => m.id !== updated.id);
+              return [...without, updated];
+            });
           }
         }
       )

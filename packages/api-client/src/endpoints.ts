@@ -48,6 +48,10 @@ export const endpoints = {
     activity: '/api/gamification/activity',
   },
   notifications: {
+    list: '/api/notifications',
+    unreadCount: '/api/notifications/unread-count',
+    markAsRead: (id: string) => `/api/notifications/${id}/read`,
+    markAllAsRead: '/api/notifications/read-all',
     vapidPublicKey: '/api/notifications/vapid-public-key',
     subscribe: '/api/notifications/subscribe',
     unsubscribe: '/api/notifications/unsubscribe',
@@ -69,9 +73,14 @@ export const endpoints = {
     list: '/api/chat',
     direct: '/api/chat/direct',
     groups: '/api/chat/groups',
+    detail: (chatId: string) => `/api/chat/${chatId}`,
     messages: (chatId: string) => `/api/chat/${chatId}/messages`,
     members: (chatId: string) => `/api/chat/${chatId}/members`,
     member: (chatId: string, memberId: string) => `/api/chat/${chatId}/members/${memberId}`,
+    groupInvite: (chatId: string) => `/api/chat/groups/${chatId}/invite`,
+    join: (token: string) => `/api/chat/join/${token}`,
+    deleteMessageForMe: (messageId: string) => `/api/chat/messages/${messageId}/me`,
+    deleteMessageForEveryone: (messageId: string) => `/api/chat/messages/${messageId}/everyone`,
   },
   feed: {
     list: '/api/feed',
@@ -127,5 +136,6 @@ export const endpoints = {
   },
   users: {
     search: '/api/users/search',
+    presence: '/api/users/presence',
   },
 } as const;

@@ -1,194 +1,488 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, Phone, Video, MoreVertical, ArrowLeft } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import {
+  Send,
+  Loader2,
+  ArrowLeft,
+  MoreVertical,
+  Link2,
+  Trash2,
+  Copy,
+  Check,
+  RefreshCw,
+  User,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRealtimeChat } from '@/hooks/useRealtimeChat';
 import { chatApi } from '@/lib/api/client';
+import { getFriendlyNetworkMessage } from '@/lib/api/networkErrorMessage';
+import { useAuthStore } from '@/stores/authStore';
 import { formatRelativeTime } from '@/features/community/utils/timeFormat';
+import { SharedPostCard } from './SharedPostCard';
+import { EmojiQuickPicker } from './EmojiQuickPicker';
 import type { ChatMessage } from '@repo/types';
 
 interface ChatWindowProps {
   chatId: string;
   chatName?: string;
   chatType?: 'direct' | 'group';
+  otherUserId?: string;
+  otherUsername?: string | null;
+  otherUserOnline?: boolean;
   onBack?: () => void;
+  onMessageSent?: () => void;
+  onRefreshMeta?: () => void;
 }
 
-export function ChatWindow({ chatId, chatName, chatType = 'direct', onBack }: ChatWindowProps) {
+export function ChatWindow({
+  chatId,
+  chatName,
+  chatType = 'direct',
+  otherUserId,
+  otherUsername,
+  otherUserOnline = false,
+  onBack,
+  onMessageSent,
+  onRefreshMeta,
+}: ChatWindowProps) {
+  const { user } = useAuthStore();
+  const currentUserId = user?.id;
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [activeMessageMenu, setActiveMessageMenu] = useState<string | null>(null);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [copiedInvite, setCopiedInvite] = useState(false);
+  const [headerError, setHeaderError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState(otherUserOnline);
+  const [showEmoji, setShowEmoji] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  
-  const { newMessages, clearNewMessages, isConnected } = useRealtimeChat(chatId);
+  const headerMenuRef = useRef<HTMLDivElement>(null);
 
-  // Load initial messages
   useEffect(() => {
-    const loadMessages = async () => {
-      setIsLoading(true);
-      try {
-        const response = await chatApi.getMessages(chatId);
-        setMessages(response.data.messages || []);
-      } catch (error) {
-        console.error('Failed to load messages:', error);
-      } finally {
-        setIsLoading(false);
-      }
+    setIsOnline(otherUserOnline);
+  }, [otherUserOnline, chatId]);
+
+  useEffect(() => {
+    if (chatType !== 'direct') return;
+    const interval = window.setInterval(() => onRefreshMeta?.(), 45_000);
+    return () => window.clearInterval(interval);
+  }, [chatType, chatId, onRefreshMeta]);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('[data-chat-menu-trigger]')) return;
+      if (headerMenuRef.current?.contains(target)) return;
+      setMenuOpen(false);
+      setActiveMessageMenu(null);
+      setShowEmoji(false);
     };
-    
-    if (chatId) {
-      loadMessages();
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, []);
+
+  const { newMessages, clearNewMessages } = useRealtimeChat(chatId);
+
+  const loadMessages = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const response = await chatApi.getMessages(chatId);
+      setMessages(response.data.messages || []);
+    } catch (error) {
+      setLoadError(getFriendlyNetworkMessage(error, 'Unable to load messages. Please try again.'));
+    } finally {
+      setIsLoading(false);
     }
   }, [chatId]);
 
-  // Add realtime messages to state
   useEffect(() => {
-    if (newMessages && newMessages.length > 0) {
-      const formattedNewMessages: ChatMessage[] = newMessages.map((msg: any) => ({
+    if (chatId) {
+      void loadMessages();
+      setInviteLink(null);
+      setMenuOpen(false);
+    }
+  }, [chatId, loadMessages]);
+
+  useEffect(() => {
+    if (newMessages?.length) {
+      const hasSharedPost = newMessages.some((msg) => msg.post_id);
+      if (hasSharedPost) {
+        void loadMessages();
+        clearNewMessages();
+        return;
+      }
+
+      const formatted: ChatMessage[] = newMessages.map((msg) => ({
         id: msg.id,
-        content: msg.content,
+        content: msg.deleted_for_everyone_at ? null : msg.content,
+        postId: msg.post_id || null,
         senderId: msg.sender_id,
         senderName: msg.users?.email?.split('@')[0] || 'User',
-        senderAvatar: msg.users?.avatar_url,
+        senderAvatar: msg.users?.avatar_url || undefined,
         isRead: msg.is_read,
+        isDeleted: Boolean(msg.deleted_for_everyone_at),
+        deletedForEveryone: Boolean(msg.deleted_for_everyone_at),
         createdAt: msg.created_at,
       }));
-      setMessages(prev => [...prev, ...formattedNewMessages]);
+
+      setMessages((prev) => {
+        const existingIds = new Set(prev.map((m) => m.id));
+        const toAdd = formatted.filter((m) => !existingIds.has(m.id));
+        const updated = prev.map((m) => {
+          const update = formatted.find((f) => f.id === m.id);
+          return update || m;
+        });
+        return [...updated, ...toAdd];
+      });
       clearNewMessages();
     }
-  }, [newMessages, clearNewMessages]);
+  }, [newMessages, clearNewMessages, loadMessages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const sendMessage = async () => {
-    if (!inputValue.trim() || isSending) return;
-    
+    if (!inputValue.trim() || isSending || !currentUserId) return;
+
     const tempId = `temp-${Date.now()}`;
-    const newMessage: ChatMessage = {
+    const content = inputValue.trim();
+    const optimistic: ChatMessage = {
       id: tempId,
-      content: inputValue.trim(),
-      senderId: 'currentUser',
+      content,
+      senderId: currentUserId,
       senderName: 'You',
       isRead: false,
       createdAt: new Date().toISOString(),
     };
-    
-    setMessages(prev => [...prev, newMessage]);
-    const messageContent = inputValue.trim();
+
+    setMessages((prev) => [...prev, optimistic]);
     setInputValue('');
     setIsSending(true);
 
     try {
-      const response = await chatApi.sendMessage(chatId, messageContent);
+      const response = await chatApi.sendMessage(chatId, { content });
       const realMessage = response.data;
-      setMessages(prev => 
-        prev.map(msg => msg.id === tempId ? {
-          id: realMessage.id,
-          content: realMessage.content,
-          senderId: realMessage.senderId,
-          senderName: 'You',
-          isRead: realMessage.isRead,
-          createdAt: realMessage.createdAt,
-        } : msg)
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === tempId
+            ? {
+                ...realMessage,
+                senderName: 'You',
+              }
+            : msg
+        )
       );
+      onMessageSent?.();
     } catch (error) {
       console.error('Failed to send message:', error);
-      setMessages(prev => prev.filter(msg => msg.id !== tempId));
+      setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
     } finally {
       setIsSending(false);
     }
   };
 
+  const deleteForMe = async (messageId: string) => {
+    setActiveMessageMenu(null);
+    try {
+      await chatApi.deleteMessageForMe(messageId);
+      setMessages((prev) => prev.filter((m) => m.id !== messageId));
+    } catch (error) {
+      console.error('Delete for me failed:', error);
+    }
+  };
+
+  const deleteForEveryone = async (messageId: string) => {
+    setActiveMessageMenu(null);
+    try {
+      await chatApi.deleteMessageForEveryone(messageId);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId
+            ? {
+                ...m,
+                content: null,
+                isDeleted: true,
+                deletedForEveryone: true,
+              }
+            : m
+        )
+      );
+      onMessageSent?.();
+    } catch (error) {
+      console.error('Delete for everyone failed:', error);
+    }
+  };
+
+  const createInviteLink = async () => {
+    setHeaderError(null);
+    try {
+      const response = await chatApi.createGroupInvite(chatId);
+      setInviteLink(response.data.inviteUrl);
+      setMenuOpen(false);
+    } catch (error) {
+      setHeaderError(error instanceof Error ? error.message : 'Could not create invite link');
+    }
+  };
+
+  const copyInviteLink = async () => {
+    if (!inviteLink) return;
+    await navigator.clipboard.writeText(inviteLink);
+    setCopiedInvite(true);
+    setTimeout(() => setCopiedInvite(false), 2000);
+  };
+
+  const insertEmoji = (emoji: string) => {
+    setInputValue((prev) => prev + emoji);
+    setShowEmoji(false);
+    inputRef.current?.focus();
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      void sendMessage();
     }
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <Loader2 size={32} className="animate-spin text-[#B85C38]" />
+        <Loader2 size={32} className="animate-spin text-bn-primary" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-xl border border-[#E8E2D9] overflow-hidden">
+    <div className="flex flex-col h-full min-h-0">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#E8E2D9]">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-bn-border/70 bg-white shrink-0 relative z-30">
+        <div className="flex items-center gap-3 min-w-0">
           {onBack && (
-            <button onClick={onBack} className="p-1 hover:bg-[#F5F1EB] rounded-lg">
+            <button
+              type="button"
+              onClick={onBack}
+              className="p-1.5 hover:bg-bn-surface rounded-lg md:hidden"
+              aria-label="Back to conversations"
+            >
               <ArrowLeft size={20} />
             </button>
           )}
-          <div>
-            <h2 className="font-semibold text-[#1A2A3A]">{chatName || 'Chat'}</h2>
-            <div className="flex items-center gap-2">
-              {isConnected ? (
-                <span className="text-xs text-green-500">● Connected</span>
+          <div className="min-w-0">
+            <h2 className="font-semibold text-bn-ink truncate">{chatName || 'Chat'}</h2>
+            <p className="text-xs text-bn-muted flex items-center gap-1.5">
+              {chatType === 'direct' ? (
+                <>
+                  <span
+                    className={cn(
+                      'inline-block w-2 h-2 rounded-full',
+                      isOnline ? 'bg-emerald-500' : 'bg-bn-border'
+                    )}
+                  />
+                  {isOnline ? 'Online now' : 'Offline'}
+                </>
               ) : (
-                <span className="text-xs text-yellow-500">● Connecting...</span>
+                <>Group chat</>
               )}
-            </div>
+            </p>
           </div>
         </div>
-        
-        <div className="flex items-center gap-1">
-          {chatType === 'direct' && (
-            <>
-              <button className="p-2 text-[#4A5568] hover:text-[#B85C38] hover:bg-[#F5F1EB] rounded-lg">
-                <Phone size={18} />
-              </button>
-              <button className="p-2 text-[#4A5568] hover:text-[#B85C38] hover:bg-[#F5F1EB] rounded-lg">
-                <Video size={18} />
-              </button>
-            </>
-          )}
-          <button className="p-2 text-[#4A5568] hover:text-[#B85C38] hover:bg-[#F5F1EB] rounded-lg">
+
+        <div className="relative" ref={headerMenuRef}>
+          <button
+            type="button"
+            data-chat-menu-trigger
+            onClick={() => setMenuOpen((v) => !v)}
+            className="p-2 text-bn-muted hover:text-bn-primary hover:bg-bn-surface rounded-lg touch-manipulation"
+            aria-label="Chat options"
+            aria-expanded={menuOpen}
+          >
             <MoreVertical size={18} />
           </button>
+          {menuOpen && (
+            <div
+              data-chat-menu-trigger
+              className="absolute right-0 top-full mt-1 w-56 bg-white border border-bn-border rounded-xl shadow-lg z-50 py-1"
+            >
+              <button
+                type="button"
+                data-chat-menu-trigger
+                onClick={() => {
+                  setMenuOpen(false);
+                  void loadMessages();
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-bn-surface touch-manipulation"
+              >
+                <RefreshCw size={16} />
+                Refresh messages
+              </button>
+              {chatType === 'direct' && otherUserId && (
+                <Link
+                  href={otherUsername ? `/${otherUsername}` : `/messages?startUser=${otherUserId}`}
+                  data-chat-menu-trigger
+                  onClick={() => setMenuOpen(false)}
+                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-bn-surface touch-manipulation"
+                >
+                  <User size={16} />
+                  View profile
+                </Link>
+              )}
+              {chatType === 'group' && (
+                <button
+                  type="button"
+                  data-chat-menu-trigger
+                  onClick={() => void createInviteLink()}
+                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-bn-surface touch-manipulation"
+                >
+                  <Link2 size={16} />
+                  Create invite link
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
+      {loadError && (
+        <div className="px-4 py-3 bg-red-50 border-b border-red-100 flex items-center justify-between gap-3">
+          <p className="text-sm text-red-700">{loadError}</p>
+          <button
+            type="button"
+            onClick={() => void loadMessages()}
+            className="text-sm font-medium text-red-700 hover:underline shrink-0"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {headerError && (
+        <div className="px-4 py-2 text-sm text-red-600 bg-red-50 border-b border-red-100">
+          {headerError}
+        </div>
+      )}
+
+      {inviteLink && (
+        <div className="px-4 py-2.5 bg-bn-primary/5 border-b border-bn-border/60 flex items-center gap-2">
+          <p className="text-xs text-bn-muted truncate flex-1">{inviteLink}</p>
+          <button
+            type="button"
+            onClick={() => void copyInviteLink()}
+            className="flex items-center gap-1 text-xs font-medium text-bn-primary hover:underline flex-shrink-0"
+          >
+            {copiedInvite ? <Check size={14} /> : <Copy size={14} />}
+            {copiedInvite ? 'Copied' : 'Copy link'}
+          </button>
+        </div>
+      )}
+
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 bg-gradient-to-b from-bn-surface/20 to-white">
         {messages.length === 0 ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center">
-              <p className="text-[#4A5568]">No messages yet</p>
-              <p className="text-sm text-[#4A5568]">Start the conversation!</p>
+              <p className="text-bn-muted">No messages yet</p>
+              <p className="text-sm text-bn-muted">Say hello to start the conversation.</p>
             </div>
           </div>
         ) : (
           messages.map((msg) => {
-            const isOwn = msg.senderId === 'currentUser';
+            const isOwn = currentUserId ? msg.senderId === currentUserId : false;
+            const isDeleted = msg.isDeleted || msg.deletedForEveryone;
+
             return (
-              <div key={msg.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[70%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col`}>
-                  {!isOwn && (
-                    <span className="text-xs text-[#4A5568] mb-1 ml-2">{msg.senderName}</span>
+              <div
+                key={msg.id}
+                className={`flex group ${isOwn ? 'justify-end' : 'justify-start'}`}
+              >
+                <div className={`relative max-w-[75%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col`}>
+                  {!isOwn && chatType === 'group' && (
+                    <span className="text-xs text-bn-muted mb-1 ml-2">{msg.senderName}</span>
                   )}
+
+                  <div className="relative flex items-start gap-1">
+                    <div className={cnBubble(isOwn, isDeleted)}>
+                      {!isDeleted && msg.sharedPost && (
+                        <div className="mb-2">
+                          <SharedPostCard post={msg.sharedPost} compact />
+                        </div>
+                      )}
+                      {!isDeleted && msg.content && msg.content !== 'Shared a post' && (
+                        <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
+                      )}
+                      {isDeleted && (
+                        <p className="text-sm whitespace-pre-wrap break-words">
+                          <span className="italic opacity-70">This message was deleted</span>
+                        </p>
+                      )}
+                      {!isDeleted && !msg.sharedPost && msg.content === 'Shared a post' && (
+                        <p className="text-sm italic opacity-80">Shared a post</p>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      data-chat-menu-trigger
+                      onClick={() =>
+                        setActiveMessageMenu((cur) => (cur === msg.id ? null : msg.id))
+                      }
+                      className={cn(
+                        'p-1.5 rounded-lg text-bn-muted hover:text-bn-primary hover:bg-white border border-transparent hover:border-bn-border shadow-sm transition-colors touch-manipulation shrink-0',
+                        activeMessageMenu === msg.id && 'text-bn-primary bg-white border-bn-border'
+                      )}
+                      aria-label="Message options"
+                    >
+                      <MoreVertical size={14} />
+                    </button>
+
+                    {activeMessageMenu === msg.id && (
+                      <div
+                        data-chat-menu-trigger
+                        className={cn(
+                          'absolute top-full mt-1 w-44 bg-white border border-bn-border rounded-xl shadow-lg py-1 z-50',
+                          isOwn ? 'right-0' : 'left-0'
+                        )}
+                      >
+                        <button
+                          type="button"
+                          data-chat-menu-trigger
+                          onClick={() => void deleteForMe(msg.id)}
+                          className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-bn-surface text-left touch-manipulation"
+                        >
+                          <Trash2 size={14} />
+                          Delete for me
+                        </button>
+                        {isOwn && !isDeleted && (
+                          <button
+                            type="button"
+                            data-chat-menu-trigger
+                            onClick={() => void deleteForEveryone(msg.id)}
+                            className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-bn-surface text-left text-red-600 touch-manipulation"
+                          >
+                            <Trash2 size={14} />
+                            Delete for everyone
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
                   <div
-                    className={`px-3 py-2 rounded-2xl ${
-                      isOwn
-                        ? 'bg-[#B85C38] text-white rounded-br-sm'
-                        : 'bg-[#F5F1EB] text-[#1A2A3A] rounded-bl-sm'
+                    className={`flex items-center gap-1 mt-1 text-xs text-bn-muted ${
+                      isOwn ? 'justify-end mr-1' : 'justify-start ml-1'
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
-                  </div>
-                  <div className={`flex items-center gap-1 mt-1 text-xs text-[#4A5568] ${isOwn ? 'justify-end' : 'justify-start'}`}>
                     <span>{formatRelativeTime(msg.createdAt)}</span>
                     {isOwn && msg.isRead && <span className="text-blue-500">✓✓</span>}
-                    {isOwn && !msg.isRead && <span className="text-[#4A5568]">✓</span>}
                   </div>
                 </div>
               </div>
@@ -198,28 +492,33 @@ export function ChatWindow({ chatId, chatName, chatType = 'direct', onBack }: Ch
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
-      <div className="p-4 border-t border-[#E8E2D9]">
+      {/* Input */}
+      <div className="p-4 border-t border-bn-border/70 bg-white shrink-0">
         <div className="flex gap-2 items-end">
+          <EmojiQuickPicker
+            open={showEmoji}
+            onToggle={() => setShowEmoji((value) => !value)}
+            onSelect={insertEmoji}
+          />
           <textarea
             ref={inputRef}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
+            placeholder="Type a message…"
             rows={1}
-            className="flex-1 px-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38] focus:ring-1 focus:ring-[#B85C38] resize-none max-h-32"
-            style={{ height: 'auto' }}
+            className="flex-1 px-3 py-2.5 border border-bn-border rounded-xl focus:outline-none focus:border-bn-primary focus:ring-1 focus:ring-bn-primary resize-none max-h-32 bg-bn-surface/30"
             onInput={(e) => {
               const target = e.target as HTMLTextAreaElement;
               target.style.height = 'auto';
-              target.style.height = Math.min(target.scrollHeight, 128) + 'px';
+              target.style.height = `${Math.min(target.scrollHeight, 128)}px`;
             }}
           />
           <button
-            onClick={sendMessage}
+            type="button"
+            onClick={() => void sendMessage()}
             disabled={!inputValue.trim() || isSending}
-            className="p-2 bg-[#B85C38] text-white rounded-lg hover:bg-[#8E735B] transition-colors disabled:opacity-50"
+            className="p-2.5 bg-bn-primary text-white rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {isSending ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
           </button>
@@ -227,4 +526,19 @@ export function ChatWindow({ chatId, chatName, chatType = 'direct', onBack }: Ch
       </div>
     </div>
   );
+}
+
+function cnBubble(isOwn: boolean, isDeleted: boolean) {
+  const base = 'px-3.5 py-2 rounded-2xl shadow-sm';
+  if (isDeleted) {
+    return `${base} bg-bn-surface/80 text-bn-muted border border-dashed border-bn-border`;
+  }
+  if (isOwn) {
+    return `${base} bg-bn-primary text-white rounded-br-md`;
+  }
+  return `${base} bg-white text-bn-ink border border-bn-border/60 rounded-bl-md`;
+}
+
+function cn(...parts: (string | false | undefined)[]) {
+  return parts.filter(Boolean).join(' ');
 }

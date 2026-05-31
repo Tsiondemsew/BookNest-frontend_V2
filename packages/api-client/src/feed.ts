@@ -47,6 +47,9 @@ export function createFeedApi(client: ApiClient) {
         {}
       ),
 
+    getPost: (postId: string) =>
+      client.get<{ success: boolean; data: Post }>(endpoints.feed.postDetail(postId)),
+
     saveDraft: (data: CreatePostRequest) =>
       client.post<CreatePostResponse, CreatePostRequest>(endpoints.feed.drafts, data),
 

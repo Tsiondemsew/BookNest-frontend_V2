@@ -92,7 +92,7 @@ export function ProfileHeader({ profile, onEdit, onSettings }: ProfileHeaderProp
                   initialIsFollowing={profile.isFollowing || false}
                   initialFollowerCount={profile.followerCount}
                 />
-                <Link href={`/messages/new?user=${profile.id}`} className={ui.btnIcon} aria-label="Message">
+                <Link href={`/messages?startUser=${profile.id}`} className={ui.btnIcon} aria-label="Message">
                   <MessageCircle size={18} />
                 </Link>
               </>

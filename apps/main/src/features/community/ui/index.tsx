@@ -79,6 +79,26 @@ export function CommunityAvatar({ name, src, size = 'md', ring, className }: Com
   );
 }
 
+interface OnlineAvatarProps extends CommunityAvatarProps {
+  isOnline?: boolean;
+}
+
+/** Green dot only when `isOnline` is true (real presence from last_seen_at). */
+export function OnlineAvatar({ isOnline, ...avatarProps }: OnlineAvatarProps) {
+  return (
+    <div className="relative inline-flex shrink-0">
+      <CommunityAvatar {...avatarProps} />
+      {isOnline ? (
+        <span
+          className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white"
+          aria-label="Online"
+          title="Online now"
+        />
+      ) : null}
+    </div>
+  );
+}
+
 interface EmptyStateProps {
   icon: LucideIcon;
   title: string;

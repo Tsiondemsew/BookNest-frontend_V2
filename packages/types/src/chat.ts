@@ -11,6 +11,7 @@ export interface Chat {
   type: 'direct' | 'group';
   name?: string;
   participants: ChatParticipant[];
+  participantCount?: number;
   lastMessage?: {
     content: string;
     senderId: string;
@@ -22,13 +23,23 @@ export interface Chat {
   updatedAt: string;
 }
 
+export interface ChatInviteResponse {
+  token: string;
+  inviteUrl: string;
+  expiresAt: string;
+}
+
 export interface ChatMessage {
   id: string;
-  content: string;
+  content: string | null;
+  postId?: string | null;
+  sharedPost?: import('./feed').Post | null;
   senderId: string;
   senderName: string;
   senderAvatar?: string;
   isRead: boolean;
+  isDeleted?: boolean;
+  deletedForEveryone?: boolean;
   createdAt: string;
 }
 
@@ -54,5 +65,6 @@ export interface CreateGroupChatRequest {
 }
 
 export interface SendMessageRequest {
-  content: string;
+  content?: string;
+  postId?: string;
 }
