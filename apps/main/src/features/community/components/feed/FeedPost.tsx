@@ -101,9 +101,14 @@ export function FeedPost({ post, onLikeToggle, showComments = false }: FeedPostP
               )}
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-semibold text-[#1A2A3A]">{post.author.name}</span>
                 {getRoleBadge(post.author.role)}
+                {post.isFromFollowing && (
+                  <span className="text-xs bg-[#B85C38]/10 text-[#B85C38] px-1.5 py-0.5 rounded font-medium">
+                    Following
+                  </span>
+                )}
               </div>
               <span className="text-xs text-[#4A5568]">
                 @{post.author.username} • {formatRelativeTime(post.createdAt)}

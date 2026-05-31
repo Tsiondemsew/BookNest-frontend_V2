@@ -5,19 +5,15 @@ import {
   Image as ImageIcon,
   X,
   Send,
-  Save,
   Loader2,
   Smile,
   AtSign,
   BookOpen,
-  FileText,
-  Pencil,
-  Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/authStore';
 import { feedApi, usersApi, booksApi } from '@/lib/api/client';
-import type { Post, CommunityUserSearchResult, PostTag } from '@repo/types';
+import type { Post, CommunityUserSearchResult } from '@repo/types';
 
 const EMOJI_QUICK = ['📚', '❤️', '🔥', '✨', '👏', '🎧', '📖', '💡', '🙂', '🎉'];
 
@@ -37,7 +33,6 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [showEmoji, setShowEmoji] = useState(false);
   const [tagQuery, setTagQuery] = useState('');
@@ -46,25 +41,8 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
   const [bookHits, setBookHits] = useState<BookHit[]>([]);
   const [taggedUsers, setTaggedUsers] = useState<CommunityUserSearchResult[]>([]);
   const [taggedBooks, setTaggedBooks] = useState<BookHit[]>([]);
-  const [drafts, setDrafts] = useState<Post[]>([]);
-  const [showDrafts, setShowDrafts] = useState(false);
-  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
-  const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  const loadDrafts = async () => {
-    try {
-      const res = await feedApi.getMyPosts(true, 1, 10);
-      setDrafts((res.data.posts || []).filter((p) => p.status === 'draft'));
-    } catch {
-      setDrafts([]);
-    }
-  };
-
-  useEffect(() => {
-    void loadDrafts();
-  }, []);
 
   useEffect(() => {
     if (!tagMode || tagQuery.length < 2) {
@@ -98,7 +76,6 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
   const removeImage = () => {
     setImageFile(null);
     setImagePreview(null);
-    setExistingImageUrl(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -107,44 +84,9 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
     removeImage();
     setTaggedUsers([]);
     setTaggedBooks([]);
-    setEditingDraftId(null);
     setTagMode(null);
     setTagQuery('');
     setShowEmoji(false);
-  };
-
-  const tagsFromDraft = (tags: PostTag[] = []) => {
-    const users: CommunityUserSearchResult[] = [];
-    const books: BookHit[] = [];
-    for (const tag of tags) {
-      if (tag.type === 'user') {
-        users.push({
-          id: tag.id,
-          name: tag.name,
-          username: tag.username,
-          avatarUrl: tag.avatarUrl,
-          role: 'reader',
-        });
-      } else {
-        books.push({ id: tag.id, title: tag.title, cover_url: tag.coverUrl });
-      }
-    }
-    return { users, books };
-  };
-
-  const loadDraftIntoEditor = (draft: Post) => {
-    const { users, books } = tagsFromDraft(draft.tags);
-    setEditingDraftId(draft.id);
-    setContent(draft.content || '');
-    setTaggedUsers(users);
-    setTaggedBooks(books);
-    setImageFile(null);
-    setExistingImageUrl(draft.imageUrl || null);
-    setImagePreview(draft.imageUrl || null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-    setShowDrafts(false);
-    setMessage(null);
-    textareaRef.current?.focus();
   };
 
   const uploadImage = async (file: File): Promise<string | undefined> => {
@@ -175,145 +117,51 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
     setTagQuery('');
   };
 
-  const buildPayload = async () => {
-    let imageUrl: string | null | undefined;
-    if (imageFile) {
-      imageUrl = (await uploadImage(imageFile)) ?? null;
-    } else if (existingImageUrl) {
-      imageUrl = existingImageUrl;
-    } else {
-      imageUrl = null;
-    }
-
-    return {
-      content: content.trim(),
-      image_url: imageUrl,
-      tagged_users: taggedUsers.map((u) => u.id),
-      tagged_books: taggedBooks.map((b) => b.id),
-    };
-  };
-
-  const hasDraftContent = () => Boolean(content.trim() || imageFile || existingImageUrl);
+  const hasContent = () => Boolean(content.trim() || imageFile);
 
   const handleSubmit = async () => {
-    if (!hasDraftContent()) return;
+    if (!hasContent()) return;
     setIsSubmitting(true);
     setMessage(null);
     try {
-      const payload = await buildPayload();
-
-      if (editingDraftId) {
-        await feedApi.updateDraft(editingDraftId, payload);
-        const response = await feedApi.publishDraft(editingDraftId);
-        resetComposer();
-        await loadDrafts();
-        onPostCreated?.(response.data);
-        setMessage('Draft published!');
-      } else {
-        const response = await feedApi.createPost(payload);
-        resetComposer();
-        onPostCreated?.(response.data);
-        setMessage('Posted!');
+      let imageUrl: string | null = null;
+      if (imageFile) {
+        imageUrl = (await uploadImage(imageFile)) ?? null;
       }
 
+      const response = await feedApi.createPost({
+        content: content.trim(),
+        image_url: imageUrl,
+        tagged_users: taggedUsers.map((u) => u.id),
+        tagged_books: taggedBooks.map((b) => b.id),
+      });
+
+      resetComposer();
+      onPostCreated?.(response.data);
+      setMessage('Posted!');
       setTimeout(() => setMessage(null), 2500);
     } catch (error) {
       console.error('Failed to publish post:', error);
-      setMessage(editingDraftId ? 'Could not publish draft' : 'Could not publish post');
+      setMessage('Could not publish post. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const saveDraft = async () => {
-    if (!hasDraftContent()) return;
-    setIsSavingDraft(true);
-    setMessage(null);
-    try {
-      const payload = await buildPayload();
-
-      if (editingDraftId) {
-        await feedApi.updateDraft(editingDraftId, payload);
-        setMessage('Draft updated');
-      } else {
-        const res = await feedApi.saveDraft(payload);
-        setEditingDraftId(res.data.id);
-        setExistingImageUrl(res.data.imageUrl || null);
-        setImageFile(null);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-        setMessage('Draft saved');
-      }
-
-      await loadDrafts();
-      setTimeout(() => setMessage(null), 2500);
-    } catch (error) {
-      console.error('Failed to save draft:', error);
-      setMessage('Could not save draft');
-    } finally {
-      setIsSavingDraft(false);
-    }
-  };
-
-  const publishDraft = async (draftId: string) => {
-    try {
-      if (editingDraftId === draftId) {
-        await handleSubmit();
-        return;
-      }
-
-      const res = await feedApi.publishDraft(draftId);
-      setDrafts((prev) => prev.filter((d) => d.id !== draftId));
-      onPostCreated?.(res.data);
-      setShowDrafts(false);
-      setMessage('Draft published!');
-      setTimeout(() => setMessage(null), 2500);
-    } catch (error) {
-      console.error('Failed to publish draft:', error);
-      setMessage('Could not publish draft');
-    }
-  };
-
-  const deleteDraft = async (draftId: string) => {
-    if (!window.confirm('Delete this draft?')) return;
-    try {
-      await feedApi.deletePost(draftId);
-      if (editingDraftId === draftId) resetComposer();
-      await loadDrafts();
-      setMessage('Draft deleted');
-      setTimeout(() => setMessage(null), 2500);
-    } catch (error) {
-      console.error('Failed to delete draft:', error);
-      setMessage('Could not delete draft');
-    }
-  };
-
   return (
     <div className="bg-white rounded-2xl border border-[#E8E2D9] shadow-sm overflow-hidden">
-      <div className="flex gap-3 p-4">
+      <div className="flex gap-3 p-4 sm:p-6">
         <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#2C3E50] to-[#B85C38] flex items-center justify-center text-white font-semibold flex-shrink-0">
           {user?.publicName?.charAt(0) || 'U'}
         </div>
 
         <div className="flex-1 space-y-3">
-          {editingDraftId && (
-            <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200/80">
-              <p className="text-sm font-medium text-amber-900">Editing draft</p>
-              <button
-                type="button"
-                onClick={resetComposer}
-                className="text-xs font-semibold text-amber-800 hover:underline"
-              >
-                Cancel
-              </button>
-            </div>
-          )}
-
           <textarea
             ref={textareaRef}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Share a thought, reading update, or book recommendation…"
-            className="w-full px-3 py-2.5 border border-[#E8E2D9] rounded-xl focus:outline-none focus:border-[#B85C38] focus:ring-2 focus:ring-[#B85C38]/20 resize-none min-h-[110px] text-[#1A2A3A]"
+            className="w-full px-3 py-2.5 border border-[#E8E2D9] rounded-xl focus:outline-none focus:border-[#B85C38] focus:ring-2 focus:ring-[#B85C38]/20 resize-none min-h-[140px] text-[#1A2A3A]"
           />
 
           {(taggedUsers.length > 0 || taggedBooks.length > 0) && (
@@ -425,7 +273,10 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
               </button>
               <button
                 type="button"
-                onClick={() => { setTagMode('user'); setTagQuery(''); }}
+                onClick={() => {
+                  setTagMode('user');
+                  setTagQuery('');
+                }}
                 className="p-2 text-[#4A5568] hover:text-[#B85C38] hover:bg-[#F5F1EB] rounded-lg"
                 title="Tag user"
               >
@@ -433,106 +284,33 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
               </button>
               <button
                 type="button"
-                onClick={() => { setTagMode('book'); setTagQuery(''); }}
+                onClick={() => {
+                  setTagMode('book');
+                  setTagQuery('');
+                }}
                 className="p-2 text-[#4A5568] hover:text-[#B85C38] hover:bg-[#F5F1EB] rounded-lg"
                 title="Tag book"
               >
                 <BookOpen size={20} />
               </button>
-              <button
-                type="button"
-                onClick={() => setShowDrafts((v) => !v)}
-                className="p-2 text-[#4A5568] hover:text-[#B85C38] hover:bg-[#F5F1EB] rounded-lg"
-                title="Drafts"
-              >
-                <FileText size={20} />
-              </button>
               <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
             </div>
 
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => void saveDraft()}
-                disabled={isSavingDraft || !hasDraftContent()}
-                className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-[#4A5568] hover:bg-[#F5F1EB] rounded-xl disabled:opacity-50"
-              >
-                {isSavingDraft ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                {editingDraftId ? 'Save changes' : 'Draft'}
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleSubmit()}
-                disabled={isSubmitting || !hasDraftContent()}
-                className="flex items-center gap-1 px-4 py-2 bg-[#B85C38] text-white font-semibold rounded-xl hover:bg-[#A04E2F] disabled:opacity-50"
-              >
-                {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                {editingDraftId ? 'Publish' : 'Post'}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => void handleSubmit()}
+              disabled={isSubmitting || !hasContent()}
+              className="flex items-center gap-1 px-5 py-2.5 bg-[#B85C38] text-white font-semibold rounded-xl hover:bg-[#A04E2F] disabled:opacity-50"
+            >
+              {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+              Post
+            </button>
           </div>
 
           {message && (
             <p className={`text-sm ${message.includes('Could not') ? 'text-red-600' : 'text-green-600'}`}>
               {message}
             </p>
-          )}
-
-          {showDrafts && (
-            <div className="border-t border-[#E8E2D9] pt-3 space-y-2">
-              <p className="text-sm font-medium text-[#1A2A3A]">Your drafts</p>
-              {drafts.length === 0 ? (
-                <p className="text-sm text-[#4A5568]">No drafts yet</p>
-              ) : (
-                drafts.map((d) => (
-                  <div
-                    key={d.id}
-                    className={`flex items-start justify-between gap-2 p-3 rounded-xl border ${
-                      editingDraftId === d.id
-                        ? 'border-[#B85C38] bg-[#FFF8F5]'
-                        : 'border-transparent bg-[#F5F1EB]'
-                    }`}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-[#1A2A3A] line-clamp-2">{d.content || '(image draft)'}</p>
-                      {d.imageUrl && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={d.imageUrl} alt="" className="mt-2 h-14 w-14 rounded-lg object-cover border border-[#E8E2D9]" />
-                      )}
-                      <p className="text-xs text-[#4A5568] mt-1">
-                        {d.tags?.length ? `${d.tags.length} tag(s) · ` : ''}
-                        Saved {new Date(d.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex flex-col gap-1 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => loadDraftIntoEditor(d)}
-                        className="flex items-center gap-1 text-xs font-semibold text-[#2C3E50] hover:underline"
-                      >
-                        <Pencil size={12} />
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void publishDraft(d.id)}
-                        className="text-xs font-semibold text-[#B85C38] hover:underline"
-                      >
-                        Publish
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void deleteDraft(d.id)}
-                        className="flex items-center gap-1 text-xs font-semibold text-red-500 hover:underline"
-                      >
-                        <Trash2 size={12} />
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
           )}
         </div>
       </div>

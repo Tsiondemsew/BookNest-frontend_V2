@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { Users, Loader2, FileText, type LucideIcon } from 'lucide-react';
 import { FeedPost } from './FeedPost';
 import { PostSkeleton } from './PostSkeleton';
@@ -11,6 +11,7 @@ interface FeedEmptyState {
   title: string;
   description: string;
   icon?: LucideIcon;
+  action?: ReactNode;
 }
 
 interface FeedProps {
@@ -26,9 +27,8 @@ interface FeedProps {
 
 const DEFAULT_EMPTY: FeedEmptyState = {
   icon: Users,
-  title: 'Your feed is quiet',
-  description:
-    'Follow authors, publishers, and readers to see their posts here — or publish your first post above.',
+  title: 'No posts yet',
+  description: 'Be the first to share something with the community.',
 };
 
 export function Feed({
@@ -75,7 +75,12 @@ export function Feed({
   if (posts.length === 0) {
     return (
       <CommunityCard>
-        <EmptyState icon={EmptyIcon} title={empty.title} description={empty.description} />
+        <EmptyState
+          icon={EmptyIcon}
+          title={empty.title}
+          description={empty.description}
+          action={empty.action}
+        />
       </CommunityCard>
     );
   }

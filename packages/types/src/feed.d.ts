@@ -13,6 +13,7 @@ export interface Post {
     commentCount: number;
     shareCount: number;
     isLiked: boolean;
+    isFromFollowing?: boolean;
     isSaved?: boolean;
     createdAt: string;
     author: PostAuthor;

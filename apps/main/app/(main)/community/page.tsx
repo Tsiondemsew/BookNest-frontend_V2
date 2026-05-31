@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Feed, CreatePost, CommunityUserSearch } from '@/features/community';
-import { PageHeader } from '@/features/community/ui';
+import Link from 'next/link';
+import { PenSquare } from 'lucide-react';
+import { Feed, CommunityUserSearch } from '@/features/community';
+import { PageHeader, ui } from '@/features/community/ui';
 import { feedApi } from '@/lib/api/client';
 import type { Post } from '@repo/types';
 
@@ -39,10 +41,6 @@ export default function CommunityPage() {
   useEffect(() => {
     void fetchFeed(1);
   }, [fetchFeed]);
-
-  const handlePostCreated = (newPost: Post) => {
-    setPosts((prev) => [newPost, ...prev]);
-  };
 
   const handleLikeToggle = async (postId: string, nextLiked: boolean) => {
     try {
@@ -90,13 +88,18 @@ export default function CommunityPage() {
       <PageHeader
         backHref="/dashboard"
         backLabel="Back"
-        title="Community"
-        description="Posts from people you follow — scroll for more"
+        title="Community feed"
+        description="All public posts from the BookNest community — posts from people you follow are highlighted"
+        action={
+          <Link href="/community/post" className={ui.btnPrimary}>
+            <PenSquare size={18} />
+            New post
+          </Link>
+        }
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-4">
-          <CreatePost onPostCreated={handlePostCreated} />
+        <div className="lg:col-span-2">
           <Feed
             posts={posts}
             isLoading={isLoading}
@@ -104,6 +107,16 @@ export default function CommunityPage() {
             hasMore={page < totalPages}
             onLoadMore={handleLoadMore}
             onLikeToggle={handleLikeToggle}
+            emptyState={{
+              title: 'No posts yet',
+              description: 'Be the first to share something with the community.',
+              action: (
+                <Link href="/community/post" className={ui.btnPrimary}>
+                  <PenSquare size={16} />
+                  Write a post
+                </Link>
+              ),
+            }}
           />
         </div>
 
@@ -113,9 +126,9 @@ export default function CommunityPage() {
           <div className="bg-white rounded-2xl border border-[#E8E2D9] p-4 shadow-sm">
             <h3 className="font-semibold text-[#1A2A3A] mb-3">Tips</h3>
             <ul className="space-y-2 text-sm text-[#4A5568]">
+              <li>Every published post is visible to everyone</li>
+              <li>Follow people you like — their posts show a Following badge</li>
               <li>Tag books from the market to recommend reads</li>
-              <li>Mention friends with @ to notify them</li>
-              <li>Save drafts and publish when you&apos;re ready</li>
             </ul>
           </div>
         </aside>
