@@ -7,17 +7,19 @@ import { followApi } from '@/lib/api/client';
 
 interface FollowButtonProps {
   userId: string;
-  initialIsFollowing: boolean;
-  initialFollowerCount: number;
+  initialIsFollowing?: boolean;
+  initialFollowerCount?: number;
   size?: 'sm' | 'md';
+  compact?: boolean;
   onFollowChange?: (isFollowing: boolean, followerCount: number) => void;
 }
 
 export function FollowButton({
   userId,
-  initialIsFollowing,
-  initialFollowerCount,
+  initialIsFollowing = false,
+  initialFollowerCount = 0,
   size = 'md',
+  compact = false,
   onFollowChange,
 }: FollowButtonProps) {
   const { isAuthenticated } = useAuthStore();
@@ -26,7 +28,7 @@ export function FollowButton({
   const [isPending, setIsPending] = useState(false);
 
   const sizes = {
-    sm: { px: 'px-3', py: 'py-1', text: 'text-sm', icon: 14 },
+    sm: { px: compact ? 'px-2.5' : 'px-3', py: compact ? 'py-1' : 'py-1', text: 'text-xs', icon: 14 },
     md: { px: 'px-4', py: 'py-1.5', text: 'text-sm', icon: 16 },
   };
 
@@ -58,6 +60,8 @@ export function FollowButton({
     }
   };
 
+  const btnSize = compact ? 'sm' : size;
+
   return (
     <button
       type="button"
@@ -65,16 +69,16 @@ export function FollowButton({
       disabled={isPending}
       className={`flex items-center gap-1.5 rounded-full font-medium transition-colors ${
         isFollowing
-          ? `border border-[#E8E2D9] text-[#4A5568] hover:bg-red-50 hover:text-red-500 hover:border-red-200 ${sizes[size].px} ${sizes[size].py}`
-          : `bg-[#B85C38] text-white hover:bg-[#8E735B] ${sizes[size].px} ${sizes[size].py}`
-      } ${sizes[size].text}`}
+          ? `border border-[#E8E2D9] text-[#4A5568] hover:bg-red-50 hover:text-red-500 hover:border-red-200 ${sizes[btnSize].px} ${sizes[btnSize].py}`
+          : `bg-[#B85C38] text-white hover:bg-[#8E735B] ${sizes[btnSize].px} ${sizes[btnSize].py}`
+      } ${sizes[btnSize].text}`}
     >
       {isPending ? (
-        <Loader2 size={sizes[size].icon} className="animate-spin" />
+        <Loader2 size={sizes[btnSize].icon} className="animate-spin" />
       ) : isFollowing ? (
-        <UserCheck size={sizes[size].icon} />
+        <UserCheck size={sizes[btnSize].icon} />
       ) : (
-        <UserPlus size={sizes[size].icon} />
+        <UserPlus size={sizes[btnSize].icon} />
       )}
       {isFollowing ? 'Following' : 'Follow'}
     </button>

@@ -1,18 +1,67 @@
 'use client';
 
-import { Users } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { Users, Loader2, FileText, type LucideIcon } from 'lucide-react';
 import { FeedPost } from './FeedPost';
 import { PostSkeleton } from './PostSkeleton';
-import { CommunityCard, EmptyState, ui } from '../../ui';
+import { CommunityCard, EmptyState } from '../../ui';
 import type { Post } from '@repo/types';
+
+interface FeedEmptyState {
+  title: string;
+  description: string;
+  icon?: LucideIcon;
+}
 
 interface FeedProps {
   posts: Post[];
   isLoading?: boolean;
-  onLikeToggle?: (postId: string, isLiked: boolean) => void;
+  isLoadingMore?: boolean;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
+  onLikeToggle?: (postId: string, nextLiked: boolean) => void;
+  emptyState?: FeedEmptyState;
+  showEndMessage?: boolean;
 }
 
-export function Feed({ posts, isLoading = false, onLikeToggle }: FeedProps) {
+const DEFAULT_EMPTY: FeedEmptyState = {
+  icon: Users,
+  title: 'Your feed is quiet',
+  description:
+    'Follow authors, publishers, and readers to see their posts here — or publish your first post above.',
+};
+
+export function Feed({
+  posts,
+  isLoading = false,
+  isLoadingMore = false,
+  hasMore = false,
+  onLoadMore,
+  onLikeToggle,
+  emptyState,
+  showEndMessage = true,
+}: FeedProps) {
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const empty = emptyState ?? DEFAULT_EMPTY;
+  const EmptyIcon = empty.icon ?? FileText;
+
+  useEffect(() => {
+    if (!hasMore || isLoading || isLoadingMore || !onLoadMore) return;
+
+    const node = sentinelRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) onLoadMore();
+      },
+      { rootMargin: '200px' }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMore, isLoading, isLoadingMore, onLoadMore]);
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -26,11 +75,7 @@ export function Feed({ posts, isLoading = false, onLikeToggle }: FeedProps) {
   if (posts.length === 0) {
     return (
       <CommunityCard>
-        <EmptyState
-          icon={Users}
-          title="Your feed is quiet"
-          description="Follow authors, publishers, and readers to see their posts here."
-        />
+        <EmptyState icon={EmptyIcon} title={empty.title} description={empty.description} />
       </CommunityCard>
     );
   }
@@ -40,6 +85,18 @@ export function Feed({ posts, isLoading = false, onLikeToggle }: FeedProps) {
       {posts.map((post) => (
         <FeedPost key={post.id} post={post} onLikeToggle={onLikeToggle} />
       ))}
+
+      <div ref={sentinelRef} className="h-4" />
+
+      {isLoadingMore && (
+        <div className="flex justify-center py-4">
+          <Loader2 className="animate-spin text-[#B85C38]" size={28} />
+        </div>
+      )}
+
+      {showEndMessage && !hasMore && posts.length > 0 && (
+        <p className="text-center text-sm text-[#4A5568] py-4">You&apos;re all caught up</p>
+      )}
     </div>
   );
 }

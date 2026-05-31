@@ -1,49 +1,63 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Feed, CreatePost } from '@/features/community';
+import { useState, useEffect, useCallback } from 'react';
+import { Feed, CreatePost, CommunityUserSearch } from '@/features/community';
+import { PageHeader } from '@/features/community/ui';
 import { feedApi } from '@/lib/api/client';
 import type { Post } from '@repo/types';
 
+const PAGE_SIZE = 10;
+
 export default function CommunityPage() {
   const [posts, setPosts] = useState<Post[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchFeed = async () => {
-    setIsLoading(true);
+  const fetchFeed = useCallback(async (pageNum: number, append = false) => {
+    if (append) setIsLoadingMore(true);
+    else setIsLoading(true);
+
     try {
-      const response = await feedApi.getFeed();
-      setPosts(response.data.posts);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load feed');
+      const response = await feedApi.getFeed(pageNum, PAGE_SIZE);
+      const { posts: newPosts, totalPages: pages } = response.data;
+      setPosts((prev) => (append ? [...prev, ...newPosts] : newPosts));
+      setTotalPages(pages);
+      setPage(pageNum);
+      setError(null);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to load feed';
+      setError(message);
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
-  };
-
-  useEffect(() => {
-    fetchFeed();
   }, []);
 
+  useEffect(() => {
+    void fetchFeed(1);
+  }, [fetchFeed]);
+
   const handlePostCreated = (newPost: Post) => {
-    setPosts(prev => [newPost, ...prev]);
+    setPosts((prev) => [newPost, ...prev]);
   };
 
-  const handleLikeToggle = async (postId: string, isLiked: boolean) => {
+  const handleLikeToggle = async (postId: string, nextLiked: boolean) => {
     try {
-      if (isLiked) {
-        await feedApi.unlikePost(postId);
-      } else {
+      if (nextLiked) {
         await feedApi.likePost(postId);
+      } else {
+        await feedApi.unlikePost(postId);
       }
-      setPosts(prev =>
-        prev.map(post =>
+      setPosts((prev) =>
+        prev.map((post) =>
           post.id === postId
             ? {
                 ...post,
-                isLiked: !isLiked,
-                likeCount: isLiked ? post.likeCount - 1 : post.likeCount + 1,
+                isLiked: nextLiked,
+                likeCount: nextLiked ? post.likeCount + 1 : Math.max(0, post.likeCount - 1),
               }
             : post
         )
@@ -53,12 +67,19 @@ export default function CommunityPage() {
     }
   };
 
-  if (error) {
+  const handleLoadMore = () => {
+    if (isLoadingMore || page >= totalPages) return;
+    void fetchFeed(page + 1, true);
+  };
+
+  if (error && posts.length === 0) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
+        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl">
           {error}
-          <button onClick={fetchFeed} className="ml-4 underline">Try again</button>
+          <button type="button" onClick={() => void fetchFeed(1)} className="ml-4 underline">
+            Try again
+          </button>
         </div>
       </div>
     );
@@ -66,24 +87,38 @@ export default function CommunityPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold text-[#1A2A3A] mb-6">Community Feed</h1>
-      
+      <PageHeader
+        backHref="/dashboard"
+        backLabel="Back"
+        title="Community"
+        description="Posts from people you follow — scroll for more"
+      />
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
           <CreatePost onPostCreated={handlePostCreated} />
-          <Feed posts={posts} isLoading={isLoading} onLikeToggle={handleLikeToggle} />
+          <Feed
+            posts={posts}
+            isLoading={isLoading}
+            isLoadingMore={isLoadingMore}
+            hasMore={page < totalPages}
+            onLoadMore={handleLoadMore}
+            onLikeToggle={handleLikeToggle}
+          />
         </div>
 
-        <div className="space-y-4">
-          <div className="bg-white rounded-xl border border-[#E8E2D9] p-4">
-            <h3 className="font-semibold text-[#1A2A3A] mb-3">Trending Topics</h3>
-            <div className="space-y-2">
-              <div className="text-sm"><span className="text-[#B85C38]">#BookRecommendations</span></div>
-              <div className="text-sm"><span className="text-[#B85C38]">#ReadingStreak</span></div>
-              <div className="text-sm"><span className="text-[#B85C38]">#NewRelease</span></div>
-            </div>
+        <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+          <CommunityUserSearch />
+
+          <div className="bg-white rounded-2xl border border-[#E8E2D9] p-4 shadow-sm">
+            <h3 className="font-semibold text-[#1A2A3A] mb-3">Tips</h3>
+            <ul className="space-y-2 text-sm text-[#4A5568]">
+              <li>Tag books from the market to recommend reads</li>
+              <li>Mention friends with @ to notify them</li>
+              <li>Save drafts and publish when you&apos;re ready</li>
+            </ul>
           </div>
-        </div>
+        </aside>
       </div>
     </div>
   );

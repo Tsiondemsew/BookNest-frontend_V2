@@ -21,6 +21,9 @@ export { ChatWindow } from './components/chat/ChatWindow';
 export { ChatMessage } from './components/chat/ChatMessage';
 export { CreateGroupModal } from './components/chat/CreateGroupModal';
 
+// Discover
+export { CommunityUserSearch } from './components/discover/CommunityUserSearch';
+
 // Profile
 export { ProfileHeader } from './components/profile/ProfileHeader';
 export { FollowButton } from './components/profile/FollowButton';

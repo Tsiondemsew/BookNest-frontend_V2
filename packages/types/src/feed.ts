@@ -6,10 +6,28 @@ export interface PostAuthor {
   role: 'reader' | 'author' | 'publisher';
 }
 
+export interface PostUserTag {
+  id: string;
+  type: 'user';
+  name: string;
+  username: string;
+  avatarUrl?: string | null;
+}
+
+export interface PostBookTag {
+  id: string;
+  type: 'book';
+  title: string;
+  coverUrl?: string | null;
+}
+
+export type PostTag = PostUserTag | PostBookTag;
+
 export interface Post {
   id: string;
   content: string;
   imageUrl?: string | null;
+  status?: 'draft' | 'published';
   likeCount: number;
   commentCount: number;
   shareCount: number;
@@ -17,6 +35,23 @@ export interface Post {
   isSaved?: boolean;
   createdAt: string;
   author: PostAuthor;
+  tags?: PostTag[];
+}
+
+export interface Comment {
+  id: string;
+  content: string;
+  author: {
+    id: string;
+    name: string;
+    username: string;
+    avatarUrl?: string | null;
+  };
+  likeCount: number;
+  isLiked: boolean;
+  replyCount: number;
+  replies?: Comment[];
+  createdAt: string;
 }
 
 export interface FeedResponse {
@@ -33,9 +68,25 @@ export interface FeedResponse {
 export interface CreatePostRequest {
   content: string;
   image_url?: string;
+  tagged_users?: string[];
+  tagged_books?: string[];
 }
 
 export interface CreatePostResponse {
   success: boolean;
   data: Post;
+}
+
+export interface CommentsResponse {
+  success: boolean;
+  data: { comments: Comment[] };
+}
+
+export interface CommunityUserSearchResult {
+  id: string;
+  name: string;
+  email?: string;
+  username?: string;
+  avatarUrl?: string | null;
+  role: string;
 }

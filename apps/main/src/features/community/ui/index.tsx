@@ -1,5 +1,8 @@
+'use client';
+
 import { type ReactNode } from 'react';
-import { type LucideIcon } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { type LucideIcon, ArrowLeft } from 'lucide-react';
 
 export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
@@ -100,16 +103,55 @@ interface PageHeaderProps {
   title: string;
   description?: string;
   action?: ReactNode;
+  backHref?: string;
+  backLabel?: string;
 }
 
-export function PageHeader({ title, description, action }: PageHeaderProps) {
+export function BackLink({
+  href = '/community',
+  label = 'Back',
+  className,
+}: {
+  href?: string;
+  label?: string;
+  className?: string;
+}) {
+  const router = useRouter();
+
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push(href);
+    }
+  };
+
   return (
-    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
-      <div>
-        <h1 className="text-2xl font-bold text-[#1A2A3A]">{title}</h1>
-        {description && <p className="text-[#4A5568] mt-1">{description}</p>}
+    <button
+      type="button"
+      onClick={handleBack}
+      className={cn(
+        'inline-flex items-center gap-1.5 text-sm font-medium text-[#4A5568] hover:text-[#B85C38] transition-colors mb-3',
+        className
+      )}
+    >
+      <ArrowLeft size={18} />
+      {label}
+    </button>
+  );
+}
+
+export function PageHeader({ title, description, action, backHref, backLabel }: PageHeaderProps) {
+  return (
+    <div className="mb-6">
+      {backHref !== undefined && <BackLink href={backHref} label={backLabel} />}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1A2A3A]">{title}</h1>
+          {description && <p className="text-[#4A5568] mt-1">{description}</p>}
+        </div>
+        {action}
       </div>
-      {action}
     </div>
   );
 }

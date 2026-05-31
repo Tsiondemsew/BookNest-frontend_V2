@@ -25,6 +25,7 @@ interface ProfileHeaderProps {
     isFollowing?: boolean;
     isOwnProfile: boolean;
     isPrivate: boolean;
+    role?: 'reader' | 'author' | 'publisher' | string;
     readingStats?: {
       current_streak: number;
       books_completed: number;
@@ -39,6 +40,13 @@ interface ProfileHeaderProps {
 
 export function ProfileHeader({ profile, onEdit, onSettings }: ProfileHeaderProps) {
   const [coverImageError, setCoverImageError] = useState(false);
+  const isReader = !profile.role || profile.role === 'reader';
+  const roleBadge =
+    profile.role === 'author'
+      ? { label: 'Author', className: 'bg-blue-100 text-blue-700' }
+      : profile.role === 'publisher'
+        ? { label: 'Publisher', className: 'bg-purple-100 text-purple-700' }
+        : null;
 
   return (
     <CommunityCard className="overflow-hidden">
@@ -94,7 +102,14 @@ export function ProfileHeader({ profile, onEdit, onSettings }: ProfileHeaderProp
 
         <div className="mt-4 space-y-3">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-bn-ink tracking-tight">{profile.name}</h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-bold text-bn-ink tracking-tight">{profile.name}</h1>
+              {roleBadge && (
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${roleBadge.className}`}>
+                  {roleBadge.label}
+                </span>
+              )}
+            </div>
             <p className={ui.caption}>@{profile.username}</p>
           </div>
 
@@ -137,7 +152,7 @@ export function ProfileHeader({ profile, onEdit, onSettings }: ProfileHeaderProp
             ))}
           </div>
 
-          {profile.readingStats && (
+          {isReader && profile.readingStats && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
               <div className="rounded-xl bg-bn-surface border border-bn-border px-3 py-2">
                 <p className="text-lg font-bold text-bn-ink tabular-nums">{profile.readingStats.current_streak}</p>
@@ -158,7 +173,7 @@ export function ProfileHeader({ profile, onEdit, onSettings }: ProfileHeaderProp
             </div>
           )}
 
-          {profile.achievements && profile.achievements.length > 0 && (
+          {isReader && profile.achievements && profile.achievements.length > 0 && (
             <div className="pt-2">
               <p className="text-sm font-medium text-bn-ink mb-2">Recent achievements</p>
               <div className="flex flex-wrap gap-2">

@@ -4,9 +4,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ProfileHeader, Feed } from '@/features/community';
+import { BackLink } from '@/features/community/ui';
 import { profileApi, feedApi } from '@/lib/api/client';
 import { useAuthStore } from '@/stores/authStore';
-import { Loader2 } from 'lucide-react';
+import { Loader2, FileText } from 'lucide-react';
 import type { PublicProfile, Post } from '@repo/types';
 
 export default function PublicProfilePage() {
@@ -67,10 +68,11 @@ export default function PublicProfilePage() {
   if (!profile) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 text-center">
+        <BackLink href="/community" label="Back to community" className="mb-6" />
         <h1 className="text-2xl font-bold text-[#1A2A3A] mb-2">Profile not found</h1>
         <p className="text-[#4A5568]">The user you are looking for does not exist.</p>
         <Link href="/community" className="inline-block mt-4 text-[#B85C38] hover:underline">
-          Back to community
+          Go to community
         </Link>
       </div>
     );
@@ -78,13 +80,28 @@ export default function PublicProfilePage() {
 
   const canSeePosts = profile.isOwnProfile || !profile.isPrivate || profile.isFollowing;
 
+  const postsEmptyState = profile.isOwnProfile
+    ? {
+        icon: FileText,
+        title: 'You have no posts yet',
+        description: 'Head to the community feed to share your first post with followers.',
+      }
+    : {
+        icon: FileText,
+        title: `No posts from ${profile.name} yet`,
+        description: 'This user has not published any posts. Check back later.',
+      };
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+      <BackLink href="/community" label="Back" />
+
       <ProfileHeader
         profile={{
           id: profile.id,
           name: profile.name,
           username: profile.username,
+          role: profile.role,
           bio: profile.bio,
           avatarUrl: profile.avatarUrl,
           coverUrl: null,
@@ -120,7 +137,7 @@ export default function PublicProfilePage() {
           </p>
         </div>
       ) : (
-        <Feed posts={posts} />
+        <Feed posts={posts} emptyState={postsEmptyState} showEndMessage={false} />
       )}
     </div>
   );

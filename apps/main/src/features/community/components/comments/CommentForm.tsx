@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import { Send, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { feedApi } from '@/lib/api/client';
+import type { Comment } from '@repo/types';
 
 interface CommentFormProps {
   postId: string;
   parentCommentId?: string;
   isReply?: boolean;
-  onCommentAdded: (comment: any) => void;
+  onCommentAdded: (comment: Comment) => void;
 }
 
 export function CommentForm({ postId, parentCommentId, isReply = false, onCommentAdded }: CommentFormProps) {
@@ -19,40 +21,30 @@ export function CommentForm({ postId, parentCommentId, isReply = false, onCommen
   const handleSubmit = async () => {
     if (!content.trim()) return;
     if (!isAuthenticated) {
-      // Redirect to login
       window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
       return;
     }
 
     setIsSubmitting(true);
-    // TODO: API call to create comment
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Mock new comment
-    const newComment = {
-      id: Date.now().toString(),
-      content: content.trim(),
-      author: {
-        id: user?.id || '',
-        name: user?.publicName || 'User',
-        username: user?.email?.split('@')[0] || 'user',
-      },
-      likeCount: 0,
-      isLiked: false,
-      replyCount: 0,
-      createdAt: new Date().toISOString(),
-    };
-    
-    onCommentAdded(newComment);
-    setContent('');
-    setIsSubmitting(false);
+    try {
+      const res = await feedApi.createComment(postId, content.trim(), parentCommentId);
+      onCommentAdded(res.data);
+      setContent('');
+    } catch (error) {
+      console.error('Failed to post comment:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!isAuthenticated) {
     return (
-      <div className="bg-[#F5F1EB] rounded-lg p-3 text-center">
+      <div className="bg-[#F5F1EB] rounded-xl p-3 text-center">
         <p className="text-sm text-[#4A5568]">
-          <a href="/login" className="text-[#B85C38] hover:underline">Sign in</a> to leave a comment
+          <a href="/login" className="text-[#B85C38] hover:underline font-medium">
+            Sign in
+          </a>{' '}
+          to leave a comment
         </p>
       </div>
     );
@@ -68,14 +60,15 @@ export function CommentForm({ postId, parentCommentId, isReply = false, onCommen
           type="text"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-          placeholder={isReply ? "Write a reply..." : "Write a comment..."}
-          className="flex-1 px-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38] focus:ring-1 focus:ring-[#B85C38] text-sm"
+          onKeyDown={(e) => e.key === 'Enter' && void handleSubmit()}
+          placeholder={isReply ? 'Write a reply…' : 'Write a comment…'}
+          className="flex-1 px-3 py-2 border border-[#E8E2D9] rounded-xl focus:outline-none focus:border-[#B85C38] focus:ring-2 focus:ring-[#B85C38]/20 text-sm"
         />
         <button
-          onClick={handleSubmit}
+          type="button"
+          onClick={() => void handleSubmit()}
           disabled={isSubmitting || !content.trim()}
-          className="p-2 bg-[#B85C38] text-white rounded-lg hover:bg-[#8E735B] transition-colors disabled:opacity-50"
+          className="p-2 bg-[#B85C38] text-white rounded-xl hover:bg-[#A04E2F] disabled:opacity-50"
         >
           {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
         </button>

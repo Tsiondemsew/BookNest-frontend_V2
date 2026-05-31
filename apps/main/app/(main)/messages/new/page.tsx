@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Loader2, ArrowLeft } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
+import { BackLink } from '@/features/community/ui';
 import { chatApi } from '@/lib/api/chat';
 import { apiClient } from '@/lib/api/client';
 
@@ -57,13 +58,9 @@ export default function NewChatPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto h-[calc(100vh-120px)] flex flex-col">
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => router.back()} className="p-2 hover:bg-[#F5F1EB] rounded-lg">
-          <ArrowLeft size={20} />
-        </button>
-        <h1 className="text-2xl font-bold text-[#1A2A3A]">New Chat</h1>
-      </div>
+    <div className="max-w-2xl mx-auto h-[calc(100vh-120px)] flex flex-col px-4 py-6">
+      <BackLink href="/messages" label="Back to messages" className="mb-3" />
+      <h1 className="text-2xl font-bold text-[#1A2A3A] mb-6">New Chat</h1>
 
       <div className="bg-white rounded-xl border border-[#E8E2D9] p-4">
         <div className="relative">

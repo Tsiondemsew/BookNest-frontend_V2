@@ -9,6 +9,7 @@ import { subscribeToStreakPush, unsubscribeFromStreakPush } from '@/lib/notifica
 import type { Profile } from '@repo/types';
 import { Camera, Save, Loader2, TrendingUp, Globe, Bell, Shield, User, Mail, MapPin, Link as LinkIcon, ExternalLink, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { BackLink } from '@/features/community/ui';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -194,6 +195,8 @@ export default function ProfilePage() {
   const userRole = user?.role || 'reader';
   const isAuthor = userRole === 'author';
   const isPublisher = userRole === 'publisher';
+  const isReader = userRole === 'reader';
+  const settingsBackHref = isAuthor || isPublisher ? '/studio' : '/dashboard';
 
   if (isLoading) {
     return (
@@ -204,7 +207,9 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 px-4 py-6">
+      <BackLink href={settingsBackHref} label="Back" />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
@@ -443,6 +448,7 @@ export default function ProfilePage() {
               </button>
             </div>
 
+            {isReader && (
             <div className="flex items-center justify-between py-2">
               <div className="flex items-center gap-3">
                 <TrendingUp size={18} className="text-[#4A5568]" />
@@ -462,6 +468,7 @@ export default function ProfilePage() {
                 }`} />
               </button>
             </div>
+            )}
           </div>
         </div>
       )}

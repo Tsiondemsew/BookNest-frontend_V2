@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { ReadingJourneyView } from '@/features/reading-journey';
+import { BackLink } from '@/features/community/ui';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -48,5 +49,12 @@ export default function ReadingJourneyPage() {
     );
   }
 
-  return <ReadingJourneyView />;
+  return (
+    <div>
+      <div className="max-w-4xl mx-auto px-4 pt-4">
+        <BackLink href="/dashboard" label="Back to dashboard" />
+      </div>
+      <ReadingJourneyView />
+    </div>
+  );
 }

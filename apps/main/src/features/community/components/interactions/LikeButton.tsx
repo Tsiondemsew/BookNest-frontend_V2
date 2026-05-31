@@ -3,16 +3,24 @@
 import { useState } from 'react';
 import { Heart } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { feedApi } from '@/lib/api/client';
 import { cn, ui } from '../../ui';
 
 interface LikeButtonProps {
-  postId: string;
+  targetId: string;
+  targetType?: 'post' | 'comment';
   initialLiked: boolean;
   initialCount: number;
   size?: 'sm' | 'md' | 'xs';
 }
 
-export function LikeButton({ postId, initialLiked, initialCount, size = 'md' }: LikeButtonProps) {
+export function LikeButton({
+  targetId,
+  targetType = 'post',
+  initialLiked,
+  initialCount,
+  size = 'md',
+}: LikeButtonProps) {
   const { isAuthenticated } = useAuthStore();
   const [isLiked, setIsLiked] = useState(initialLiked);
   const [likeCount, setLikeCount] = useState(initialCount);
@@ -29,10 +37,22 @@ export function LikeButton({ postId, initialLiked, initialCount, size = 'md' }: 
     setIsPending(true);
     const next = !isLiked;
     setIsLiked(next);
-    setLikeCount((prev) => prev + (next ? 1 : -1));
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    setIsPending(false);
-    void postId;
+    setLikeCount((prev) => Math.max(0, prev + (next ? 1 : -1)));
+
+    try {
+      if (targetType === 'comment') {
+        if (next) await feedApi.likeComment(targetId);
+        else await feedApi.unlikeComment(targetId);
+      } else {
+        if (next) await feedApi.likePost(targetId);
+        else await feedApi.unlikePost(targetId);
+      }
+    } catch {
+      setIsLiked(!next);
+      setLikeCount((prev) => Math.max(0, prev + (next ? -1 : 1)));
+    } finally {
+      setIsPending(false);
+    }
   };
 
   return (
