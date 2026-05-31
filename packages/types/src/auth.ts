@@ -111,6 +111,8 @@ export interface RegisterResponse {
   message?: string;
   data: {
     email: string;
+    resumed?: boolean;
+    verificationEmailPending?: boolean;
   };
 }
 

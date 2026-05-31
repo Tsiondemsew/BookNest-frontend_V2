@@ -31,6 +31,9 @@ interface AuthState {
     success: boolean;
     error?: string;
     fieldErrors?: Record<string, string>;
+    message?: string;
+    resumed?: boolean;
+    verificationEmailPending?: boolean;
   }>;
   logout: () => Promise<void>;
   /** First load only */
@@ -104,22 +107,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ error: null });
 
     try {
-      await authApi.register({
+      const response = await authApi.register({
         email,
         password,
         display_name: displayName,
       });
 
       set({ error: null });
-      return { success: true };
+      return {
+        success: true,
+        message: response.message,
+        resumed: response.data?.resumed,
+        verificationEmailPending: response.data?.verificationEmailPending,
+      };
     } catch (error: unknown) {
       let friendlyMessage = getFriendlyAuthMessage(error);
       let fieldErrors = getAuthFieldErrors(error);
 
       if (error instanceof ValidationError) {
         const lower = friendlyMessage.toLowerCase();
-        if (lower.includes('already registered')) {
-          fieldErrors = { ...fieldErrors, email: 'An account with this email already exists.' };
+        if (lower.includes('already registered') || lower.includes('sign in instead')) {
+          fieldErrors = {
+            ...fieldErrors,
+            email: 'This email is already registered. Sign in, or use resend verification if you never confirmed.',
+          };
         }
         if (lower.includes('display name')) {
           fieldErrors = { ...fieldErrors, displayName: friendlyMessage };

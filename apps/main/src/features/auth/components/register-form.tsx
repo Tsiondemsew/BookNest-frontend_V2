@@ -69,6 +69,9 @@ export function RegisterForm() {
 
     setRegisteredEmail(data.email);
     setVerificationSent(true);
+    if (result.message) {
+      setResendMessage(result.message);
+    }
   };
 
   const handleResendVerification = async () => {
@@ -102,7 +105,9 @@ export function RegisterForm() {
           <p
             className={`text-sm ${
               resendMessage.toLowerCase().includes('resent') ||
-              resendMessage.toLowerCase().includes('check')
+              resendMessage.toLowerCase().includes('check') ||
+              resendMessage.toLowerCase().includes('sent') ||
+              resendMessage.toLowerCase().includes('inbox')
                 ? 'text-green-600'
                 : 'text-red-600'
             }`}
