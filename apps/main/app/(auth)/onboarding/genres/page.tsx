@@ -96,10 +96,20 @@ function GenresPageContent() {
   };
 
   const skip = async () => {
-    if (user) {
-      await completeAuthContinuation(router, searchParams, user);
-    } else {
-      router.push(afterSaveRedirect);
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      if (user) {
+        await completeAuthContinuation(router, searchParams, user, {
+          needsGenreOnboarding: false,
+        });
+      } else {
+        router.push(afterSaveRedirect);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not continue. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -176,7 +186,8 @@ function GenresPageContent() {
 
             <div className="flex flex-col sm:flex-row gap-3">
               <button
-                onClick={handleSubmit}
+                type="button"
+                onClick={(e) => void handleSubmit(e)}
                 disabled={isSubmitting}
                 className="flex-1 py-3 bg-[#2C3E50] text-white rounded-xl font-medium hover:bg-[#1A2A3A] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
@@ -193,8 +204,10 @@ function GenresPageContent() {
                 )}
               </button>
               <button
-                onClick={skip}
-                className="py-3 px-6 text-[#4A5568] hover:text-[#1A2A3A] transition-colors flex items-center justify-center gap-1"
+                type="button"
+                onClick={() => void skip()}
+                disabled={isSubmitting}
+                className="py-3 px-6 text-[#4A5568] hover:text-[#1A2A3A] transition-colors flex items-center justify-center gap-1 disabled:opacity-50"
               >
                 <SkipForward size={16} />
                 Skip for now
