@@ -519,7 +519,7 @@ export function ChatWindow({
         ) : (
           messages.map((msg) => {
             const isOwn = currentUserId ? msg.senderId === currentUserId : false;
-            const isDeleted = msg.isDeleted || msg.deletedForEveryone;
+            const isDeleted = Boolean(msg.isDeleted || msg.deletedForEveryone);
 
             return (
               <div

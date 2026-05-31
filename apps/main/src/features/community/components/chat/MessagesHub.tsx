@@ -215,12 +215,13 @@ export function MessagesHub({ initialChatId }: MessagesHubProps) {
 
           <div className="flex-1 overflow-y-auto">
             {filteredChats.length === 0 ? (
-              <EmptyState
-                icon={MessageSquare}
-                title="No conversations"
-                description="Start a direct chat or create a group."
-                className="py-12"
-              />
+              <div className="py-12">
+                <EmptyState
+                  icon={MessageSquare}
+                  title="No conversations"
+                  description="Start a direct chat or create a group."
+                />
+              </div>
             ) : (
               <div className="divide-y divide-bn-border/50">
                 {filteredChats.map((chat) => {

@@ -55,12 +55,14 @@ export function createChatApi(client: ApiClient) {
 
     createGroupInvite: (chatId: string) =>
       client.post<{ success: boolean; data: ChatInviteResponse }>(
-        endpoints.chat.groupInvite(chatId)
+        endpoints.chat.groupInvite(chatId),
+        {}
       ),
 
     joinGroupViaInvite: (token: string) =>
       client.post<{ success: boolean; data: { id: string; name?: string } }>(
-        endpoints.chat.join(token)
+        endpoints.chat.join(token),
+        {}
       ),
 
     addGroupMember: (chatId: string, memberId: string) =>

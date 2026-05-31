@@ -8,5 +8,6 @@ export * from './feed';
 export * from './profile';
 export * from './progress';
 export * from './gamification';
+export * from './notification';
 export * from './reviews';
 export * from './sellerFinance';

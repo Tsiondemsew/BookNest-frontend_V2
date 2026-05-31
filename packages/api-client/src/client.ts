@@ -97,9 +97,7 @@ export class ApiClient {
     try {
       response = await fetch(url, init);
     } catch {
-      const isLocalDev =
-        process.env.NODE_ENV === 'development' &&
-        (url.includes('localhost') || url.includes('127.0.0.1'));
+      const isLocalDev = url.includes('localhost') || url.includes('127.0.0.1');
       throw new ApiClientError(
         'NETWORK_ERROR',
         0,
