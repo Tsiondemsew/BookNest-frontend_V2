@@ -22,7 +22,7 @@ export function CommentItem({ comment, postId, onReplyAdded, isReply = false }: 
   const [showReplies, setShowReplies] = useState(false);
 
   return (
-    <div className={`${!isReply && 'border-b border-[#E8E2D9] pb-3 last:border-0'} ${isReply && 'ml-8 mt-2'}`}>
+    <div className={`${!isReply && 'pb-3 last:pb-0'} ${isReply && 'ml-6 mt-2 pl-3 border-l-2 border-[#E8E2D9]'}`}>
       <div className="flex gap-2">
         <Link href={`/@${encodeURIComponent(comment.author.username)}`} className="flex-shrink-0">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#2C3E50] to-[#B85C38] flex items-center justify-center text-white text-xs font-semibold overflow-hidden">

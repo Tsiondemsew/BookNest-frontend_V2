@@ -8,7 +8,7 @@ export const OFFLINE_ALLOWED_PREFIXES = [
   '/library',
   '/reader',
   '/dashboard/reading',
-  '/dashboard',
+  '/community',
   '/profile',
 ];
 

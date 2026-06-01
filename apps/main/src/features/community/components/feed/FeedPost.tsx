@@ -1,17 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Heart, MessageCircle, Bookmark, MoreHorizontal, BookOpen, User } from 'lucide-react';
+import {
+  Heart,
+  MessageCircle,
+  Bookmark,
+  MoreHorizontal,
+  BookOpen,
+  User,
+  Pencil,
+  Trash2,
+  Loader2,
+  Check,
+  X,
+} from 'lucide-react';
 import { CommentSection } from '../comments/CommentSection';
 import { ShareButton } from '../interactions/ShareButton';
 import { ReportButton } from '../interactions/ReportButton';
 import { formatRelativeTime } from '../../utils/timeFormat';
+import { useAuthStore } from '@/stores/authStore';
+import { feedApi } from '@/lib/api/client';
 import type { Post, PostTag } from '@repo/types';
 
 interface FeedPostProps {
   post: Post;
   onLikeToggle?: (postId: string, nextLiked: boolean) => void;
+  onPostUpdated?: (post: Post) => void;
+  onPostDeleted?: (postId: string) => void;
   showComments?: boolean;
 }
 
@@ -49,18 +65,84 @@ function PostTags({ tags }: { tags: PostTag[] }) {
   );
 }
 
-export function FeedPost({ post, onLikeToggle, showComments = false }: FeedPostProps) {
+export function FeedPost({
+  post,
+  onLikeToggle,
+  onPostUpdated,
+  onPostDeleted,
+  showComments = false,
+}: FeedPostProps) {
+  const { user } = useAuthStore();
+  const menuRef = useRef<HTMLDivElement>(null);
   const [expandedComments, setExpandedComments] = useState(showComments);
   const [isLiked, setIsLiked] = useState(post.isLiked);
   const [likeCount, setLikeCount] = useState(post.likeCount);
   const [shareCount, setShareCount] = useState(post.shareCount);
   const [isSaved, setIsSaved] = useState(post.isSaved ?? false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(post.content);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [displayContent, setDisplayContent] = useState(post.content);
+
+  const isOwner = user?.id === post.author.id;
+
+  useEffect(() => {
+    setDisplayContent(post.content);
+    setEditContent(post.content);
+  }, [post.content]);
+
+  useEffect(() => {
+    const handleClick = (event: MouseEvent) => {
+      if (menuRef.current?.contains(event.target as Node)) return;
+      setMenuOpen(false);
+    };
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, []);
 
   const handleLike = () => {
     const nextLiked = !isLiked;
     setIsLiked(nextLiked);
     setLikeCount((prev) => Math.max(0, prev + (nextLiked ? 1 : -1)));
     onLikeToggle?.(post.id, nextLiked);
+  };
+
+  const handleSaveEdit = async () => {
+    const trimmed = editContent.trim();
+    if (!trimmed || isSaving) return;
+
+    setIsSaving(true);
+    try {
+      const response = await feedApi.updatePost(post.id, { content: trimmed });
+      const updated = response.data;
+      setDisplayContent(updated.content);
+      setIsEditing(false);
+      setMenuOpen(false);
+      onPostUpdated?.({ ...post, content: updated.content });
+    } catch (error) {
+      console.error('Failed to update post:', error);
+      alert('Could not update post. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm('Delete this post? This cannot be undone.')) return;
+
+    setIsDeleting(true);
+    try {
+      await feedApi.deletePost(post.id);
+      setMenuOpen(false);
+      onPostDeleted?.(post.id);
+    } catch (error) {
+      console.error('Failed to delete post:', error);
+      alert('Could not delete post. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const getRoleBadge = (role: string) => {
@@ -116,16 +198,96 @@ export function FeedPost({ post, onLikeToggle, showComments = false }: FeedPostP
             </div>
           </Link>
           <div className="flex items-center gap-1">
-            <ReportButton targetId={post.id} type="post" />
-            <button type="button" className="p-1 text-[#4A5568] hover:text-[#1A2A3A]">
-              <MoreHorizontal size={18} />
-            </button>
+            {!isOwner && <ReportButton targetId={post.id} type="post" />}
+            {isOwner && (
+              <div className="relative" ref={menuRef}>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMenuOpen((value) => !value);
+                  }}
+                  className="p-1 text-[#4A5568] hover:text-[#1A2A3A] touch-manipulation"
+                  aria-label="Post options"
+                >
+                  <MoreHorizontal size={18} />
+                </button>
+                {menuOpen && (
+                  <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-[#E8E2D9] rounded-xl shadow-lg py-1 z-20">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditing(true);
+                        setMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-[#F5F1EB] text-left"
+                    >
+                      <Pencil size={14} />
+                      Edit post
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isDeleting}
+                      onClick={() => void handleDelete()}
+                      className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-[#F5F1EB] text-left text-red-600"
+                    >
+                      <Trash2 size={14} />
+                      Delete post
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       <div className="px-4 py-2">
-        <p className="text-[#1A2A3A] whitespace-pre-wrap leading-relaxed">{post.content}</p>
+        {isEditing ? (
+          <div className="space-y-2">
+            <textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                  e.preventDefault();
+                  void handleSaveEdit();
+                }
+                if (e.key === 'Escape') {
+                  setIsEditing(false);
+                  setEditContent(displayContent);
+                }
+              }}
+              rows={4}
+              autoFocus
+              className="w-full px-3 py-2 border border-[#E8E2D9] rounded-xl text-[#1A2A3A] focus:outline-none focus:border-[#B85C38] focus:ring-2 focus:ring-[#B85C38]/20 resize-none text-sm"
+            />
+            <div className="flex items-center justify-end gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditContent(displayContent);
+                }}
+                className="p-2 rounded-lg text-[#4A5568] hover:bg-[#F5F1EB] transition-colors"
+                aria-label="Cancel edit"
+              >
+                <X size={18} />
+              </button>
+              <button
+                type="button"
+                disabled={!editContent.trim() || isSaving}
+                onClick={() => void handleSaveEdit()}
+                className="p-2 rounded-lg bg-[#B85C38] text-white hover:bg-[#A04E2F] disabled:opacity-50 transition-colors"
+                aria-label="Save edit"
+              >
+                {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-[#1A2A3A] whitespace-pre-wrap leading-relaxed">{displayContent}</p>
+        )}
         {post.tags && post.tags.length > 0 && <PostTags tags={post.tags} />}
         {post.imageUrl && (
           <div className="mt-3 rounded-xl overflow-hidden border border-[#E8E2D9]">
@@ -174,11 +336,7 @@ export function FeedPost({ post, onLikeToggle, showComments = false }: FeedPostP
         </button>
       </div>
 
-      {expandedComments && (
-        <div className="border-t border-[#E8E2D9]">
-          <CommentSection postId={post.id} />
-        </div>
-      )}
+      {expandedComments && <CommentSection postId={post.id} />}
     </article>
   );
 }

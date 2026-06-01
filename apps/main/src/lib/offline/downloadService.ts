@@ -54,8 +54,7 @@ export function canDownloadOffline(): { allowed: boolean; reason?: string } {
   if (!isInstalledPwa()) {
     return {
       allowed: false,
-      reason:
-        'Install the BookNest app to save books for offline reading. Browser tabs cannot access downloads when offline.',
+      reason: 'Install the app to download for offline use.',
     };
   }
   return { allowed: true };

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, Plus, Users, Loader2, MessageSquare, UserPlus } from 'lucide-react';
+import { Search, Plus, Users, Loader2, MessageSquare } from 'lucide-react';
 import { chatApi } from '@/lib/api/chat';
 import { usersApi } from '@/lib/api/client';
 import { getFriendlyNetworkMessage } from '@/lib/api/networkErrorMessage';
@@ -10,7 +10,6 @@ import { formatRelativeTime } from '@/features/community/utils/timeFormat';
 import { ChatWindow } from '@/features/community/components/chat/ChatWindow';
 import { CreateGroupModal } from '@/features/community/components/chat/CreateGroupModal';
 import {
-  PageHeader,
   CommunityCard,
   OnlineAvatar,
   CommunityAvatar,
@@ -153,29 +152,14 @@ export function MessagesHub({ initialChatId }: MessagesHubProps) {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-4 sm:py-6">
-      <PageHeader
-        title="Messages"
-        description="Chat with readers, authors, and groups."
-        action={
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setShowGroupModal(true)}
-              className={ui.btnSecondary}
-            >
-              <Users size={18} />
-              New group
-            </button>
-            <button type="button" onClick={() => setShowNewChat(true)} className={ui.btnPrimary}>
-              <Plus size={18} />
-              New chat
-            </button>
-          </div>
-        }
-      />
-
-      {loadError ? (
+    <div
+      className={cn(
+        selectedChatId
+          ? 'fixed inset-x-0 bottom-0 top-14 z-20 lg:static lg:z-auto flex flex-col bg-white lg:max-w-6xl lg:mx-auto lg:px-4 lg:py-4 lg:h-auto'
+          : 'max-w-6xl mx-auto px-4 py-4'
+      )}
+    >
+      {loadError && !selectedChatId ? (
         <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {loadError}
           <button
@@ -188,7 +172,14 @@ export function MessagesHub({ initialChatId }: MessagesHubProps) {
         </div>
       ) : null}
 
-      <div className="flex h-[calc(100dvh-11rem)] min-h-[420px] max-h-[820px] rounded-2xl border border-bn-border/70 overflow-hidden bg-white shadow-md">
+      <div
+        className={cn(
+          'flex flex-1 min-h-0 overflow-hidden bg-white',
+          selectedChatId
+            ? 'h-full lg:h-[calc(100dvh-11rem)] lg:min-h-[420px] lg:max-h-[820px] lg:rounded-2xl lg:border lg:border-bn-border/70 lg:shadow-md'
+            : 'h-[calc(100dvh-9rem)] min-h-[420px] max-h-[820px] rounded-2xl border border-bn-border/70 shadow-md'
+        )}
+      >
         {/* Chat list — left panel */}
         <div
           className={cn(
@@ -197,15 +188,33 @@ export function MessagesHub({ initialChatId }: MessagesHubProps) {
           )}
         >
           <div className="p-4 space-y-3 border-b border-bn-border/60">
-            <div className="relative">
-              <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-bn-muted" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search conversations…"
-                className={cn(ui.input, 'pl-10 bg-white')}
-              />
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-bn-muted" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search conversations…"
+                  className={cn(ui.input, 'pl-10 bg-white')}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowNewChat(true)}
+                className="p-2.5 rounded-xl bg-bn-primary text-white hover:bg-[#A04E2F] shrink-0"
+                aria-label="New chat"
+              >
+                <Plus size={20} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowGroupModal(true)}
+                className={cn(ui.btnIcon, 'shrink-0')}
+                aria-label="New group"
+              >
+                <Users size={18} />
+              </button>
             </div>
             <SegmentedTabs
               tabs={[
@@ -326,18 +335,8 @@ export function MessagesHub({ initialChatId }: MessagesHubProps) {
               </div>
               <h3 className="text-lg font-semibold text-bn-ink">Select a conversation</h3>
               <p className="text-sm text-bn-muted mt-1 max-w-sm">
-                Choose a chat from the list or start a new direct message or group.
+                Choose a chat from the list, or use + and group icons to start a new one.
               </p>
-              <div className="flex gap-3 mt-6">
-                <button type="button" onClick={() => setShowNewChat(true)} className={ui.btnPrimary}>
-                  <UserPlus size={16} />
-                  New chat
-                </button>
-                <button type="button" onClick={() => setShowGroupModal(true)} className={ui.btnSecondary}>
-                  <Users size={16} />
-                  Create group
-                </button>
-              </div>
             </div>
           )}
         </div>

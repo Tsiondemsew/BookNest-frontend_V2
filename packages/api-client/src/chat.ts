@@ -53,6 +53,12 @@ export function createChatApi(client: ApiClient) {
     deleteMessageForEveryone: (messageId: string) =>
       client.delete<{ success: boolean }>(endpoints.chat.deleteMessageForEveryone(messageId)),
 
+    editMessage: (messageId: string, content: string) =>
+      client.patch<{ success: boolean; data: import('@repo/types').ChatMessage }>(
+        endpoints.chat.editMessage(messageId),
+        { content }
+      ),
+
     createGroupInvite: (chatId: string) =>
       client.post<{ success: boolean; data: ChatInviteResponse }>(
         endpoints.chat.groupInvite(chatId),

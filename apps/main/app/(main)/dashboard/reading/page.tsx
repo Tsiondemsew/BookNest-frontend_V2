@@ -2,11 +2,10 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuthStore } from '@/stores/authStore';
 import { ReadingJourneyView } from '@/features/reading-journey';
-import { BackLink } from '@/features/community/ui';
-import { Loader2 } from 'lucide-react';
-import Link from 'next/link';
+import { Loader2, Library } from 'lucide-react';
 
 function isReaderRole(role?: string) {
   return role !== 'author' && role !== 'publisher';
@@ -34,25 +33,34 @@ export default function ReadingJourneyPage() {
   if (!isReaderRole(role)) {
     return (
       <div className="max-w-md mx-auto text-center py-16 px-4">
-        <p className="text-[#1A2A3A] font-semibold text-lg">Reading tracking is for readers</p>
+        <p className="text-[#1A2A3A] font-semibold text-lg bn-serif">Reading tracking is for readers</p>
         <p className="text-sm text-[#4A5568] mt-2">
-          Authors and publishers use Studio for sales analytics and earnings — not reading streaks or
-          badges.
+          Authors and publishers use Studio for analytics and earnings.
         </p>
         <Link
           href="/studio/analytics"
-          className="inline-block mt-6 text-sm font-semibold text-[#B85C38] hover:underline"
+          className="inline-block mt-6 text-sm font-semibold text-[#B85C38] hover:text-[#8E735B]"
         >
-          Go to Studio analytics →
+          Go to Studio →
         </Link>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="max-w-4xl mx-auto px-4 pt-4">
-        <BackLink href="/dashboard" label="Back to dashboard" />
+    <div className="max-w-6xl mx-auto px-4 py-4 sm:py-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1A2A3A] bn-serif">Reading Journey</h1>
+          <p className="text-sm text-[#4A5568] mt-1">Streaks, stats, and achievements</p>
+        </div>
+        <Link
+          href="/library"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[#E8E2D9] bg-white text-sm font-medium text-[#2C3E50] hover:border-[#B85C38]/30 hover:bg-[#FDFBF7] transition-colors w-fit"
+        >
+          <Library size={16} className="text-[#B85C38]" />
+          My Library
+        </Link>
       </div>
       <ReadingJourneyView />
     </div>

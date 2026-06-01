@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { PenSquare } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Feed, CommunityUserSearch } from '@/features/community';
-import { PageHeader, ui } from '@/features/community/ui';
+import { ui } from '@/features/community/ui';
 import { feedApi } from '@/lib/api/client';
 import type { Post } from '@repo/types';
 
@@ -70,9 +70,17 @@ export default function CommunityPage() {
     void fetchFeed(page + 1, true);
   };
 
+  const handlePostUpdated = (updated: Post) => {
+    setPosts((prev) => prev.map((post) => (post.id === updated.id ? updated : post)));
+  };
+
+  const handlePostDeleted = (postId: string) => {
+    setPosts((prev) => prev.filter((post) => post.id !== postId));
+  };
+
   if (error && posts.length === 0) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-2xl mx-auto">
         <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl">
           {error}
           <button type="button" onClick={() => void fetchFeed(1)} className="ml-4 underline">
@@ -84,20 +92,7 @@ export default function CommunityPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
-      <PageHeader
-        backHref="/dashboard"
-        backLabel="Back"
-        title="Community feed"
-        description="All public posts from the BookNest community — posts from people you follow are highlighted"
-        action={
-          <Link href="/community/post" className={ui.btnPrimary}>
-            <PenSquare size={18} />
-            New post
-          </Link>
-        }
-      />
-
+    <div className="max-w-2xl lg:max-w-7xl mx-auto relative">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <Feed
@@ -107,12 +102,14 @@ export default function CommunityPage() {
             hasMore={page < totalPages}
             onLoadMore={handleLoadMore}
             onLikeToggle={handleLikeToggle}
+            onPostUpdated={handlePostUpdated}
+            onPostDeleted={handlePostDeleted}
             emptyState={{
               title: 'No posts yet',
               description: 'Be the first to share something with the community.',
               action: (
                 <Link href="/community/post" className={ui.btnPrimary}>
-                  <PenSquare size={16} />
+                  <Plus size={16} />
                   Write a post
                 </Link>
               ),
@@ -120,10 +117,18 @@ export default function CommunityPage() {
           />
         </div>
 
-        <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+        <aside className="hidden lg:block space-y-4 lg:sticky lg:top-6 lg:self-start">
           <CommunityUserSearch />
         </aside>
       </div>
+
+      <Link
+        href="/community/post"
+        className="fixed z-50 bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] right-4 lg:bottom-8 lg:right-8 w-14 h-14 rounded-full bg-[#B85C38] text-white shadow-lg shadow-[#B85C38]/35 flex items-center justify-center hover:bg-[#A04E2F] active:scale-95 transition-all"
+        aria-label="New post"
+      >
+        <Plus size={26} strokeWidth={2.5} />
+      </Link>
     </div>
   );
 }

@@ -1,23 +1,26 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
 import { ProfileHeader, Feed } from '@/features/community';
 import { BackLink } from '@/features/community/ui';
 import { profileApi, feedApi } from '@/lib/api/client';
+import { profileBackFallback } from '@/lib/community/profilePaths';
 import { useAuthStore } from '@/stores/authStore';
 import { Loader2, FileText } from 'lucide-react';
 import type { PublicProfile, Post } from '@repo/types';
 
-export default function PublicProfilePage() {
+function PublicProfileContent() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuthStore();
   const rawUsername = params.username as string;
   const username = decodeURIComponent(rawUsername?.replace(/^@/, '') || '')
     .trim()
     .toLowerCase();
+
+  const backHref = searchParams.get('from') || profileBackFallback(username === 'me');
 
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -68,12 +71,16 @@ export default function PublicProfilePage() {
   if (!profile) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 text-center">
-        <BackLink href="/community" label="Back to community" className="mb-6" />
+        <BackLink href={backHref} label="Back" className="mb-6" />
         <h1 className="text-2xl font-bold text-[#1A2A3A] mb-2">Profile not found</h1>
         <p className="text-[#4A5568]">The user you are looking for does not exist.</p>
-        <Link href="/community" className="inline-block mt-4 text-[#B85C38] hover:underline">
-          Go to community
-        </Link>
+        <button
+          type="button"
+          onClick={() => router.push(backHref)}
+          className="inline-block mt-4 text-[#B85C38] hover:underline"
+        >
+          Go back
+        </button>
       </div>
     );
   }
@@ -94,7 +101,7 @@ export default function PublicProfilePage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-      <BackLink href="/community" label="Back" />
+      <BackLink href={backHref} label="Back" />
 
       <ProfileHeader
         profile={{
@@ -137,8 +144,30 @@ export default function PublicProfilePage() {
           </p>
         </div>
       ) : (
-        <Feed posts={posts} emptyState={postsEmptyState} showEndMessage={false} />
+        <Feed
+          posts={posts}
+          emptyState={postsEmptyState}
+          showEndMessage={false}
+          onPostUpdated={(updated) =>
+            setPosts((prev) => prev.map((post) => (post.id === updated.id ? updated : post)))
+          }
+          onPostDeleted={(postId) => setPosts((prev) => prev.filter((post) => post.id !== postId))}
+        />
       )}
     </div>
+  );
+}
+
+export default function PublicProfilePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-64">
+          <Loader2 size={32} className="animate-spin text-[#B85C38]" />
+        </div>
+      }
+    >
+      <PublicProfileContent />
+    </Suspense>
   );
 }

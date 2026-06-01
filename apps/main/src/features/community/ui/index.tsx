@@ -10,8 +10,8 @@ export function cn(...classes: Array<string | false | null | undefined>) {
 
 export const ui = {
   page: 'max-w-4xl mx-auto px-4 py-6',
-  card: 'bg-white rounded-2xl border border-[#E8E2D9] shadow-sm',
-  cardPad: 'bg-white rounded-2xl border border-[#E8E2D9] shadow-sm p-5 sm:p-6',
+  card: 'bg-white rounded-xl border border-[#E8E2D9] shadow-sm',
+  cardPad: 'bg-white rounded-xl border border-[#E8E2D9] shadow-sm p-5 sm:p-6',
   body: 'text-sm text-[#4A5568] leading-relaxed',
   caption: 'text-xs text-[#4A5568]',
   input:
@@ -167,7 +167,7 @@ export function PageHeader({ title, description, action, backHref, backLabel }: 
       {backHref !== undefined && <BackLink href={backHref} label={backLabel} />}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#1A2A3A]">{title}</h1>
+          <h1 className="text-2xl font-bold text-[#1A2A3A] bn-serif">{title}</h1>
           {description && <p className="text-[#4A5568] mt-1">{description}</p>}
         </div>
         {action}

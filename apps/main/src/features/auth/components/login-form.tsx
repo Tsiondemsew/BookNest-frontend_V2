@@ -7,13 +7,19 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, type LoginInput } from '@repo/validation';
 import { useAuthStore } from '@/stores/authStore';
+import { DEFAULT_AUTHENTICATED_HOME } from '@/lib/routes/defaultRoutes';
 import { completeAuthContinuation } from '@/lib/auth/pendingAuthAction';
 import { Eye, EyeOff, AlertCircle, Loader2, CheckCircle, WifiOff } from 'lucide-react';
+
+const inputClass = (hasError: boolean) =>
+  `w-full px-4 py-2.5 border rounded-xl bg-[#FDFBF7]/50 text-[#1A2A3A] placeholder:text-[#4A5568]/60 focus:outline-none focus:ring-2 focus:ring-[#B85C38]/30 focus:border-[#B85C38] disabled:opacity-60 disabled:bg-[#E8E2D9]/30 transition-colors ${
+    hasError ? 'border-red-400' : 'border-[#E8E2D9]'
+  }`;
 
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirect') || '/dashboard';
+  const redirectTo = searchParams.get('redirect') || DEFAULT_AUTHENTICATED_HOME;
   const verified = searchParams.get('verified') === '1';
   const passwordReset = searchParams.get('reset') === '1';
   const sessionExpired = searchParams.get('session') === 'expired';
@@ -87,27 +93,27 @@ export function LoginForm() {
   };
 
   return (
-    <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)} noValidate>
+    <form className="space-y-5" onSubmit={handleSubmit(onSubmit)} noValidate>
       {verified && (
-        <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
-          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-green-800">
+        <div className="p-4 bg-emerald-50 border border-emerald-200/80 rounded-xl flex items-start gap-3">
+          <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-emerald-800">
             Your email is verified. Sign in to continue.
           </p>
         </div>
       )}
 
       {passwordReset && (
-        <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
-          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-green-800">
+        <div className="p-4 bg-emerald-50 border border-emerald-200/80 rounded-xl flex items-start gap-3">
+          <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-emerald-800">
             Your password was updated. Sign in with your new password.
           </p>
         </div>
       )}
 
       {(isOffline || offlineParam) && (
-        <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
+        <div className="p-4 bg-amber-50 border border-amber-200/80 rounded-xl flex items-start gap-3">
           <WifiOff className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-amber-900">
             <p className="font-medium">You are offline</p>
@@ -126,7 +132,7 @@ export function LoginForm() {
       )}
 
       {generalError && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+        <div className="p-4 bg-red-50 border border-red-200/80 rounded-xl">
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
@@ -134,7 +140,7 @@ export function LoginForm() {
               {generalError.toLowerCase().includes('verify') && (
                 <Link
                   href="/resend-verification"
-                  className="text-sm text-red-600 hover:text-red-800 font-medium mt-2 inline-block"
+                  className="text-sm text-[#B85C38] hover:text-[#8E735B] font-medium mt-2 inline-block"
                 >
                   Resend verification email →
                 </Link>
@@ -145,22 +151,20 @@ export function LoginForm() {
       )}
 
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-          Email <span className="text-red-500">*</span>
+        <label htmlFor="email" className="block text-sm font-medium text-[#2C3E50] mb-1.5">
+          Email
         </label>
         <input
           id="email"
           type="email"
           autoComplete="email"
           disabled={isSubmitting}
-          className={`w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${
-            errors.email ? 'border-red-500' : 'border-gray-300'
-          }`}
+          className={inputClass(!!errors.email)}
           placeholder="you@example.com"
           {...register('email')}
         />
         {errors.email && (
-          <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+          <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
             <AlertCircle size={14} />
             {errors.email.message}
           </p>
@@ -168,8 +172,8 @@ export function LoginForm() {
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-          Password <span className="text-red-500">*</span>
+        <label htmlFor="password" className="block text-sm font-medium text-[#2C3E50] mb-1.5">
+          Password
         </label>
         <div className="relative">
           <input
@@ -177,40 +181,42 @@ export function LoginForm() {
             type={showPassword ? 'text' : 'password'}
             autoComplete="current-password"
             disabled={isSubmitting}
-            className={`w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 pr-10 ${
-              errors.password ? 'border-red-500' : 'border-gray-300'
-            }`}
+            className={`${inputClass(!!errors.password)} pr-11`}
             placeholder="Enter your password"
             {...register('password')}
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A5568] hover:text-[#2C3E50] transition-colors p-0.5"
             tabIndex={-1}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
           >
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
         {errors.password && (
-          <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+          <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
             <AlertCircle size={14} />
             {errors.password.message}
           </p>
         )}
       </div>
 
-      <div className="flex items-center justify-between">
-        <label className="flex items-center gap-2 cursor-pointer">
+      <div className="flex items-center justify-between gap-4 pt-1">
+        <label className="flex items-center gap-2.5 cursor-pointer select-none">
           <input
             type="checkbox"
             disabled={isSubmitting}
-            className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+            className="w-4 h-4 rounded border-[#E8E2D9] text-[#B85C38] focus:ring-[#B85C38]/30"
             {...register('remember_me')}
           />
-          <span className="text-sm text-gray-600">Keep me signed in for 30 days</span>
+          <span className="text-sm text-[#4A5568]">Remember me</span>
         </label>
-        <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
+        <Link
+          href="/forgot-password"
+          className="text-sm text-[#B85C38] hover:text-[#8E735B] font-medium transition-colors whitespace-nowrap"
+        >
           Forgot password?
         </Link>
       </div>
@@ -218,7 +224,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={isSubmitting || isOffline}
-        className="w-full py-2.5 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 font-medium"
+        className="w-full py-3 px-4 bg-[#2C3E50] text-white rounded-xl hover:bg-[#1A2A3A] focus:outline-none focus:ring-2 focus:ring-[#B85C38]/40 focus:ring-offset-2 disabled:opacity-50 font-semibold transition-colors shadow-sm"
       >
         {isSubmitting ? (
           <span className="flex items-center justify-center gap-2">
@@ -229,13 +235,6 @@ export function LoginForm() {
           'Sign in'
         )}
       </button>
-
-      <p className="text-center text-sm text-gray-500">
-        Don&apos;t have an account?{' '}
-        <Link href="/register" className="text-blue-600 hover:underline font-medium">
-          Create one for free
-        </Link>
-      </p>
     </form>
   );
 }

@@ -6,8 +6,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { forgotPasswordSchema, type ForgotPasswordInput } from '@repo/validation';
 import { authApi } from '@/lib/api/client';
 import { getFriendlyAuthMessage } from '@/lib/auth/mapAuthError';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AuthPageShell } from '@/features/auth/components';
+import { AlertCircle, Loader2, CheckCircle } from 'lucide-react';
 import { useState } from 'react';
+
+const inputClass = (hasError: boolean) =>
+  `w-full px-4 py-2.5 border rounded-xl bg-[#FDFBF7]/50 text-[#1A2A3A] placeholder:text-[#4A5568]/60 focus:outline-none focus:ring-2 focus:ring-[#B85C38]/30 focus:border-[#B85C38] disabled:opacity-60 transition-colors ${
+    hasError ? 'border-red-400' : 'border-[#E8E2D9]'
+  }`;
 
 export default function ForgotPasswordPage() {
   const [success, setSuccess] = useState(false);
@@ -37,81 +43,85 @@ export default function ForgotPasswordPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <h1 className="text-2xl font-bold mb-2">Check your email</h1>
-          <p className="text-gray-600 mb-6">
-            We&apos;ve sent a password reset link to{' '}
-            <strong>{submittedEmail}</strong>
+      <AuthPageShell
+        title="Check your email"
+        subtitle="We sent a password reset link to your inbox"
+      >
+        <div className="text-center space-y-4">
+          <div className="w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center mx-auto">
+            <CheckCircle className="w-7 h-7 text-emerald-600" />
+          </div>
+          <p className="text-sm text-[#4A5568] leading-relaxed">
+            We&apos;ve sent a reset link to{' '}
+            <strong className="text-[#1A2A3A]">{submittedEmail}</strong>
           </p>
           <Link
             href="/login"
-            className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="inline-flex items-center justify-center w-full py-3 px-4 bg-[#2C3E50] text-white rounded-xl hover:bg-[#1A2A3A] font-semibold transition-colors text-sm"
           >
-            Back to login
+            Back to sign in
           </Link>
         </div>
-      </div>
+      </AuthPageShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-        <h1 className="text-2xl font-bold text-center mb-2">Reset password</h1>
-        <p className="text-center text-gray-600 mb-6 text-sm">
-          Enter your email and we&apos;ll send you a BookNest reset link.
-        </p>
-
-        {submitError && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex gap-2">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-            <p className="text-sm text-red-700">{submitError}</p>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              disabled={isSubmitting}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.email ? 'border-red-500' : 'border-gray-300'
-              }`}
-              placeholder="you@example.com"
-              {...register('email')}
-            />
-            {errors.email && (
-              <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>
-            )}
-          </div>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium"
+    <AuthPageShell
+      title="Reset password"
+      subtitle="Enter your email and we'll send you a reset link"
+      footer={
+        <p className="text-sm text-[#4A5568]">
+          Remember your password?{' '}
+          <Link
+            href="/login"
+            className="text-[#B85C38] hover:text-[#8E735B] font-semibold underline-offset-2 hover:underline"
           >
-            {isSubmitting ? (
-              <span className="flex items-center justify-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Sending...
-              </span>
-            ) : (
-              'Send reset link'
-            )}
-          </button>
+            Sign in
+          </Link>
+        </p>
+      }
+    >
+      {submitError && (
+        <div className="mb-5 p-4 bg-red-50 border border-red-200/80 rounded-xl flex gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+          <p className="text-sm text-red-700">{submitError}</p>
+        </div>
+      )}
 
-          <div className="text-center">
-            <Link href="/login" className="text-sm text-blue-600 hover:underline">
-              Back to login
-            </Link>
-          </div>
-        </form>
-      </div>
-    </div>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium text-[#2C3E50] mb-1.5">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            disabled={isSubmitting}
+            className={inputClass(!!errors.email)}
+            placeholder="you@example.com"
+            {...register('email')}
+          />
+          {errors.email && (
+            <p className="text-red-600 text-sm mt-1.5">{errors.email.message}</p>
+          )}
+        </div>
+
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="w-full py-3 px-4 bg-[#2C3E50] text-white rounded-xl hover:bg-[#1A2A3A] disabled:opacity-50 font-semibold transition-colors"
+        >
+          {isSubmitting ? (
+            <span className="flex items-center justify-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Sending...
+            </span>
+          ) : (
+            'Send reset link'
+          )}
+        </button>
+      </form>
+    </AuthPageShell>
   );
 }

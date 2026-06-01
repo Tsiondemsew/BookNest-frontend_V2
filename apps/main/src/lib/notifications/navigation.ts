@@ -14,7 +14,7 @@ function normalizePath(path: string): string {
   return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
 }
 
-const GENERIC_PATHS = new Set(['/', '/community', '/dashboard']);
+const GENERIC_PATHS = new Set(['/', '/community']);
 
 function isGenericPath(path: string): boolean {
   const base = normalizePath(path).split('?')[0].split('#')[0];

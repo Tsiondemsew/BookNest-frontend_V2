@@ -14,6 +14,10 @@ import {
   User,
   Users,
   LogOut,
+  Pencil,
+  Reply,
+  Forward,
+  X,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRealtimeChat } from '@/hooks/useRealtimeChat';
@@ -24,6 +28,7 @@ import { formatRelativeTime } from '@/features/community/utils/timeFormat';
 import { SharedPostCard } from './SharedPostCard';
 import { EmojiQuickPicker } from './EmojiQuickPicker';
 import { GroupManageModal } from './GroupManageModal';
+import { ForwardMessageModal } from './ForwardMessageModal';
 import type { ChatMessage } from '@repo/types';
 
 interface ChatWindowProps {
@@ -71,6 +76,10 @@ export function ChatWindow({
   const [showGroupManage, setShowGroupManage] = useState(false);
   const [groupAdmin, setGroupAdmin] = useState(isGroupAdmin);
   const [isDeletingChat, setIsDeletingChat] = useState(false);
+  const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [forwardMessage, setForwardMessage] = useState<ChatMessage | null>(null);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -178,8 +187,36 @@ export function ChatWindow({
   const sendMessage = async () => {
     if (!inputValue.trim() || isSending || !currentUserId) return;
 
+    if (editingMessageId) {
+      setIsSending(true);
+      try {
+        const response = await chatApi.editMessage(editingMessageId, inputValue.trim());
+        const updated = response.data;
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === editingMessageId
+              ? { ...msg, ...updated, senderName: 'You' }
+              : msg
+          )
+        );
+        setInputValue('');
+        setEditingMessageId(null);
+        onMessageSent?.();
+      } catch (error) {
+        console.error('Failed to edit message:', error);
+        setHeaderError(getFriendlyNetworkMessage(error, 'Could not edit message.'));
+      } finally {
+        setIsSending(false);
+      }
+      return;
+    }
+
     const tempId = `temp-${Date.now()}`;
-    const content = inputValue.trim();
+    let content = inputValue.trim();
+    if (replyTo?.content) {
+      const quote = replyTo.content.split('\n')[0].slice(0, 120);
+      content = `↩ ${replyTo.senderName}: ${quote}${quote.length >= 120 ? '…' : ''}\n${content}`;
+    }
     const optimistic: ChatMessage = {
       id: tempId,
       content,
@@ -191,6 +228,7 @@ export function ChatWindow({
 
     setMessages((prev) => [...prev, optimistic]);
     setInputValue('');
+    setReplyTo(null);
     setIsSending(true);
 
     try {
@@ -245,6 +283,34 @@ export function ChatWindow({
     } catch (error) {
       console.error('Delete for everyone failed:', error);
     }
+  };
+
+  const copyMessageText = async (msg: ChatMessage) => {
+    setActiveMessageMenu(null);
+    const text = msg.content?.trim();
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedMessageId(msg.id);
+      window.setTimeout(() => setCopiedMessageId(null), 1500);
+    } catch {
+      setHeaderError('Could not copy message.');
+    }
+  };
+
+  const startReply = (msg: ChatMessage) => {
+    setActiveMessageMenu(null);
+    setEditingMessageId(null);
+    setReplyTo(msg);
+    inputRef.current?.focus();
+  };
+
+  const startEdit = (msg: ChatMessage) => {
+    setActiveMessageMenu(null);
+    setReplyTo(null);
+    setEditingMessageId(msg.id);
+    setInputValue(msg.content || '');
+    inputRef.current?.focus();
   };
 
   const createInviteLink = async () => {
@@ -342,7 +408,7 @@ export function ChatWindow({
             <button
               type="button"
               onClick={onBack}
-              className="p-1.5 hover:bg-bn-surface rounded-lg md:hidden"
+              className="p-1.5 hover:bg-bn-surface rounded-lg shrink-0 lg:hidden"
               aria-label="Back to conversations"
             >
               <ArrowLeft size={20} />
@@ -541,6 +607,11 @@ export function ChatWindow({
                       {!isDeleted && msg.content && msg.content !== 'Shared a post' && (
                         <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
                       )}
+                      {!isDeleted && msg.editedAt && (
+                        <p className={`text-[10px] mt-1 ${isOwn ? 'text-white/70' : 'text-bn-muted'}`}>
+                          edited
+                        </p>
+                      )}
                       {isDeleted && (
                         <p className="text-sm whitespace-pre-wrap break-words">
                           <span className="italic opacity-70">This message was deleted</span>
@@ -570,10 +641,57 @@ export function ChatWindow({
                       <div
                         data-chat-menu-trigger
                         className={cn(
-                          'absolute top-full mt-1 w-44 bg-white border border-bn-border rounded-xl shadow-lg py-1 z-50',
+                          'absolute top-full mt-1 w-48 bg-white border border-bn-border rounded-xl shadow-lg py-1 z-50',
                           isOwn ? 'right-0' : 'left-0'
                         )}
                       >
+                        {!isDeleted && msg.content && (
+                          <button
+                            type="button"
+                            data-chat-menu-trigger
+                            onClick={() => void copyMessageText(msg)}
+                            className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-bn-surface text-left touch-manipulation"
+                          >
+                            <Copy size={14} />
+                            {copiedMessageId === msg.id ? 'Copied' : 'Copy'}
+                          </button>
+                        )}
+                        {!isDeleted && msg.content && !msg.sharedPost && (
+                          <button
+                            type="button"
+                            data-chat-menu-trigger
+                            onClick={() => startReply(msg)}
+                            className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-bn-surface text-left touch-manipulation"
+                          >
+                            <Reply size={14} />
+                            Reply
+                          </button>
+                        )}
+                        {!isDeleted && msg.content && (
+                          <button
+                            type="button"
+                            data-chat-menu-trigger
+                            onClick={() => {
+                              setActiveMessageMenu(null);
+                              setForwardMessage(msg);
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-bn-surface text-left touch-manipulation"
+                          >
+                            <Forward size={14} />
+                            Forward
+                          </button>
+                        )}
+                        {isOwn && !isDeleted && !msg.sharedPost && (
+                          <button
+                            type="button"
+                            data-chat-menu-trigger
+                            onClick={() => startEdit(msg)}
+                            className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-bn-surface text-left touch-manipulation"
+                          >
+                            <Pencil size={14} />
+                            Edit
+                          </button>
+                        )}
                         <button
                           type="button"
                           data-chat-menu-trigger
@@ -616,6 +734,30 @@ export function ChatWindow({
 
       {/* Input */}
       <div className="p-4 border-t border-bn-border/70 bg-white shrink-0">
+        {(replyTo || editingMessageId) && (
+          <div className="mb-2 flex items-start justify-between gap-2 rounded-xl bg-bn-surface/80 border border-bn-border px-3 py-2">
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-bn-primary">
+                {editingMessageId ? 'Editing message' : `Replying to ${replyTo?.senderName}`}
+              </p>
+              {!editingMessageId && replyTo?.content && (
+                <p className="text-xs text-bn-muted truncate mt-0.5">{replyTo.content}</p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setReplyTo(null);
+                setEditingMessageId(null);
+                setInputValue('');
+              }}
+              className="text-bn-muted hover:text-bn-ink"
+              aria-label="Cancel"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        )}
         <div className="flex gap-2 items-end">
           <EmojiQuickPicker
             open={showEmoji}
@@ -627,7 +769,7 @@ export function ChatWindow({
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type a message…"
+            placeholder={editingMessageId ? 'Edit your message…' : 'Type a message…'}
             rows={1}
             className="flex-1 px-3 py-2.5 border border-bn-border rounded-xl focus:outline-none focus:border-bn-primary focus:ring-1 focus:ring-bn-primary resize-none max-h-32 bg-bn-surface/30"
             onInput={(e) => {
@@ -646,6 +788,14 @@ export function ChatWindow({
           </button>
         </div>
       </div>
+
+      <ForwardMessageModal
+        messageContent={forwardMessage?.content || ''}
+        senderName={forwardMessage?.senderName || 'User'}
+        excludeChatId={chatId}
+        isOpen={Boolean(forwardMessage)}
+        onClose={() => setForwardMessage(null)}
+      />
 
       <GroupManageModal
         isOpen={showGroupManage}

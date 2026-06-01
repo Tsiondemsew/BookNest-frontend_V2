@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Loader2, X } from 'lucide-react';
 import { followApi } from '@/lib/api/client';
+import { getProfilePath } from '@/lib/community/profilePaths';
 import { CommunityAvatar, cn, ui } from '@/features/community/ui';
 import type { FollowUser } from '@repo/types';
 
@@ -18,6 +20,7 @@ interface FollowListModalProps {
 }
 
 export function FollowListModal({ userId, kind, title, isOpen, onClose }: FollowListModalProps) {
+  const pathname = usePathname();
   const [users, setUsers] = useState<FollowUser[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +49,8 @@ export function FollowListModal({ userId, kind, title, isOpen, onClose }: Follow
   }, [isOpen, loadList]);
 
   if (!isOpen) return null;
+
+  const returnTo = pathname || '/@me';
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/50">
@@ -77,33 +82,30 @@ export function FollowListModal({ userId, kind, title, isOpen, onClose }: Follow
             </p>
           ) : (
             <ul className="divide-y divide-bn-border/60">
-              {users.map((person) => {
-                const slug = person.username || person.id;
-                return (
-                  <li key={person.id}>
-                    <Link
-                      href={`/${encodeURIComponent(slug)}`}
-                      onClick={onClose}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-bn-surface/80 transition-colors"
-                    >
-                      <CommunityAvatar
-                        name={person.name}
-                        src={person.avatarUrl || undefined}
-                        size="md"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-sm text-bn-ink truncate">{person.name}</p>
-                        {person.username && (
-                          <p className="text-xs text-bn-muted truncate">@{person.username}</p>
-                        )}
-                        {person.bio && (
-                          <p className={cn(ui.caption, 'line-clamp-1 mt-0.5')}>{person.bio}</p>
-                        )}
-                      </div>
-                    </Link>
-                  </li>
-                );
-              })}
+              {users.map((person) => (
+                <li key={person.id}>
+                  <Link
+                    href={getProfilePath({ id: person.id, username: person.username }, returnTo)}
+                    onClick={onClose}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-bn-surface/80 transition-colors"
+                  >
+                    <CommunityAvatar
+                      name={person.name}
+                      src={person.avatarUrl || undefined}
+                      size="md"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-sm text-bn-ink truncate">{person.name}</p>
+                      {person.username && (
+                        <p className="text-xs text-bn-muted truncate">@{person.username}</p>
+                      )}
+                      {person.bio && (
+                        <p className={cn(ui.caption, 'line-clamp-1 mt-0.5')}>{person.bio}</p>
+                      )}
+                    </div>
+                  </Link>
+                </li>
+              ))}
             </ul>
           )}
         </div>

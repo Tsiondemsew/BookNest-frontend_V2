@@ -32,8 +32,48 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Classic book typography for headings */
+.bn-serif {
+  font-family: Georgia, 'Times New Roman', 'Palatino Linotype', serif;
+  letter-spacing: -0.01em;
+}
+
+/* Shared page shell */
+.bn-page {
+  max-width: 72rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.bn-card {
+  background: white;
+  border: 1px solid var(--color-bn-border, #e8e2d9);
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px rgb(26 42 58 / 4%);
+}
+
+.bn-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.bn-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.bn-scrollbar::-webkit-scrollbar-thumb {
+  background: #e8e2d9;
+  border-radius: 4px;
+}
+.bn-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #e8e2d9 transparent;
+}
+
+/* Mobile bottom nav safe area (notched devices) */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* Custom scrollbar - clean and minimal */

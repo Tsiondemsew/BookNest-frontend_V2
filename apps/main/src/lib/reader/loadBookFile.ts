@@ -160,7 +160,7 @@ export async function loadBookFileBytes(bookFormatId: string): Promise<LoadBookF
 
   if (!navigator.onLine) {
     throw new Error(
-      'You are offline and this book is not downloaded. Install the BookNest app and download it while online.'
+      'You are offline and this book is not downloaded. Download it from your library while online.'
     );
   }
 

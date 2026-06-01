@@ -40,8 +40,8 @@ export function OfflineIndicator() {
           <p className="text-white/80 text-xs mt-0.5">
             {user
               ? canUseOfflineSession()
-                ? 'Downloaded books in Library still work. Connect to refresh feeds, messages, and marketplace.'
-                : 'Install the BookNest app to read downloaded books offline. Connect to refresh data.'
+                ? 'Downloaded books in Library still work. Connect to refresh feeds and marketplace.'
+                : 'Connect to sign in and sync your library.'
               : canUseOfflineSession()
                 ? 'Connect to the internet to sign in.'
                 : 'Sign in requires an internet connection.'}

@@ -21,6 +21,8 @@ interface FeedProps {
   hasMore?: boolean;
   onLoadMore?: () => void;
   onLikeToggle?: (postId: string, nextLiked: boolean) => void;
+  onPostUpdated?: (post: Post) => void;
+  onPostDeleted?: (postId: string) => void;
   emptyState?: FeedEmptyState;
   showEndMessage?: boolean;
 }
@@ -38,6 +40,8 @@ export function Feed({
   hasMore = false,
   onLoadMore,
   onLikeToggle,
+  onPostUpdated,
+  onPostDeleted,
   emptyState,
   showEndMessage = true,
 }: FeedProps) {
@@ -88,7 +92,13 @@ export function Feed({
   return (
     <div className="space-y-4">
       {posts.map((post) => (
-        <FeedPost key={post.id} post={post} onLikeToggle={onLikeToggle} />
+        <FeedPost
+          key={post.id}
+          post={post}
+          onLikeToggle={onLikeToggle}
+          onPostUpdated={onPostUpdated}
+          onPostDeleted={onPostDeleted}
+        />
       ))}
 
       <div ref={sentinelRef} className="h-4" />

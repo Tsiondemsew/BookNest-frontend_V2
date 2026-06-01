@@ -76,7 +76,7 @@
           status.textContent = 'You are offline. Open BookNest once while online, then try again.';
           return;
         }
-        var routes = ['/library', '/dashboard', '/login', '/'];
+        var routes = ['/library', '/community', '/login', '/'];
         caches.open('booknest-pages').then(function (cache) {
           var i = 0;
           function tryNext() {

@@ -62,6 +62,9 @@ export function createFeedApi(client: ApiClient) {
     deletePost: (postId: string) =>
       client.delete<{ success: boolean }>(endpoints.feed.postDetail(postId)),
 
+    updatePost: (postId: string, data: CreatePostRequest) =>
+      client.put<CreatePostResponse, CreatePostRequest>(endpoints.feed.postDetail(postId), data),
+
     getMyPosts: (includeDrafts?: boolean, page?: number, limit?: number) => {
       const params = new URLSearchParams();
       if (includeDrafts) params.append('include_drafts', 'true');

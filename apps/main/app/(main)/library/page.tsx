@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, Headphones, ArrowRight, Clock, Download, CheckCircle, Loader2, WifiOff } from 'lucide-react';
+import { BookOpen, Headphones, ArrowRight, Clock, CheckCircle, Loader2, TrendingUp } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { libraryApi } from '@/lib/api/client';
 import { mergeProgressFromServer } from '@/lib/progress/progressService';
@@ -13,7 +13,8 @@ import { getLocalProgressForBook, syncProgressToBackend } from '@/lib/progress/p
 import { downloadBookForOffline, isBookDownloaded, removeOfflineBook, checkStorageSpace } from '@/lib/offline/downloadService';
 import { consumePendingReview, wasReviewPromptShown, markReviewPromptShown, hasSubmittedReviewLocally, type PendingReview } from '@/lib/reader/reviewPrompt';
 import { ExitReviewPrompt } from '@/features/reviews/components/ExitReviewPrompt';
-import { LibraryReviewButton } from '@/features/reviews/components/LibraryReviewButton';
+import { BookReviewModal } from '@/features/reviews/components/BookReviewModal';
+import { LibraryBookCard } from '@/features/library/components/LibraryBookCard';
 import { reviewsApi } from '@/lib/api/client';
 import { saveLibraryCache, getLibraryCache } from '@/lib/offline/libraryCache';
 import { OfflinePageNotice } from '@/components/OfflinePageNotice';
@@ -55,6 +56,7 @@ export default function LibraryPage() {
   const [downloadStatus, setDownloadStatus] = useState<DownloadStatus>({});
   const [storageInfo, setStorageInfo] = useState<{ available: number; isSufficient: boolean }>({ available: 0, isSufficient: true });
   const [exitReview, setExitReview] = useState<PendingReview | null>(null);
+  const [reviewTarget, setReviewTarget] = useState<{ bookId: string; bookTitle: string } | null>(null);
 
   useEffect(() => {
     const pending = consumePendingReview();
@@ -160,7 +162,7 @@ export default function LibraryPage() {
   }, [refetch]);
 
   // Handle download for offline
-const handleDownload = async (bookFormatId: string, bookTitle: string, formatType: 'PDF' | 'Audio', fileSizeMB: number) => {
+  const handleDownload = async (bookFormatId: string, bookTitle: string, formatType: 'PDF' | 'Audio', fileSizeMB: number) => {
   const pwa = canDownloadOffline();
   if (!pwa.allowed) {
     alert(pwa.reason);
@@ -197,9 +199,9 @@ const handleDownload = async (bookFormatId: string, bookTitle: string, formatTyp
   }));
   
   if (!result.success) {
-    alert(`❌ Download failed: ${result.error || 'Unknown error'}`);
+    alert(`Download failed: ${result.error || 'Unknown error'}`);
   } else {
-    alert(`✅ "${bookTitle}" downloaded successfully!\n\nYou can now read it offline.`);
+    alert(`"${bookTitle}" is ready for offline reading.`);
     const info = await checkStorageSpace(0);
     setStorageInfo(info);
   }
@@ -221,8 +223,6 @@ const handleDownload = async (bookFormatId: string, bookTitle: string, formatTyp
     return item.localProgress ?? item.syncedProgress ?? item.progress?.progress_percent ?? 0;
   };
 
-  const pwaInstalled = typeof window !== 'undefined' && canDownloadOffline().allowed;
-
   if (!isAuthenticated) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-16 text-center">
@@ -238,10 +238,10 @@ const handleDownload = async (bookFormatId: string, bookTitle: string, formatTyp
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div>
-          <h1 className="text-2xl font-bold text-[#1A2A3A] mb-2">My Library</h1>
-          <p className="text-[#4A5568] mb-6">Your collection of purchased books</p>
+      <div className="max-w-6xl mx-auto px-4 py-4 sm:py-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-[#1A2A3A] bn-serif">My Library</h1>
+          <p className="text-sm text-[#4A5568] mt-1">Loading your collection…</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {[...Array(6)].map((_, i) => (
@@ -261,11 +261,14 @@ const handleDownload = async (bookFormatId: string, bookTitle: string, formatTyp
 
   if (isError && !library) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-16 text-center">
-        <p className="text-red-500">
+      <div className="max-w-6xl mx-auto px-4 py-16 text-center">
+        <p className="text-red-600 font-medium">
           {!navigator.onLine
-            ? 'You are offline and no saved library was found. Connect once while signed in, then reopen.'
-            : 'Failed to load your library. Please try again.'}
+            ? 'You are offline and no saved library was found.'
+            : 'Could not load your library.'}
+        </p>
+        <p className="text-sm text-[#4A5568] mt-2">
+          {!navigator.onLine ? 'Connect once while signed in, then try again.' : 'Please try again in a moment.'}
         </p>
         {navigator.onLine && (
           <button onClick={() => refetch()} className="mt-4 px-4 py-2 bg-[#2C3E50] text-white rounded-lg text-sm hover:bg-[#1A2A3A] transition-colors">
@@ -278,13 +281,13 @@ const handleDownload = async (bookFormatId: string, bookTitle: string, formatTyp
 
   if (!libraryWithProgress || libraryWithProgress.length === 0) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-16 text-center">
+      <div className="max-w-6xl mx-auto px-4 py-16 text-center">
         <div className="max-w-md mx-auto">
-          <BookOpen size={64} className="mx-auto text-[#4A5568] mb-4" />
-          <h1 className="text-2xl font-bold text-[#1A2A3A] mb-2">Your Library is Empty</h1>
-          <p className="text-[#4A5568] mb-6">You haven't purchased any books yet. Start your reading journey today!</p>
-          <Link href="/market" className="inline-flex items-center gap-2 px-6 py-3 bg-[#2C3E50] text-white rounded-lg hover:bg-[#1A2A3A] transition-colors">
-            Browse Marketplace <ArrowRight size={18} />
+          <BookOpen size={56} className="mx-auto text-[#B85C38]/60 mb-4" />
+          <h1 className="text-2xl font-bold text-[#1A2A3A] bn-serif mb-2">Your library is empty</h1>
+          <p className="text-sm text-[#4A5568] mb-6">Browse the marketplace to find your next read.</p>
+          <Link href="/market" className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#B85C38] text-white rounded-xl text-sm font-semibold hover:bg-[#A04E2F] transition-colors">
+            Browse marketplace <ArrowRight size={16} />
           </Link>
         </div>
       </div>
@@ -304,23 +307,36 @@ const handleDownload = async (bookFormatId: string, bookTitle: string, formatTyp
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className="max-w-6xl mx-auto px-4 py-4 sm:py-6">
       <OfflinePageNotice label="library list is from your last online visit" />
       {exitReview && (
         <ExitReviewPrompt pending={exitReview} onDismiss={() => setExitReview(null)} />
       )}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#1A2A3A]">My Library</h1>
-        <p className="text-[#4A5568] mt-1">Your collection of purchased books</p>
-        {!pwaInstalled && (
-          <p className="mt-2 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-            Install the BookNest app to download books for offline reading. Browser tabs cannot keep books offline.
-          </p>
-        )}
+      {reviewTarget && (
+        <BookReviewModal
+          bookId={reviewTarget.bookId}
+          bookTitle={reviewTarget.bookTitle}
+          onClose={() => setReviewTarget(null)}
+          onSubmitted={() => setReviewTarget(null)}
+        />
+      )}
+
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1A2A3A] bn-serif">My Library</h1>
+          <p className="text-sm text-[#4A5568] mt-1">{totalBooks} {totalBooks === 1 ? 'book' : 'books'} in your collection</p>
+        </div>
+        <Link
+          href="/dashboard/reading"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[#E8E2D9] bg-white text-sm font-medium text-[#2C3E50] hover:border-[#B85C38]/30 hover:bg-[#FDFBF7] transition-colors w-fit"
+        >
+          <TrendingUp size={16} className="text-[#B85C38]" />
+          Reading Journey
+        </Link>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 mb-8">
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
         <div className="bg-white rounded-xl border border-[#E8E2D9] p-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-[#2C3E50]/10 rounded-lg">
@@ -354,24 +370,23 @@ const handleDownload = async (bookFormatId: string, bookTitle: string, formatTyp
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-[#E8E2D9] p-4">
+        <div className="bg-white rounded-xl border border-[#E8E2D9] p-4 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <CheckCircle size={20} className="text-green-600" />
+            <div className="p-2 bg-emerald-50 rounded-lg">
+              <CheckCircle size={20} className="text-emerald-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-[#1A2A3A]">{readingStats.completed}</p>
+              <p className="text-2xl font-bold text-[#1A2A3A] tabular-nums">{readingStats.completed}</p>
               <p className="text-xs text-[#4A5568]">Completed</p>
             </div>
           </div>
         </div>
-       
       </div>
 
-      {/* Recently Added Section */}
+      {/* Recently added */}
       {recentlyPurchased.length > 0 && (
         <div className="mb-8">
-        
+          <h2 className="text-sm font-semibold text-[#4A5568] uppercase tracking-wider mb-3">Continue reading</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {recentlyPurchased.map((item) => {
               const progress = getDisplayProgress(item);
@@ -398,98 +413,29 @@ const handleDownload = async (bookFormatId: string, bookTitle: string, formatTyp
 
       {/* All Books Grid */}
       <div>
-        <h2 className="text-lg font-semibold text-[#1A2A3A] mb-4">All Books</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <h2 className="text-sm font-semibold text-[#4A5568] uppercase tracking-wider mb-4">All books</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
           {libraryWithProgress.map((item) => {
             const progress = getDisplayProgress(item);
             const status = downloadStatus[item.format.id];
             const isDownloaded = status?.isDownloaded || false;
             const isDownloading = status?.isDownloading || false;
-            const fileUrl = item.format.file_url;
             const fileSizeMB = item.format.file_size_bytes
               ? Math.ceil(item.format.file_size_bytes / (1024 * 1024))
               : 10;
-            
+
             return (
-              <div key={item.id} className="group">
-                <div className="bg-white rounded-xl border border-[#E8E2D9] overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-                  <Link href={`/reader/${item.book.id}?format_id=${item.format.id}`}>
-                    <div className="aspect-[2/3] relative overflow-hidden bg-[#F5F1EB]">
-                      <img src={item.book.cover_image_url} alt={item.book.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-400" />
-                      <div className="absolute top-2 right-2">
-                        <span className="text-xs bg-white/90 backdrop-blur-sm text-[#2C3E50] px-2 py-1 rounded-md flex items-center gap-1 shadow-sm">
-                          {item.format.type === 'PDF' ? <BookOpen size={12} /> : <Headphones size={12} />}
-                          {item.format.type}
-                        </span>
-                      </div>
-                      {isDownloaded && (
-                        <div className="absolute top-2 left-2">
-                          <span className="text-xs bg-green-500/90 text-white px-2 py-1 rounded-md flex items-center gap-1 shadow-sm">
-                            <CheckCircle size={10} />
-                            Offline
-                          </span>
-                        </div>
-                      )}
-                      {!navigator.onLine && !isDownloaded && (
-                        <div className="absolute top-2 left-2">
-                          <span className="text-xs bg-yellow-500/90 text-white px-2 py-1 rounded-md flex items-center gap-1 shadow-sm">
-                            <WifiOff size={10} />
-                            Offline only
-                          </span>
-                        </div>
-                      )}
-                      {progress > 0 && progress < 100 && (
-                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/30">
-                          <div className="h-full bg-[#B85C38]" style={{ width: `${progress}%` }} />
-                        </div>
-                      )}
-                      {progress === 100 && <div className="absolute bottom-0 left-0 right-0 h-1 bg-green-500" />}
-                    </div>
-                  </Link>
-                  <div className="p-4">
-                    <Link href={`/reader/${item.book.id}?format_id=${item.format.id}`}>
-                      <h3 className="font-semibold text-[#1A2A3A] text-base line-clamp-1 group-hover:text-[#B85C38] transition-colors">{item.book.title}</h3>
-                    </Link>
-                    <p className="text-sm text-[#4A5568] mt-1 line-clamp-1">{item.book.author_name}</p>
-                    
-                    {progress > 0 && (
-                      <div className="mt-2">
-                        <div className="flex justify-between text-xs text-[#4A5568] mb-1"><span>Progress</span><span>{progress}%</span></div>
-                        <div className="w-full bg-gray-200 rounded-full h-1.5">
-                          <div className="bg-[#B85C38] h-1.5 rounded-full transition-all" style={{ width: `${progress}%` }} />
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div className="mt-3 flex items-center justify-between">
-                      <p className="text-xs text-[#4A5568]">Added: {new Date(item.purchased_at).toLocaleDateString()}</p>
-                      <div className="flex items-center gap-2">
-                        {isDownloaded ? (
-                          <button onClick={() => handleRemoveOffline(item.format.id)} className="p-1.5 text-green-600 hover:text-red-500 transition-colors" title="Remove from offline">
-                            <CheckCircle size={14} />
-                          </button>
-                        ) : (
-                          <button
-  onClick={() => handleDownload(item.format.id, item.book.title, item.format.type, fileSizeMB)}
-  disabled={isDownloading || !pwaInstalled}
-  className="p-1.5 text-[#4A5568] hover:text-[#B85C38] transition-colors disabled:opacity-50"
-  title={pwaInstalled ? 'Download for offline' : 'Install the BookNest app to download'}
->
-  {isDownloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-</button>
-                        )}
-                        {progress === 100 ? (
-                          <LibraryReviewButton bookId={item.book.id} bookTitle={item.book.title} />
-                        ) : (
-                          <Link href={`/reader/${item.book.id}?format_id=${item.format.id}`} className="text-sm text-[#B85C38] font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                            {progress > 0 ? 'Continue →' : 'Start →'}
-                          </Link>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <LibraryBookCard
+                key={item.id}
+                item={item}
+                progress={progress}
+                isDownloaded={isDownloaded}
+                isDownloading={isDownloading}
+                isOffline={typeof navigator !== 'undefined' && !navigator.onLine}
+                onDownload={() => handleDownload(item.format.id, item.book.title, item.format.type, fileSizeMB)}
+                onRemoveOffline={() => handleRemoveOffline(item.format.id)}
+                onReviewClick={(bookId, bookTitle) => setReviewTarget({ bookId, bookTitle })}
+              />
             );
           })}
         </div>

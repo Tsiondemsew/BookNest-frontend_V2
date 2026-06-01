@@ -62,6 +62,7 @@ export interface ChatMessage {
   isRead: boolean;
   isDeleted?: boolean;
   deletedForEveryone?: boolean;
+  editedAt?: string | null;
   createdAt: string;
 }
 

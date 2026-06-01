@@ -84,6 +84,7 @@ export const endpoints = {
     join: (token: string) => `/api/chat/join/${token}`,
     deleteMessageForMe: (messageId: string) => `/api/chat/messages/${messageId}/me`,
     deleteMessageForEveryone: (messageId: string) => `/api/chat/messages/${messageId}/everyone`,
+    editMessage: (messageId: string) => `/api/chat/messages/${messageId}`,
   },
   feed: {
     list: '/api/feed',

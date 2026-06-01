@@ -11,7 +11,7 @@ interface BookGridProps {
 export function BookGrid({ books, isLoading }: BookGridProps) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
         {[...Array(8)].map((_, i) => (
           <div key={i} className="bg-white rounded-xl overflow-hidden border border-[#E8E2D9] animate-pulse">
             <div className="aspect-[2/3] bg-gradient-to-br from-[#E8E2D9] to-[#D4CCC0]"></div>
@@ -37,7 +37,7 @@ export function BookGrid({ books, isLoading }: BookGridProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
       {books.map((book) => (
         <BookCard key={book.id} book={book} />
       ))}

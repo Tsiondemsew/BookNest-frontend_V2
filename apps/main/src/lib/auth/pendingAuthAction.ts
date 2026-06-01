@@ -1,3 +1,4 @@
+import { DEFAULT_AUTHENTICATED_HOME } from '@/lib/routes/defaultRoutes';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import type { SessionUser } from '@repo/types';
 import { cartApi } from '@/lib/api/client';
@@ -29,7 +30,7 @@ export function appendPendingActionQuery(
   { redirect, action, bookFormatIds = [] }: PendingAuthParams
 ): string {
   const params = new URLSearchParams();
-  if (redirect && redirect !== '/dashboard') params.set('redirect', redirect);
+  if (redirect && redirect !== DEFAULT_AUTHENTICATED_HOME) params.set('redirect', redirect);
   if (action) params.set('action', action);
   bookFormatIds.forEach((id) => params.append('book_format_id', id));
   const query = params.toString();
@@ -71,7 +72,7 @@ export function readPendingActionFromSearchParams(
   const action =
     actionParam === 'add-to-cart' || actionParam === 'buy' ? actionParam : null;
   const bookFormatIds = searchParams.getAll('book_format_id').filter(Boolean);
-  const redirect = searchParams.get('redirect') || '/dashboard';
+  const redirect = searchParams.get('redirect') || DEFAULT_AUTHENTICATED_HOME;
   return { action, bookFormatIds, redirect };
 }
 

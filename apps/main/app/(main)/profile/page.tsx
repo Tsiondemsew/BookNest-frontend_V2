@@ -196,7 +196,7 @@ export default function ProfilePage() {
   const isAuthor = userRole === 'author';
   const isPublisher = userRole === 'publisher';
   const isReader = userRole === 'reader';
-  const settingsBackHref = isAuthor || isPublisher ? '/studio' : '/dashboard';
+  const settingsBackHref = isAuthor || isPublisher ? '/studio' : '/community';
 
   if (isLoading) {
     return (

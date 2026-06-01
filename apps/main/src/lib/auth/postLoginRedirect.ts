@@ -1,5 +1,6 @@
 import type { SessionUser } from '@repo/types';
 import { authApi } from '@/lib/api/client';
+import { DEFAULT_AUTHENTICATED_HOME } from '@/lib/routes/defaultRoutes';
 
 /**
  * Where to send the user after a successful login.
@@ -12,11 +13,11 @@ export function getPostLoginPath(
     redirectTo?: string;
   } = {}
 ): string {
-  const redirectTo = options.redirectTo || '/dashboard';
+  const redirectTo = options.redirectTo || DEFAULT_AUTHENTICATED_HOME;
 
   if (user.role === 'reader' && options.needsGenreOnboarding) {
     const params = new URLSearchParams();
-    if (redirectTo && redirectTo !== '/dashboard') {
+    if (redirectTo && redirectTo !== DEFAULT_AUTHENTICATED_HOME) {
       params.set('redirect', redirectTo);
     }
     const query = params.toString();
@@ -29,7 +30,7 @@ export function getPostLoginPath(
 /** Resolve path when user is already logged in (e.g. opened /login). */
 export async function resolvePostLoginPath(
   user: SessionUser,
-  redirectTo = '/dashboard'
+  redirectTo = DEFAULT_AUTHENTICATED_HOME
 ): Promise<string> {
   if (user.role !== 'reader') {
     return redirectTo;

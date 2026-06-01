@@ -1,57 +1,109 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, Globe, User, ShoppingCart, Heart } from 'lucide-react';
+import { BookOpen, Globe, Menu, X } from 'lucide-react';
 
-export default function GuestLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+const navLinks = [
+  { href: '/', label: 'Home' },
+  { href: '/market', label: 'Marketplace' },
+];
+
+export default function GuestLayout({ children }: { children: React.ReactNode }) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-[#FDFBF7] flex flex-col">
-      {/* Navigation Bar - Guest Only */}
-      <nav className="bg-white border-b border-[#E8E2D9] sticky top-0 z-50 flex-shrink-0">
+      <nav className="bg-white/90 backdrop-blur-md border-b border-[#E8E2D9] sticky top-0 z-50 flex-shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 group">
-              <BookOpen className="w-6 h-6 text-[#B85C38] group-hover:scale-110 transition-transform" />
-              <span className="text-xl font-bold text-[#1A2A3A]">BookNest</span>
+            <Link href="/" className="flex items-center gap-2.5 group">
+              <div className="w-9 h-9 rounded-xl bg-[#2C3E50]/8 flex items-center justify-center group-hover:bg-[#B85C38]/10 transition-colors">
+                <BookOpen className="w-5 h-5 text-[#B85C38]" />
+              </div>
+              <span className="text-lg sm:text-xl font-bold text-[#1A2A3A] tracking-tight">
+                BookNest
+              </span>
             </Link>
-            
-            {/* Navigation Links */}
+
             <div className="hidden md:flex items-center gap-8">
-              <Link href="/" className="text-[#4A5568] hover:text-[#B85C38] transition-colors font-medium">
-                Home
-              </Link>
-              <Link href="/market" className="text-[#4A5568] hover:text-[#B85C38] transition-colors font-medium">
-                Marketplace
-              </Link>
+              {navLinks.map(({ href, label }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className="text-sm text-[#4A5568] hover:text-[#B85C38] transition-colors font-medium"
+                >
+                  {label}
+                </Link>
+              ))}
             </div>
-            
-            {/* Right Section */}
-            <div className="flex items-center gap-4">
-              {/* Language Toggle */}
-              <button className="flex items-center gap-1 px-2 py-1.5 text-sm text-[#4A5568] hover:text-[#B85C38] transition-colors rounded-lg">
-                <Globe size={16} />
+
+            <div className="hidden md:flex items-center gap-3">
+              <button
+                type="button"
+                className="flex items-center gap-1 px-2.5 py-1.5 text-sm text-[#4A5568] hover:text-[#B85C38] transition-colors rounded-lg hover:bg-[#FDFBF7]"
+              >
+                <Globe size={15} />
                 <span>EN</span>
               </button>
-              
-              <Link href="/login" className="px-4 py-2 text-[#2C3E50] font-medium hover:text-[#B85C38] transition-colors">
-                Sign In
+              <Link
+                href="/login"
+                className="px-4 py-2 text-sm text-[#2C3E50] font-medium hover:text-[#B85C38] transition-colors"
+              >
+                Sign in
               </Link>
-              <Link href="/register" className="px-4 py-2 bg-[#2C3E50] text-white rounded-lg text-sm font-medium hover:bg-[#1A2A3A] transition-colors shadow-sm">
-                Get Started
+              <Link
+                href="/register"
+                className="px-4 py-2.5 bg-[#2C3E50] text-white rounded-xl text-sm font-medium hover:bg-[#1A2A3A] transition-colors shadow-sm"
+              >
+                Create account
+              </Link>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setMobileOpen((o) => !o)}
+              className="md:hidden p-2 rounded-lg text-[#2C3E50] hover:bg-[#E8E2D9]/50 transition-colors"
+              aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+            >
+              {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
+          </div>
+        </div>
+
+        {mobileOpen && (
+          <div className="md:hidden border-t border-[#E8E2D9] bg-white px-4 py-4 space-y-1">
+            {navLinks.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                onClick={() => setMobileOpen(false)}
+                className="block px-3 py-2.5 rounded-xl text-[#2C3E50] font-medium hover:bg-[#FDFBF7] transition-colors"
+              >
+                {label}
+              </Link>
+            ))}
+            <div className="pt-3 mt-2 border-t border-[#E8E2D9] flex flex-col gap-2">
+              <Link
+                href="/login"
+                onClick={() => setMobileOpen(false)}
+                className="block text-center px-4 py-2.5 rounded-xl border border-[#E8E2D9] text-[#2C3E50] font-medium"
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/register"
+                onClick={() => setMobileOpen(false)}
+                className="block text-center px-4 py-2.5 rounded-xl bg-[#2C3E50] text-white font-medium"
+              >
+                Create account
               </Link>
             </div>
           </div>
-        </div>
+        )}
       </nav>
-      
-      <main className="flex-1">
-        {children}
-      </main>
+
+      <main className="flex-1">{children}</main>
     </div>
   );
 }

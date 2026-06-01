@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/authStore';
 import GuestLayout from './GuestLayout';
 import DashboardLayout from './DashboardLayout';
 import { resolvePostLoginPath } from '@/lib/auth/postLoginRedirect';
+import { DEFAULT_AUTHENTICATED_HOME } from '@/lib/routes/defaultRoutes';
 import {
   canUseOfflineSession,
   offlineLoginPath,
@@ -33,12 +34,12 @@ function isPublicProfilePath(pathname: string | null | undefined): boolean {
 
 // Routes that require authentication
 const PROTECTED_ROUTES = [
+  '/community',
+  '/library',
   '/dashboard',
-  '/library', 
   '/cart',
   '/checkout',
   '/wishlist',
-  '/community',
   '/messages',
   '/profile',
   '/studio',
@@ -65,7 +66,7 @@ export default function MainLayout({
         !isPublicProfilePath(pathname);
 
       if (isAuthenticated && isGuestOnlyRoute && user) {
-        resolvePostLoginPath(user, '/dashboard').then((path) => {
+        resolvePostLoginPath(user, DEFAULT_AUTHENTICATED_HOME).then((path) => {
           if (pathname?.startsWith('/onboarding') && path.startsWith('/onboarding')) return;
           router.push(path);
         });
