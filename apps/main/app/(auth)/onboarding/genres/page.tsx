@@ -2,8 +2,10 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
 import { booksApi, authApi } from '@/lib/api/client';
+import { authQueryKeys } from '@/features/auth/query-keys';
 import {
   completeAuthContinuation,
   readPendingActionFromSearchParams,
@@ -22,6 +24,7 @@ function GenresPageContent() {
   const searchParams = useSearchParams();
   const { redirect: afterSaveRedirect, action, bookFormatIds } =
     readPendingActionFromSearchParams(searchParams);
+  const queryClient = useQueryClient();
   const { isAuthenticated, isInitializing: authLoading, user } = useAuthStore();
   const [genres, setGenres] = useState<Genre[]>([]);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
@@ -83,6 +86,7 @@ function GenresPageContent() {
 
     try {
       await authApi.favoriteGenres({ genre_ids: selectedGenres });
+      await queryClient.invalidateQueries({ queryKey: authQueryKeys.favoriteGenres });
       if (user) {
         await completeAuthContinuation(router, searchParams, user);
       } else {

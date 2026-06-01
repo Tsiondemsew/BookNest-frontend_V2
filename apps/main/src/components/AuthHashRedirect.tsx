@@ -29,6 +29,7 @@ export function AuthHashRedirect() {
       type === 'signup' ||
       type === 'email' ||
       type === 'email_change' ||
+      type === 'magiclink' ||
       hash.includes('type=signup')
     ) {
       router.replace(`/verify${hash}`);

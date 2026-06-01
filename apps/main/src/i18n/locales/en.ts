@@ -5,6 +5,9 @@ export const en = {
     amharic: 'Amharic',
   },
   nav: {
+    home: 'Home',
+    openMenu: 'Open menu',
+    closeMenu: 'Close menu',
     community: 'Community',
     communityFeed: 'Community Feed',
     feed: 'Feed',
@@ -145,10 +148,22 @@ export const en = {
     downloadReady: '"{{title}}" is ready for offline reading.',
     downloadFailed: 'Download failed: {{error}}',
   },
+  genres: {
+    sidebarTitle: 'Pick your genres',
+    sidebarHint: 'Personalize what you see in the marketplace',
+    sidebarLink: 'Choose favorite genres',
+    bannerTitle: 'Get recommendations that fit you',
+    bannerHint: 'You skipped genre picks earlier — choose 1–5 favorites anytime.',
+    bannerCta: 'Choose genres',
+    pickGenresLink: 'Personalize my feed',
+    dismissBanner: 'Dismiss for now',
+  },
   market: {
     heroTitle: 'Discover your next read',
     heroSubtitle: 'Browse thousands of books from independent authors and publishers',
     heroPersonalized: 'Your favorite genres appear first — browse the full marketplace below',
+    heroNoGenresYet:
+      'Browse the marketplace below — or pick favorite genres to see tailored picks first.',
     showingRange: 'Showing {{start}}–{{end}} of {{total}} books',
     noMatch: 'No books match your filters',
     clearFilters: 'Clear all filters',

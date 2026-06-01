@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   BookOpen,
   ChevronLeft,
+  Sparkles,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { canUseOfflineSession, offlineLoginPath } from '@/lib/offline/offlineAccess';
@@ -22,6 +23,8 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { getNavGroupsForRole, getPageTitleKey } from '@/i18n/navigation';
 import { getDefaultHomeForRole } from '@/lib/routes/defaultRoutes';
 import { isNavHrefActive } from '@/lib/navigation/navActive';
+import { useReaderGenrePreferences } from '@/features/auth/hooks/useReaderGenrePreferences';
+import { GenrePreferencesPrompt } from '@/features/auth/components/GenrePreferencesPrompt';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -35,6 +38,7 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
   const { isAuthenticated } = useAuthStore();
   const { t } = useTranslation();
   const { cartCount, wishlistCount } = useCommerceCounts();
+  const { needsGenrePreferences } = useReaderGenrePreferences();
 
   usePresenceHeartbeat();
 
@@ -57,6 +61,8 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
 
   const userRole =
     user?.role === 'author' ? 'author' : user?.role === 'publisher' ? 'publisher' : 'reader';
+  const showGenreSidebarLink = userRole === 'reader' && needsGenrePreferences;
+  const genreRedirect = pathname?.startsWith('/market') ? '/market' : pathname || '/market';
   const homeHref = getDefaultHomeForRole(userRole);
   const groups = getNavGroupsForRole(userRole);
   const pageTitle = t(getPageTitleKey(pathname, userRole));
@@ -161,6 +167,23 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
             </div>
           ))}
         </nav>
+
+        {showGenreSidebarLink && (
+          <div className={`flex-shrink-0 pb-2 ${sidebarCollapsed ? 'px-1 flex justify-center' : 'px-2.5'}`}>
+            {sidebarCollapsed ? (
+              <Link
+                href={`/onboarding/genres?redirect=${encodeURIComponent(genreRedirect)}`}
+                className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#B85C38]/15 text-[#B85C38] hover:bg-[#B85C38]/25 transition-colors"
+                title={t('genres.sidebarLink')}
+                aria-label={t('genres.sidebarLink')}
+              >
+                <Sparkles size={18} />
+              </Link>
+            ) : (
+              <GenrePreferencesPrompt redirectTo={genreRedirect} variant="sidebar" />
+            )}
+          </div>
+        )}
 
         <div className="border-t border-[#E8E2D9] p-2.5 flex-shrink-0 bg-white/50">
           <LanguageSwitcher variant="sidebar" collapsed={sidebarCollapsed} />

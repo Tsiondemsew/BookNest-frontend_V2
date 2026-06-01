@@ -7,6 +7,9 @@ export const am: Messages = {
     amharic: 'አማርኛ',
   },
   nav: {
+    home: 'መነሻ',
+    openMenu: 'ምናሌ ክፈት',
+    closeMenu: 'ምናሌ ዝጋ',
     community: 'ማህበረሰብ',
     communityFeed: 'የማህበረሰብ ፊድ',
     feed: 'ፊድ',
@@ -147,10 +150,22 @@ export const am: Messages = {
     downloadReady: '"{{title}}" offline ለንባብ ዝግጁ ነው።',
     downloadFailed: 'ማውረድ አልተሳካም: {{error}}',
   },
+  genres: {
+    sidebarTitle: 'የሚወዱትን 장르 ይምረጡ',
+    sidebarHint: 'በገበያ ላይ የሚያዩትን ያብሩ',
+    sidebarLink: 'የሚወዱትን 장르 ይምረጡ',
+    bannerTitle: 'ለእርስዎ የሚስማሙ ምክረ-መጽሐፍት',
+    bannerHint: 'ከቀደም 장르 አልመረጡም — 1–5 ተወዳጅ 장르 በማንኛውም ጊዜ ይምረጡ።',
+    bannerCta: '장르 ይምረጡ',
+    pickGenresLink: 'መገጥሜያዬን ያብሩ',
+    dismissBanner: 'ለአሁን ዝጋ',
+  },
   market: {
     heroTitle: 'ቀጣዩን ንባብዎን ያግኙ',
     heroSubtitle: 'ከ مستقل ደራሲዎችና አሳራዮች በሺዎች የሚቆጠሩ መጽሐፍት',
     heroPersonalized: 'የሚወዷቸው 장르ዎች በመጀመሪያ — ሙሉ ገበያውን ከታች ያስሱ',
+    heroNoGenresYet:
+      'ከታች ገበያውን ያስሱ — ወይም ተወዳጅ 장르 ይምረጡ እና የተበጁ መጽሐፍት በመጀመሪያ ይታያሉ።',
     showingRange: '{{start}}–{{end}} ከ {{total}} መጽሐፍት',
     noMatch: 'ምንም መጽሐፍ ከ filterዎ ጋር አይዛመድም',
     clearFilters: 'ሁሉንም filter አጽዳ',

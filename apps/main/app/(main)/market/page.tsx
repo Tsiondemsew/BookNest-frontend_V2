@@ -1,11 +1,15 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useMemo } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { BookGrid, BookFilters, BookPagination } from '@/features/books/components';
 import { useBooks, useGenres, usePersonalizedBooks } from '@/features/books/hooks';
 import { useAuthStore } from '@/stores/authStore';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useReaderGenrePreferences } from '@/features/auth/hooks/useReaderGenrePreferences';
+import { GenrePreferencesPrompt } from '@/features/auth/components/GenrePreferencesPrompt';
+
+const GENRE_BANNER_DISMISS_KEY = 'booknest-genre-banner-dismissed';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -17,6 +21,25 @@ function MarketPageContent() {
   const searchParams = useSearchParams();
   const { isAuthenticated } = useAuthStore();
   const { t } = useTranslation();
+  const { needsGenrePreferences } = useReaderGenrePreferences();
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+
+  useEffect(() => {
+    try {
+      setBannerDismissed(sessionStorage.getItem(GENRE_BANNER_DISMISS_KEY) === '1');
+    } catch {
+      setBannerDismissed(false);
+    }
+  }, []);
+
+  const dismissGenreBanner = useCallback(() => {
+    setBannerDismissed(true);
+    try {
+      sessionStorage.setItem(GENRE_BANNER_DISMISS_KEY, '1');
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const genre = searchParams.get('genre') || '';
   const format = searchParams.get('format') || '';
@@ -139,12 +162,28 @@ function MarketPageContent() {
           <p className="text-[#8E735B] text-base md:text-lg max-w-2xl">
             {hasPersonalized
               ? t('market.heroPersonalized')
-              : t('market.heroSubtitle')}
+              : needsGenrePreferences
+                ? t('market.heroNoGenresYet')
+                : t('market.heroSubtitle')}
           </p>
+          {isAuthenticated && needsGenrePreferences && (
+            <div className="mt-4">
+              <GenrePreferencesPrompt redirectTo="/market" variant="compact" />
+            </div>
+          )}
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {isAuthenticated && needsGenrePreferences && (
+          <GenrePreferencesPrompt
+            redirectTo="/market"
+            variant="banner"
+            dismissible
+            dismissed={bannerDismissed}
+            onDismiss={dismissGenreBanner}
+          />
+        )}
         <div className="mb-8">
           <BookFilters
             genres={genres || []}

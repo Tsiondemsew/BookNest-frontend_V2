@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { useAuthStore } from '@/stores/authStore';
 import { feedApi, usersApi, booksApi } from '@/lib/api/client';
 import { useTranslation } from '@/hooks/useTranslation';
+import { getBookDetailPath } from '@/lib/books/bookPaths';
 import type { Post, CommunityUserSearchResult } from '@repo/types';
 
 const EMOJI_QUICK = ['📚', '❤️', '🔥', '✨', '👏', '🎧', '📖', '💡', '🙂', '🎉'];
@@ -179,7 +180,7 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
               {taggedBooks.map((b) => (
                 <Link
                   key={b.id}
-                  href={`/market/${b.id}`}
+                  href={getBookDetailPath(b.id)}
                   className="text-xs px-2.5 py-1 rounded-full bg-[#E8F4FD] text-[#2C3E50] hover:underline"
                 >
                   📖 {b.title}

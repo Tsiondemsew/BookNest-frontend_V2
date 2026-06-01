@@ -2,15 +2,18 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, Globe, Menu, X } from 'lucide-react';
-
-const navLinks = [
-  { href: '/', label: 'Home' },
-  { href: '/market', label: 'Marketplace' },
-];
+import { BookOpen, Menu, X } from 'lucide-react';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function GuestLayout({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const navLinks = [
+    { href: '/', label: t('nav.home') },
+    { href: '/market', label: t('nav.marketplace') },
+  ];
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] flex flex-col">
@@ -22,7 +25,7 @@ export default function GuestLayout({ children }: { children: React.ReactNode })
                 <BookOpen className="w-5 h-5 text-[#B85C38]" />
               </div>
               <span className="text-lg sm:text-xl font-bold text-[#1A2A3A] tracking-tight">
-                BookNest
+                {t('pages.bookNest')}
               </span>
             </Link>
 
@@ -39,35 +42,32 @@ export default function GuestLayout({ children }: { children: React.ReactNode })
             </div>
 
             <div className="hidden md:flex items-center gap-3">
-              <button
-                type="button"
-                className="flex items-center gap-1 px-2.5 py-1.5 text-sm text-[#4A5568] hover:text-[#B85C38] transition-colors rounded-lg hover:bg-[#FDFBF7]"
-              >
-                <Globe size={15} />
-                <span>EN</span>
-              </button>
+              <LanguageSwitcher variant="compact" />
               <Link
                 href="/login"
                 className="px-4 py-2 text-sm text-[#2C3E50] font-medium hover:text-[#B85C38] transition-colors"
               >
-                Sign in
+                {t('common.signIn')}
               </Link>
               <Link
                 href="/register"
                 className="px-4 py-2.5 bg-[#2C3E50] text-white rounded-xl text-sm font-medium hover:bg-[#1A2A3A] transition-colors shadow-sm"
               >
-                Create account
+                {t('auth.createAccount')}
               </Link>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setMobileOpen((o) => !o)}
-              className="md:hidden p-2 rounded-lg text-[#2C3E50] hover:bg-[#E8E2D9]/50 transition-colors"
-              aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
-            >
-              {mobileOpen ? <X size={22} /> : <Menu size={22} />}
-            </button>
+            <div className="flex md:hidden items-center gap-2">
+              <LanguageSwitcher variant="compact" />
+              <button
+                type="button"
+                onClick={() => setMobileOpen((o) => !o)}
+                className="p-2 rounded-lg text-[#2C3E50] hover:bg-[#E8E2D9]/50 transition-colors"
+                aria-label={mobileOpen ? t('nav.closeMenu') : t('nav.openMenu')}
+              >
+                {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -89,14 +89,14 @@ export default function GuestLayout({ children }: { children: React.ReactNode })
                 onClick={() => setMobileOpen(false)}
                 className="block text-center px-4 py-2.5 rounded-xl border border-[#E8E2D9] text-[#2C3E50] font-medium"
               >
-                Sign in
+                {t('common.signIn')}
               </Link>
               <Link
                 href="/register"
                 onClick={() => setMobileOpen(false)}
                 className="block text-center px-4 py-2.5 rounded-xl bg-[#2C3E50] text-white font-medium"
               >
-                Create account
+                {t('auth.createAccount')}
               </Link>
             </div>
           </div>
