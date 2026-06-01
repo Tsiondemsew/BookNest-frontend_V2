@@ -27,7 +27,6 @@ export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
-  const [resumedSignup, setResumedSignup] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
   const [registeredEmail, setRegisteredEmail] = useState('');
   const [generalError, setGeneralError] = useState<string | null>(null);
@@ -74,7 +73,6 @@ export function RegisterForm() {
     }
 
     setRegisteredEmail(data.email);
-    setResumedSignup(!!result.resumed);
     setVerificationSent(true);
     if (result.message) {
       setResendMessage(result.message);
@@ -99,27 +97,13 @@ export function RegisterForm() {
         <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto">
           <CheckCircle className="w-8 h-8 text-emerald-600" />
         </div>
-        <h2 className="text-xl font-semibold text-[#1A2A3A]">
-          {resumedSignup ? 'Finish verifying your email' : 'Check your email'}
-        </h2>
+        <h2 className="text-xl font-semibold text-[#1A2A3A]">Check your email</h2>
         <p className="text-[#4A5568]">
-          {resumedSignup ? (
-            <>
-              You already started signing up with{' '}
-              <strong className="text-[#1A2A3A]">{registeredEmail}</strong>. We sent a fresh
-              verification link to that address.
-            </>
-          ) : (
-            <>
-              We&apos;ve sent a verification link to{' '}
-              <strong className="text-[#1A2A3A]">{registeredEmail}</strong>
-            </>
-          )}
+          We&apos;ve sent a verification link to{' '}
+          <strong className="text-[#1A2A3A]">{registeredEmail}</strong>
         </p>
         <p className="text-sm text-[#4A5568]">
-          {resumedSignup
-            ? 'Open the link in that message to confirm your account, then sign in with the password you just chose.'
-            : 'We&apos;ve sent a verification email from BookNest. Open the link in that message, then sign in.'}
+          Open the link in that message to confirm your account, then sign in.
         </p>
 
         {resendMessage && (
