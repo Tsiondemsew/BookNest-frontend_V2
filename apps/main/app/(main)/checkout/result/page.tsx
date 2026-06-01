@@ -3,10 +3,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { CheckCircle, Loader2, BookOpen, ArrowRight } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { CheckCircle, Loader2, BookOpen, ArrowRight, AlertCircle } from 'lucide-react';
 import { checkoutApi } from '@/lib/api/client';
+import { useCartStore } from '@/stores/cartStore';
+import { wishlistQueryKeys } from '@/features/wishlist/query-keys';
 
-type ResultStatus = 'processing' | 'success';
+type ResultStatus = 'processing' | 'success' | 'failed';
 
 function readTxRef(searchParams: URLSearchParams): string | null {
   return (
@@ -17,40 +20,36 @@ function readTxRef(searchParams: URLSearchParams): string | null {
   );
 }
 
-function isChapaSuccess(statusParam: string | null): boolean {
-  if (!statusParam) return false;
-  const s = statusParam.toLowerCase();
-  return s === 'success' || s === 'successful';
-}
-
 export default function CheckoutResultPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const fetchCart = useCartStore((s) => s.fetchCart);
   const [status, setStatus] = useState<ResultStatus>('processing');
   const [message, setMessage] = useState('Confirming your payment...');
+
+  const refreshCommerceState = useCallback(() => {
+    void fetchCart();
+    void queryClient.invalidateQueries({ queryKey: wishlistQueryKeys.all });
+  }, [fetchCart, queryClient]);
 
   const goToLibrary = useCallback(() => {
     router.replace('/library');
   }, [router]);
 
   const confirmPayment = useCallback(
-    async (txRef: string, chapaSaysSuccess: boolean) => {
-      if (chapaSaysSuccess) {
-        setStatus('success');
-        setMessage('Payment successful! Taking you to your library...');
-        checkoutApi.verifyPayment(txRef).catch(() => {});
-        setTimeout(goToLibrary, 1500);
-        return;
-      }
-
-      const maxAttempts = 4;
+    async (txRef: string) => {
+      const maxAttempts = 5;
       const delayMs = 1500;
 
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
           const response = await checkoutApi.verifyPayment(txRef);
-          if (response.data?.verified === true) {
+          const verified = response.data?.verified === true;
+
+          if (verified) {
             setStatus('success');
             setMessage('Payment confirmed! Taking you to your library...');
+            refreshCommerceState();
             setTimeout(goToLibrary, 1500);
             return;
           }
@@ -63,11 +62,12 @@ export default function CheckoutResultPage() {
         }
       }
 
-      setStatus('success');
-      setMessage('Payment received! Your library has been updated.');
-      setTimeout(goToLibrary, 2000);
+      setStatus('failed');
+      setMessage(
+        'We could not confirm your payment yet. If Chapa charged you, open your library in a minute or contact support with your receipt.'
+      );
     },
-    [goToLibrary]
+    [goToLibrary, refreshCommerceState]
   );
 
   useEffect(() => {
@@ -76,16 +76,15 @@ export default function CheckoutResultPage() {
     const statusParam = searchParams.get('status');
 
     if (statusParam?.toLowerCase() === 'cancelled' || statusParam?.toLowerCase() === 'canceled') {
-      setStatus('success');
+      setStatus('failed');
       setMessage('Payment was cancelled.');
       setTimeout(() => router.replace('/market'), 2000);
       return;
     }
 
     if (statusParam?.toLowerCase() === 'failed') {
-      setStatus('success');
-      setMessage('Payment did not complete. Check your library or try again.');
-      setTimeout(goToLibrary, 2500);
+      setStatus('failed');
+      setMessage('Payment did not complete. You can try again from the marketplace.');
       return;
     }
 
@@ -96,23 +95,31 @@ export default function CheckoutResultPage() {
       return;
     }
 
-    void confirmPayment(tx_ref, isChapaSuccess(statusParam));
-  }, [confirmPayment, goToLibrary]);
+    void confirmPayment(tx_ref);
+  }, [confirmPayment, goToLibrary, router]);
 
   return (
-    <div className="min-h-[70vh] flex items-center justify-center">
+    <div className="min-h-[70vh] flex items-center justify-center px-4">
       <div className="text-center max-w-md">
         {status === 'processing' ? (
           <div className="w-16 h-16 mx-auto mb-6">
             <Loader2 size={64} className="animate-spin text-[#B85C38]" />
           </div>
-        ) : (
+        ) : status === 'success' ? (
           <div className="w-20 h-20 mx-auto mb-6 bg-green-100 rounded-full flex items-center justify-center">
             <CheckCircle size={48} className="text-[#2D6A4F]" />
           </div>
+        ) : (
+          <div className="w-20 h-20 mx-auto mb-6 bg-amber-100 rounded-full flex items-center justify-center">
+            <AlertCircle size={48} className="text-[#B85C38]" />
+          </div>
         )}
         <h1 className="text-2xl font-bold text-[#1A2A3A] mb-2">
-          {status === 'processing' ? 'Processing Payment' : 'Payment Successful!'}
+          {status === 'processing'
+            ? 'Processing Payment'
+            : status === 'success'
+              ? 'Payment Successful!'
+              : 'Payment Status'}
         </h1>
         <p className="text-[#4A5568] mb-6">{message}</p>
         {status === 'processing' ? (

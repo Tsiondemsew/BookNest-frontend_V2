@@ -71,8 +71,8 @@ export function ForwardMessageModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/50">
-      <CommunityCard padding className="max-w-md w-full max-h-[80vh] flex flex-col">
+    <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/50 animate-in fade-in duration-200">
+      <CommunityCard padding className="max-w-md w-full max-h-[80vh] flex flex-col animate-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-bn-ink">Forward message</h2>
           <button type="button" onClick={onClose} className="text-bn-muted" aria-label="Close">

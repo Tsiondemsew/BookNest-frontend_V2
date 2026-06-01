@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Search, Loader2, UserPlus, X } from 'lucide-react';
 import { usersApi } from '@/lib/api/client';
 import { FollowButton } from '../profile/FollowButton';
+import { useTranslation } from '@/hooks/useTranslation';
 import type { CommunityUserSearchResult } from '@repo/types';
 
 interface CommunityUserSearchProps {
@@ -20,6 +21,7 @@ export function CommunityUserSearch({
   variant = 'default',
   onNavigate,
 }: CommunityUserSearchProps) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<CommunityUserSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -70,7 +72,7 @@ export function CommunityUserSearch({
   const resultList = (
     <>
       {showResults && !isSearching && results.length === 0 && (
-        <p className="text-sm text-[#4A5568] text-center py-4">No users found</p>
+        <p className="text-sm text-[#4A5568] text-center py-4">{t('community.noUsersFound')}</p>
       )}
       <ul className={`space-y-1 ${compact ? 'p-2' : 'space-y-2'} max-h-72 overflow-y-auto`}>
         {results.map((user) => (
@@ -117,7 +119,7 @@ export function CommunityUserSearch({
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name…"
+            placeholder={t('community.searchByName')}
             className="w-full pl-9 pr-10 py-3 text-sm border border-[#E8E2D9] rounded-xl focus:outline-none focus:border-[#B85C38] focus:ring-2 focus:ring-[#B85C38]/20 bg-[#FDFBF7]/50"
           />
           {isSearching && (
@@ -142,7 +144,7 @@ export function CommunityUserSearch({
             className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-[#E8E2D9] bg-white text-sm text-[#4A5568] hover:border-[#B85C38]/30 transition-colors"
           >
             <Search size={16} className="text-[#B85C38] shrink-0" />
-            <span>Find people…</span>
+            <span>{t('community.findPeople')}</span>
           </button>
         ) : (
           <div className="rounded-xl border border-[#E8E2D9] bg-white shadow-sm overflow-hidden">
@@ -153,7 +155,7 @@ export function CommunityUserSearch({
                 autoFocus
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search by name…"
+                placeholder={t('community.searchByName')}
                 className="w-full pl-9 pr-10 py-2.5 text-sm border-0 focus:outline-none focus:ring-0 bg-transparent"
               />
               {isSearching ? (
@@ -170,7 +172,7 @@ export function CommunityUserSearch({
                   setResults([]);
                 }}
                 className="absolute right-2 p-1.5 rounded-lg text-[#4A5568] hover:bg-[#F5F1EB]"
-                aria-label="Close search"
+                aria-label={t('community.closeSearch')}
               >
                 <X size={16} />
               </button>
@@ -190,7 +192,7 @@ export function CommunityUserSearch({
     <div className="bg-white rounded-xl border border-[#E8E2D9] p-4 shadow-sm">
       <h3 className="font-semibold text-[#1A2A3A] mb-3 flex items-center gap-2">
         <UserPlus size={18} className="text-[#B85C38]" />
-        Find people
+        {t('community.findPeople')}
       </h3>
       <div className="relative mb-3">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4A5568]" />
@@ -198,7 +200,7 @@ export function CommunityUserSearch({
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by name or email…"
+          placeholder={t('community.searchByNameEmail')}
           className="w-full pl-9 pr-3 py-2.5 text-sm border border-[#E8E2D9] rounded-xl focus:outline-none focus:border-[#B85C38] focus:ring-2 focus:ring-[#B85C38]/20"
         />
         {isSearching && (

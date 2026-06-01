@@ -22,10 +22,11 @@
   --color-bn-canvas: #faf8f5;
 }
 
+/* Keep BookNest readable on form surfaces — avoid OS dark mode washing out inputs */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #faf8f5;
+    --foreground: #1a2a3a;
   }
 }
 
@@ -54,6 +55,24 @@ body {
   border: 1px solid var(--color-bn-border, #e8e2d9);
   border-radius: 0.75rem;
   box-shadow: 0 1px 2px rgb(26 42 58 / 4%);
+}
+
+.bn-input,
+input.bn-input,
+textarea.bn-input,
+select.bn-input {
+  color: #1a2a3a;
+  background-color: #fff;
+}
+
+.bn-auth-surface {
+  color-scheme: light;
+}
+
+.bn-auth-surface input,
+.bn-auth-surface textarea,
+.bn-auth-surface select {
+  color: #1a2a3a;
 }
 
 .bn-scrollbar::-webkit-scrollbar {

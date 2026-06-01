@@ -35,7 +35,10 @@ export function createChatApi(client: ApiClient) {
       return client.get<ChatMessagesResponse>(url);
     },
 
-    sendMessage: (chatId: string, payload: { content?: string; postId?: string }) =>
+    sendMessage: (
+      chatId: string,
+      payload: { content?: string; postId?: string; replyToMessageId?: string }
+    ) =>
       client.post<{ success: boolean; data: import('@repo/types').ChatMessage }>(
         endpoints.chat.messages(chatId),
         payload

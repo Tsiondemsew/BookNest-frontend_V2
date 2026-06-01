@@ -23,12 +23,14 @@ import Link from 'next/link';
 import { useRealtimeChat } from '@/hooks/useRealtimeChat';
 import { chatApi } from '@/lib/api/client';
 import { getFriendlyNetworkMessage } from '@/lib/api/networkErrorMessage';
+import { dismissMessageNotifications } from '@/lib/notifications/dismissOnView';
 import { useAuthStore } from '@/stores/authStore';
 import { formatRelativeTime } from '@/features/community/utils/timeFormat';
 import { SharedPostCard } from './SharedPostCard';
 import { EmojiQuickPicker } from './EmojiQuickPicker';
 import { GroupManageModal } from './GroupManageModal';
 import { ForwardMessageModal } from './ForwardMessageModal';
+import { ui } from '@/features/community/ui';
 import type { ChatMessage } from '@repo/types';
 
 interface ChatWindowProps {
@@ -140,6 +142,7 @@ export function ChatWindow({
   useEffect(() => {
     if (chatId) {
       void loadMessages();
+      dismissMessageNotifications(chatId);
       setInviteLink(null);
       setMenuOpen(false);
     }
@@ -212,17 +215,23 @@ export function ChatWindow({
     }
 
     const tempId = `temp-${Date.now()}`;
-    let content = inputValue.trim();
-    if (replyTo?.content) {
-      const quote = replyTo.content.split('\n')[0].slice(0, 120);
-      content = `↩ ${replyTo.senderName}: ${quote}${quote.length >= 120 ? '…' : ''}\n${content}`;
-    }
+    const content = inputValue.trim();
+    const replyingTo = replyTo;
     const optimistic: ChatMessage = {
       id: tempId,
       content,
       senderId: currentUserId,
       senderName: 'You',
       isRead: false,
+      replyTo: replyingTo
+        ? {
+            id: replyingTo.id,
+            senderId: replyingTo.senderId,
+            senderName: replyingTo.senderName,
+            content: replyingTo.content?.slice(0, 200) || null,
+            isDeleted: replyingTo.isDeleted,
+          }
+        : null,
       createdAt: new Date().toISOString(),
     };
 
@@ -232,7 +241,10 @@ export function ChatWindow({
     setIsSending(true);
 
     try {
-      const response = await chatApi.sendMessage(chatId, { content });
+      const response = await chatApi.sendMessage(chatId, {
+        content,
+        replyToMessageId: replyingTo?.id,
+      });
       const realMessage = response.data;
       setMessages((prev) =>
         prev.map((msg) =>
@@ -401,8 +413,8 @@ export function ChatWindow({
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-bn-border/70 bg-white shrink-0 relative z-30">
+      {/* Header — stays above message scroll */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-bn-border/70 bg-white shrink-0 sticky top-0 z-20">
         <div className="flex items-center gap-3 min-w-0">
           {onBack && (
             <button
@@ -448,7 +460,7 @@ export function ChatWindow({
           {menuOpen && (
             <div
               data-chat-menu-trigger
-              className="absolute right-0 top-full mt-1 w-56 bg-white border border-bn-border rounded-xl shadow-lg z-50 py-1"
+              className={cn(ui.menuDropdown, 'right-0 top-full mt-1 w-56')}
             >
               <button
                 type="button"
@@ -457,7 +469,7 @@ export function ChatWindow({
                   setMenuOpen(false);
                   void loadMessages();
                 }}
-                className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-bn-surface touch-manipulation"
+                className={ui.menuItem}
               >
                 <RefreshCw size={16} />
                 Refresh messages
@@ -467,7 +479,7 @@ export function ChatWindow({
                   href={otherUsername ? `/${otherUsername}` : `/messages?startUser=${otherUserId}`}
                   data-chat-menu-trigger
                   onClick={() => setMenuOpen(false)}
-                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-bn-surface touch-manipulation"
+                  className={ui.menuItem}
                 >
                   <User size={16} />
                   View profile
@@ -482,7 +494,7 @@ export function ChatWindow({
                       setMenuOpen(false);
                       setShowGroupManage(true);
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-bn-surface touch-manipulation"
+                    className={ui.menuItem}
                   >
                     <Users size={16} />
                     {groupAdmin ? 'Manage group' : 'View members'}
@@ -493,7 +505,7 @@ export function ChatWindow({
                         type="button"
                         data-chat-menu-trigger
                         onClick={() => void createInviteLink()}
-                        className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-bn-surface touch-manipulation"
+                        className={ui.menuItem}
                       >
                         <Link2 size={16} />
                         Create invite link
@@ -560,21 +572,28 @@ export function ChatWindow({
       )}
 
       {inviteLink && (
-        <div className="px-4 py-2.5 bg-bn-primary/5 border-b border-bn-border/60 flex items-center gap-2">
-          <p className="text-xs text-bn-muted truncate flex-1">{inviteLink}</p>
+        <div className="px-4 py-2.5 bg-bn-primary/5 border-b border-bn-border/60 flex items-center gap-2 shrink-0">
+          <a
+            href={inviteLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-bn-primary font-medium truncate flex-1 hover:underline"
+          >
+            {inviteLink}
+          </a>
           <button
             type="button"
             onClick={() => void copyInviteLink()}
             className="flex items-center gap-1 text-xs font-medium text-bn-primary hover:underline flex-shrink-0"
           >
             {copiedInvite ? <Check size={14} /> : <Copy size={14} />}
-            {copiedInvite ? 'Copied' : 'Copy link'}
+            {copiedInvite ? 'Copied' : 'Copy'}
           </button>
         </div>
       )}
 
-      {/* Messages */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 bg-gradient-to-b from-bn-surface/20 to-white">
+      {/* Messages — only this region scrolls */}
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 space-y-3 bg-gradient-to-b from-bn-surface/20 to-white">
         {messages.length === 0 ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center">
@@ -592,20 +611,23 @@ export function ChatWindow({
                 key={msg.id}
                 className={`flex group ${isOwn ? 'justify-end' : 'justify-start'}`}
               >
-                <div className={`relative max-w-[75%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col`}>
+                <div className={`relative max-w-[min(75%,20rem)] ${isOwn ? 'items-end' : 'items-start'} flex flex-col`}>
                   {!isOwn && chatType === 'group' && (
                     <span className="text-xs text-bn-muted mb-1 ml-2">{msg.senderName}</span>
                   )}
 
                   <div className="relative flex items-start gap-1">
                     <div className={cnBubble(isOwn, isDeleted)}>
+                      {!isDeleted && msg.replyTo && (
+                        <ReplyQuote reply={msg.replyTo} isOwn={isOwn} />
+                      )}
                       {!isDeleted && msg.sharedPost && (
                         <div className="mb-2">
                           <SharedPostCard post={msg.sharedPost} compact />
                         </div>
                       )}
                       {!isDeleted && msg.content && msg.content !== 'Shared a post' && (
-                        <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
+                        <MessageBody content={msg.content} isOwn={isOwn} />
                       )}
                       {!isDeleted && msg.editedAt && (
                         <p className={`text-[10px] mt-1 ${isOwn ? 'text-white/70' : 'text-bn-muted'}`}>
@@ -629,8 +651,8 @@ export function ChatWindow({
                         setActiveMessageMenu((cur) => (cur === msg.id ? null : msg.id))
                       }
                       className={cn(
-                        'p-1.5 rounded-lg text-bn-muted hover:text-bn-primary hover:bg-white border border-transparent hover:border-bn-border shadow-sm transition-colors touch-manipulation shrink-0',
-                        activeMessageMenu === msg.id && 'text-bn-primary bg-white border-bn-border'
+                        'p-1.5 rounded-lg text-bn-muted hover:text-bn-primary hover:bg-[#F5F1EB] border border-transparent hover:border-bn-border transition-colors touch-manipulation shrink-0',
+                        activeMessageMenu === msg.id && 'text-bn-primary bg-[#F5F1EB] border-bn-border'
                       )}
                       aria-label="Message options"
                     >
@@ -641,7 +663,7 @@ export function ChatWindow({
                       <div
                         data-chat-menu-trigger
                         className={cn(
-                          'absolute top-full mt-1 w-48 bg-white border border-bn-border rounded-xl shadow-lg py-1 z-50',
+                          cn(ui.menuDropdown, 'top-full mt-1 w-48'),
                           isOwn ? 'right-0' : 'left-0'
                         )}
                       >
@@ -735,13 +757,13 @@ export function ChatWindow({
       {/* Input */}
       <div className="p-4 border-t border-bn-border/70 bg-white shrink-0">
         {(replyTo || editingMessageId) && (
-          <div className="mb-2 flex items-start justify-between gap-2 rounded-xl bg-bn-surface/80 border border-bn-border px-3 py-2">
+          <div className="mb-2 flex items-start justify-between gap-2 rounded-xl bg-bn-surface/80 border border-bn-border border-l-4 border-l-bn-primary px-3 py-2 animate-in fade-in slide-in-from-bottom-1 duration-200">
             <div className="min-w-0">
               <p className="text-xs font-medium text-bn-primary">
                 {editingMessageId ? 'Editing message' : `Replying to ${replyTo?.senderName}`}
               </p>
               {!editingMessageId && replyTo?.content && (
-                <p className="text-xs text-bn-muted truncate mt-0.5">{replyTo.content}</p>
+                <p className="text-xs text-bn-muted line-clamp-2 mt-0.5">{replyTo.content}</p>
               )}
             </div>
             <button
@@ -771,7 +793,7 @@ export function ChatWindow({
             onKeyDown={handleKeyDown}
             placeholder={editingMessageId ? 'Edit your message…' : 'Type a message…'}
             rows={1}
-            className="flex-1 px-3 py-2.5 border border-bn-border rounded-xl focus:outline-none focus:border-bn-primary focus:ring-1 focus:ring-bn-primary resize-none max-h-32 bg-bn-surface/30"
+            className={`${ui.input} resize-none max-h-32 py-2.5`}
             onInput={(e) => {
               const target = e.target as HTMLTextAreaElement;
               target.style.height = 'auto';
@@ -826,4 +848,57 @@ function cnBubble(isOwn: boolean, isDeleted: boolean) {
 
 function cn(...parts: (string | false | undefined)[]) {
   return parts.filter(Boolean).join(' ');
+}
+
+const URL_SPLIT = /(https?:\/\/[^\s]+)/;
+
+function isHttpUrl(part: string) {
+  return /^https?:\/\//i.test(part);
+}
+
+function ReplyQuote({
+  reply,
+  isOwn,
+}: {
+  reply: NonNullable<ChatMessage['replyTo']>;
+  isOwn: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        'mb-2 rounded-lg border-l-[3px] px-2.5 py-1.5 text-xs',
+        isOwn ? 'border-white/80 bg-white/15' : 'border-bn-primary bg-[#F5F1EB]'
+      )}
+    >
+      <p className={cn('font-semibold truncate', isOwn ? 'text-white/95' : 'text-bn-primary')}>
+        {reply.senderName}
+      </p>
+      <p className={cn('line-clamp-2 mt-0.5', isOwn ? 'text-white/80' : 'text-bn-muted')}>
+        {reply.isDeleted ? 'Message deleted' : reply.content || '…'}
+      </p>
+    </div>
+  );
+}
+
+function MessageBody({ content, isOwn }: { content: string; isOwn: boolean }) {
+  const parts = content.split(URL_SPLIT);
+  return (
+    <p className="text-sm whitespace-pre-wrap break-words">
+      {parts.map((part, i) =>
+        isHttpUrl(part) ? (
+          <a
+            key={`${i}-${part.slice(0, 12)}`}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`underline break-all ${isOwn ? 'text-white/95' : 'text-bn-primary'}`}
+          >
+            {part}
+          </a>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </p>
+  );
 }

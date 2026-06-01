@@ -1,6 +1,6 @@
 import type { SessionUser } from '@repo/types';
 import { authApi } from '@/lib/api/client';
-import { DEFAULT_AUTHENTICATED_HOME } from '@/lib/routes/defaultRoutes';
+import { DEFAULT_AUTHENTICATED_HOME, getDefaultHomeForRole } from '@/lib/routes/defaultRoutes';
 
 /**
  * Where to send the user after a successful login.
@@ -13,7 +13,9 @@ export function getPostLoginPath(
     redirectTo?: string;
   } = {}
 ): string {
-  const redirectTo = options.redirectTo || DEFAULT_AUTHENTICATED_HOME;
+  const requested = options.redirectTo || DEFAULT_AUTHENTICATED_HOME;
+  const redirectTo =
+    requested === DEFAULT_AUTHENTICATED_HOME ? getDefaultHomeForRole(user.role) : requested;
 
   if (user.role === 'reader' && options.needsGenreOnboarding) {
     const params = new URLSearchParams();
@@ -32,8 +34,11 @@ export async function resolvePostLoginPath(
   user: SessionUser,
   redirectTo = DEFAULT_AUTHENTICATED_HOME
 ): Promise<string> {
+  const resolved =
+    redirectTo === DEFAULT_AUTHENTICATED_HOME ? getDefaultHomeForRole(user.role) : redirectTo;
+
   if (user.role !== 'reader') {
-    return redirectTo;
+    return resolved;
   }
 
   try {
@@ -41,9 +46,9 @@ export async function resolvePostLoginPath(
     const hasGenres = Array.isArray(res.data) && res.data.length > 0;
     return getPostLoginPath(user, {
       needsGenreOnboarding: !hasGenres,
-      redirectTo,
+      redirectTo: resolved,
     });
   } catch {
-    return redirectTo;
+    return resolved;
   }
 }

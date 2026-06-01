@@ -78,6 +78,13 @@ export function getNotificationHref(notification: AppNotification): string | nul
   }
 
   if (notification.type === 'post') {
+    const postId =
+      typeof notification.metadata?.postId === 'string'
+        ? notification.metadata.postId
+        : null;
+    if (postId) {
+      return `/community?post=${encodeURIComponent(postId)}`;
+    }
     return '/community';
   }
 

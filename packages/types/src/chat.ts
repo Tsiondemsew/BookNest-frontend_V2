@@ -51,6 +51,14 @@ export interface ChatInviteResponse {
   expiresAt: string;
 }
 
+export interface ChatMessageReplyPreview {
+  id: string;
+  senderId: string;
+  senderName: string;
+  content: string | null;
+  isDeleted?: boolean;
+}
+
 export interface ChatMessage {
   id: string;
   content: string | null;
@@ -63,6 +71,7 @@ export interface ChatMessage {
   isDeleted?: boolean;
   deletedForEveryone?: boolean;
   editedAt?: string | null;
+  replyTo?: ChatMessageReplyPreview | null;
   createdAt: string;
 }
 

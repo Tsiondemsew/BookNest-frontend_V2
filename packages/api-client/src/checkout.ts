@@ -8,7 +8,7 @@ export function createCheckoutApi(client: ApiClient) {
       client.post<CheckoutResponse, CheckoutRequest>(endpoints.checkout.initialize, data),
 
     verifyPayment: (tx_ref: string, transaction_id?: string) => {
-      let url = `${endpoints.checkout.verify}?tx_ref=${tx_ref}`;
+      let url = `${endpoints.checkout.verify}?tx_ref=${encodeURIComponent(tx_ref)}`;
       if (transaction_id) {
         url += `&transaction_id=${transaction_id}`;
       }

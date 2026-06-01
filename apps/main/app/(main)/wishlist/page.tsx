@@ -6,8 +6,10 @@ import { Heart, ShoppingBag, ArrowRight } from 'lucide-react';
 import { useWishlist } from '@/features/wishlist/hooks/useWishlist';
 import { WishlistItemComponent } from '@/features/wishlist/components/WishlistItem';
 import { useAuthStore } from '@/stores/authStore';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function WishlistPage() {
+  const { t } = useTranslation();
   const [page] = useState(1);
   const limit = 20;
   
@@ -21,13 +23,13 @@ export default function WishlistPage() {
     return (
       <div className="max-w-4xl mx-auto text-center py-16">
         <Heart size={64} className="mx-auto text-[#4A5568] mb-4" />
-        <h1 className="text-2xl font-bold text-[#1A2A3A] mb-2">Your Wishlist</h1>
-        <p className="text-[#4A5568] mb-6">Please log in to view and manage your wishlist.</p>
+        <h1 className="text-2xl font-bold text-[#1A2A3A] mb-2">{t('pages.wishlist')}</h1>
+        <p className="text-[#4A5568] mb-6">{t('wishlist.loginPrompt')}</p>
         <Link
           href="/login"
           className="inline-flex items-center gap-2 px-6 py-3 bg-[#2C3E50] text-white rounded-lg hover:bg-[#1A2A3A] transition-colors"
         >
-          Sign In
+          {t('common.signIn')}
           <ArrowRight size={18} />
         </Link>
       </div>
@@ -37,8 +39,8 @@ export default function WishlistPage() {
   if (isLoading) {
     return (
       <div>
-        <h1 className="text-2xl font-bold text-[#1A2A3A] mb-2">My Wishlist</h1>
-        <p className="text-[#4A5568] mb-8">Books you've saved for later</p>
+        <h1 className="text-2xl font-bold text-[#1A2A3A] mb-2">{t('wishlist.title')}</h1>
+        <p className="text-[#4A5568] mb-8">{t('wishlist.subtitle')}</p>
         <div className="space-y-4">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="flex gap-5 p-5 bg-white rounded-xl border border-[#E8E2D9] animate-pulse">
@@ -58,7 +60,7 @@ export default function WishlistPage() {
   if (isError) {
     return (
       <div className="text-center py-16">
-        <p className="text-red-500">Failed to load wishlist. Please try again.</p>
+        <p className="text-red-500">{t('wishlist.loadFailed')}</p>
       </div>
     );
   }
@@ -67,14 +69,14 @@ export default function WishlistPage() {
     return (
       <div className="text-center py-16">
         <Heart size={64} className="mx-auto text-[#4A5568] mb-4" />
-        <h1 className="text-2xl font-bold text-[#1A2A3A] mb-2">Your Wishlist is Empty</h1>
-        <p className="text-[#4A5568] mb-6">Save books you love to your wishlist and they'll appear here.</p>
+        <h1 className="text-2xl font-bold text-[#1A2A3A] mb-2">{t('wishlist.emptyTitle')}</h1>
+        <p className="text-[#4A5568] mb-6">{t('wishlist.emptyDesc')}</p>
         <Link
           href="/market"
           className="inline-flex items-center gap-2 px-6 py-3 bg-[#2C3E50] text-white rounded-lg hover:bg-[#1A2A3A] transition-colors"
         >
           <ShoppingBag size={18} />
-          Browse Books
+          {t('common.browseBooks')}
         </Link>
       </div>
     );
@@ -84,16 +86,18 @@ export default function WishlistPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-[#1A2A3A]">My Wishlist</h1>
+          <h1 className="text-2xl font-bold text-[#1A2A3A]">{t('wishlist.title')}</h1>
           <p className="text-[#4A5568] text-sm mt-1">
-            {total} {total === 1 ? 'book' : 'books'} saved for later
+            {total === 1
+              ? t('wishlist.savedCount_one', { count: total })
+              : t('wishlist.savedCount_other', { count: total })}
           </p>
         </div>
         <Link
           href="/market"
           className="text-[#B85C38] hover:text-[#8E735B] text-sm font-medium flex items-center gap-1 transition-colors"
         >
-          Continue Shopping
+          {t('common.continueShopping')}
           <ArrowRight size={16} />
         </Link>
       </div>

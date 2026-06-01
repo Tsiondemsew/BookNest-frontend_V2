@@ -30,12 +30,20 @@ export interface ProfileResponse {
   data: Profile;
 }
 
+export interface ProfilePhoto {
+  id: string;
+  imageUrl: string;
+  sortOrder?: number;
+  createdAt?: string;
+}
+
 export interface PublicProfile {
   id: string;
   name: string;
   username: string;
   role: string;
   avatarUrl?: string | null;
+  photos?: ProfilePhoto[];
   bio?: string | null;
   location?: string | null;
   website?: string | null;

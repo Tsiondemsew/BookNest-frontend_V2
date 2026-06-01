@@ -43,6 +43,7 @@ export function GroupManageModal({
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [copiedInvite, setCopiedInvite] = useState(false);
   const [isCreatingInvite, setIsCreatingInvite] = useState(false);
+  const [canManage, setCanManage] = useState(isAdmin);
 
   const loadMembers = useCallback(async () => {
     setIsLoading(true);
@@ -50,6 +51,7 @@ export function GroupManageModal({
     try {
       const response = await chatApi.getGroupMembers(chatId);
       setMembers(response.data.members);
+      setCanManage(Boolean(response.data.isAdmin));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load members');
       setMembers([]);
@@ -57,6 +59,10 @@ export function GroupManageModal({
       setIsLoading(false);
     }
   }, [chatId]);
+
+  useEffect(() => {
+    setCanManage(isAdmin);
+  }, [isAdmin, chatId]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -156,9 +162,13 @@ export function GroupManageModal({
             </div>
           )}
 
-          {isAdmin && (
+          {canManage && (
             <section className="space-y-3">
-              <h3 className="text-sm font-semibold text-bn-ink">Invite people</h3>
+              <h3 className="text-sm font-semibold text-bn-ink">Add members</h3>
+              <p className="text-xs text-bn-muted">Search community members to add to this group.</p>
+              <h4 className="text-xs font-medium text-bn-muted uppercase tracking-wide pt-1">
+                Invite link
+              </h4>
               <button
                 type="button"
                 onClick={() => void createInviteLink()}
@@ -174,7 +184,14 @@ export function GroupManageModal({
               </button>
               {inviteLink && (
                 <div className="flex items-center gap-2 rounded-xl border border-bn-border bg-bn-surface/40 px-3 py-2">
-                  <p className="text-xs text-bn-muted truncate flex-1">{inviteLink}</p>
+                  <a
+                    href={inviteLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-bn-primary font-medium truncate flex-1 hover:underline"
+                  >
+                    {inviteLink}
+                  </a>
                   <button
                     type="button"
                     onClick={() => void copyInviteLink()}
@@ -251,7 +268,7 @@ export function GroupManageModal({
                         </p>
                       )}
                     </div>
-                    {isAdmin && !member.isSelf && !member.isAdmin && (
+                    {canManage && !member.isSelf && !member.isAdmin && (
                       <button
                         type="button"
                         onClick={() => void removeMember(member.id)}
@@ -274,7 +291,7 @@ export function GroupManageModal({
         </div>
 
         <div className="p-4 border-t border-bn-border/70 shrink-0 space-y-2">
-          {!isAdmin && (
+          {!canManage && (
             <button
               type="button"
               onClick={async () => {
@@ -292,7 +309,7 @@ export function GroupManageModal({
               Leave group
             </button>
           )}
-          {isAdmin && (
+          {canManage && (
             <button
               type="button"
               onClick={async () => {

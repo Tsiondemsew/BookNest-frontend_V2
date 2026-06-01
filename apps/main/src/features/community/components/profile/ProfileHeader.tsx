@@ -1,13 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { MapPin, Link as LinkIcon, Calendar, Settings, MessageCircle, Lock } from 'lucide-react';
 import { FollowButton } from './FollowButton';
 import { FollowListModal } from './FollowListModal';
-import { formatRelativeTime } from '../../utils/timeFormat';
-import { CommunityAvatar, CommunityCard, cn, ui } from '../../ui';
+import { ProfilePhotoGrid } from './ProfilePhotoGrid';
+import { formatJoinDate } from '@/lib/utils/formatJoinDate';
+import { useTranslation } from '@/hooks/useTranslation';
+import { CommunityCard, cn, ui } from '../../ui';
+import type { ProfilePhoto } from '@repo/types';
 
 type FollowListKind = 'followers' | 'following';
 
@@ -18,6 +21,7 @@ interface ProfileHeaderProps {
     username: string;
     bio?: string | null;
     avatarUrl?: string | null;
+    photos?: ProfilePhoto[];
     coverUrl?: string | null;
     location?: string | null;
     website?: string | null;
@@ -42,14 +46,20 @@ interface ProfileHeaderProps {
 }
 
 export function ProfileHeader({ profile, onEdit, onSettings }: ProfileHeaderProps) {
+  const { t, locale } = useTranslation();
   const [coverImageError, setCoverImageError] = useState(false);
   const [followList, setFollowList] = useState<FollowListKind | null>(null);
   const isReader = !profile.role || profile.role === 'reader';
+  const joinLabel = useMemo(
+    () => formatJoinDate(profile.joinedAt, locale === 'am' ? 'am-ET' : 'en-US'),
+    [profile.joinedAt, locale]
+  );
+
   const roleBadge =
     profile.role === 'author'
-      ? { label: 'Author', className: 'bg-blue-100 text-blue-700' }
+      ? { label: t('community.author'), className: 'bg-blue-100 text-blue-700' }
       : profile.role === 'publisher'
-        ? { label: 'Publisher', className: 'bg-purple-100 text-purple-700' }
+        ? { label: t('community.publisher'), className: 'bg-purple-100 text-purple-700' }
         : null;
 
   return (
@@ -69,23 +79,21 @@ export function ProfileHeader({ profile, onEdit, onSettings }: ProfileHeaderProp
 
       <div className="relative px-4 sm:px-6 pb-5 sm:pb-6">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 -mt-12 sm:-mt-14">
-          <div className="relative">
-            <CommunityAvatar
-              name={profile.name}
-              src={profile.avatarUrl}
-              size="xl"
-              ring
-              className="border-4 border-white"
+          <div className="-mt-1">
+            <ProfilePhotoGrid
+              avatarUrl={profile.avatarUrl}
+              photos={profile.photos}
+              avatarSize="lg"
             />
           </div>
 
-          <div className="flex flex-wrap gap-2 sm:pb-1">
+          <div className="flex flex-wrap gap-2 sm:pb-1 sm:ml-auto">
             {profile.isOwnProfile ? (
               <>
                 <button type="button" onClick={onEdit} className={ui.btnSecondary}>
-                  Edit profile
+                  {t('profile.editProfile')}
                 </button>
-                <button type="button" onClick={onSettings} className={ui.btnIcon} aria-label="Settings">
+                <button type="button" onClick={onSettings} className={ui.btnIcon} aria-label={t('profile.settings')}>
                   <Settings size={18} />
                 </button>
               </>
@@ -96,7 +104,7 @@ export function ProfileHeader({ profile, onEdit, onSettings }: ProfileHeaderProp
                   initialIsFollowing={profile.isFollowing || false}
                   initialFollowerCount={profile.followerCount}
                 />
-                <Link href={`/messages?startUser=${profile.id}`} className={ui.btnIcon} aria-label="Message">
+                <Link href={`/messages?startUser=${profile.id}`} className={ui.btnIcon} aria-label={t('profile.message')}>
                   <MessageCircle size={18} />
                 </Link>
               </>
@@ -137,16 +145,18 @@ export function ProfileHeader({ profile, onEdit, onSettings }: ProfileHeaderProp
                 {profile.website.replace(/^https?:\/\//, '')}
               </a>
             )}
-            <span className="inline-flex items-center gap-1.5">
-              <Calendar size={14} className="text-bn-primary/70" />
-              Joined {formatRelativeTime(profile.joinedAt)}
-            </span>
+            {joinLabel && (
+              <span className="inline-flex items-center gap-1.5">
+                <Calendar size={14} className="text-bn-primary/70" />
+                {t('profile.joined', { date: joinLabel })}
+              </span>
+            )}
           </div>
 
           <div className="flex gap-6 pt-3 border-t border-bn-border/60">
             <div>
               <span className="font-bold text-bn-ink tabular-nums">{profile.postCount}</span>
-              <span className="text-sm text-bn-muted ml-1.5">Posts</span>
+              <span className="text-sm text-bn-muted ml-1.5">{t('profile.posts')}</span>
             </div>
             <button
               type="button"
@@ -154,7 +164,7 @@ export function ProfileHeader({ profile, onEdit, onSettings }: ProfileHeaderProp
               className="text-left hover:opacity-80 transition-opacity touch-manipulation"
             >
               <span className="font-bold text-bn-ink tabular-nums">{profile.followerCount}</span>
-              <span className="text-sm text-bn-muted ml-1.5">Followers</span>
+              <span className="text-sm text-bn-muted ml-1.5">{t('profile.followers')}</span>
             </button>
             <button
               type="button"
@@ -162,7 +172,7 @@ export function ProfileHeader({ profile, onEdit, onSettings }: ProfileHeaderProp
               className="text-left hover:opacity-80 transition-opacity touch-manipulation"
             >
               <span className="font-bold text-bn-ink tabular-nums">{profile.followingCount}</span>
-              <span className="text-sm text-bn-muted ml-1.5">Following</span>
+              <span className="text-sm text-bn-muted ml-1.5">{t('profile.following')}</span>
             </button>
           </div>
 
@@ -170,26 +180,26 @@ export function ProfileHeader({ profile, onEdit, onSettings }: ProfileHeaderProp
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
               <div className="rounded-xl bg-bn-surface border border-bn-border px-3 py-2">
                 <p className="text-lg font-bold text-bn-ink tabular-nums">{profile.readingStats.current_streak}</p>
-                <p className="text-xs text-bn-muted">Day streak</p>
+                <p className="text-xs text-bn-muted">{t('profile.dayStreak')}</p>
               </div>
               <div className="rounded-xl bg-bn-surface border border-bn-border px-3 py-2">
                 <p className="text-lg font-bold text-bn-ink tabular-nums">{profile.readingStats.books_completed}</p>
-                <p className="text-xs text-bn-muted">Books done</p>
+                <p className="text-xs text-bn-muted">{t('profile.booksDone')}</p>
               </div>
               <div className="rounded-xl bg-bn-surface border border-bn-border px-3 py-2">
                 <p className="text-lg font-bold text-bn-ink tabular-nums">{profile.readingStats.total_pages}</p>
-                <p className="text-xs text-bn-muted">Pages read</p>
+                <p className="text-xs text-bn-muted">{t('profile.pagesRead')}</p>
               </div>
               <div className="rounded-xl bg-bn-surface border border-bn-border px-3 py-2">
                 <p className="text-lg font-bold text-bn-ink tabular-nums">{profile.readingStats.total_minutes}</p>
-                <p className="text-xs text-bn-muted">Minutes listened</p>
+                <p className="text-xs text-bn-muted">{t('profile.minutesListened')}</p>
               </div>
             </div>
           )}
 
           {isReader && profile.achievements && profile.achievements.length > 0 && (
             <div className="pt-2">
-              <p className="text-sm font-medium text-bn-ink mb-2">Recent achievements</p>
+              <p className="text-sm font-medium text-bn-ink mb-2">{t('profile.recentAchievements')}</p>
               <div className="flex flex-wrap gap-2">
                 {profile.achievements.slice(0, 6).map((a) => (
                   <span
@@ -206,14 +216,14 @@ export function ProfileHeader({ profile, onEdit, onSettings }: ProfileHeaderProp
           {profile.isPrivate && !profile.isOwnProfile && !profile.isFollowing && (
             <div className="flex items-center gap-2 mt-2 px-3.5 py-2.5 rounded-xl bg-amber-50 border border-amber-200/80 text-sm text-amber-900">
               <Lock size={16} className="shrink-0" />
-              Private account — follow to see posts
+              {t('profile.privateFollow')}
             </div>
           )}
 
           {profile.isPrivate && profile.isOwnProfile && (
             <div className="flex items-center gap-2 mt-2 px-3.5 py-2.5 rounded-xl bg-bn-surface border border-bn-border text-sm text-bn-muted">
               <Lock size={16} className="shrink-0 text-bn-primary" />
-              Your account is private. Only followers can see your posts.
+              {t('profile.privateOwn')}
             </div>
           )}
         </div>
@@ -222,7 +232,7 @@ export function ProfileHeader({ profile, onEdit, onSettings }: ProfileHeaderProp
       <FollowListModal
         userId={profile.id}
         kind={followList || 'followers'}
-        title={followList === 'following' ? 'Following' : 'Followers'}
+        title={followList === 'following' ? t('profile.following') : t('profile.followers')}
         isOpen={followList !== null}
         onClose={() => setFollowList(null)}
       />

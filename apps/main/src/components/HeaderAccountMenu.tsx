@@ -3,8 +3,10 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { User, Settings, LogOut, Crown } from 'lucide-react';
+import { User, Settings, LogOut } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { useTranslation } from '@/hooks/useTranslation';
+import { isNavHrefActive } from '@/lib/navigation/navActive';
 
 interface HeaderAccountMenuProps {
   user: { name?: string; email?: string; role?: string } | null;
@@ -14,11 +16,10 @@ export function HeaderAccountMenu({ user }: HeaderAccountMenuProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { logout } = useAuthStore();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  const isAuthor = user?.role === 'author';
-  const isPublisher = user?.role === 'publisher';
   const initial = user?.name?.[0] || user?.email?.[0] || 'U';
 
   useEffect(() => {
@@ -53,18 +54,21 @@ export function HeaderAccountMenu({ user }: HeaderAccountMenuProps) {
   };
 
   const menuItems = [
-    { label: 'My Profile', href: '/@me', icon: User },
-    ...(isAuthor || isPublisher
-      ? [{ label: 'Studio', href: '/studio', icon: Crown }]
-      : []),
-    { label: 'Settings', href: '/profile', icon: Settings },
+    { label: t('account.myProfile'), href: '/@me', icon: User },
+    { label: t('account.settings'), href: '/profile', icon: Settings },
   ];
+
+  const roleLabel =
+    user?.role === 'author'
+      ? t('account.author')
+      : user?.role === 'publisher'
+        ? t('account.publisher')
+        : t('account.reader');
 
   const isProfileActive =
     pathname === '/@me' ||
     pathname === '/me' ||
-    pathname === '/profile' ||
-    pathname?.startsWith('/studio');
+    pathname === '/profile';
 
   return (
     <div ref={rootRef} className="relative">
@@ -76,7 +80,7 @@ export function HeaderAccountMenu({ user }: HeaderAccountMenuProps) {
             ? 'bg-[#2C3E50] text-white ring-[#B85C38]/40'
             : 'bg-[#2C3E50] text-white ring-transparent hover:ring-[#E8E2D9]'
         }`}
-        aria-label="Account menu"
+        aria-label={t('account.accountMenu')}
         aria-expanded={open}
         aria-haspopup="menu"
       >
@@ -92,13 +96,12 @@ export function HeaderAccountMenu({ user }: HeaderAccountMenuProps) {
             <p className="text-sm font-semibold text-[#1A2A3A] truncate">
               {user?.name || user?.email?.split('@')[0]}
             </p>
-            <p className="text-xs text-[#4A5568] capitalize">{user?.role || 'Reader'}</p>
+            <p className="text-xs text-[#4A5568] capitalize">{roleLabel}</p>
           </div>
 
           {menuItems.map(({ label, href, icon: Icon }) => {
             const active =
-              pathname === href ||
-              (href !== '/@me' && pathname?.startsWith(href + '/')) ||
+              isNavHrefActive(pathname, href) ||
               (href === '/@me' && pathname === '/me');
             return (
               <Link
@@ -126,7 +129,7 @@ export function HeaderAccountMenu({ user }: HeaderAccountMenuProps) {
               className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
             >
               <LogOut size={16} />
-              Log out
+              {t('account.logOut')}
             </button>
           </div>
         </div>

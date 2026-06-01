@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Send, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { feedApi } from '@/lib/api/client';
+import { useTranslation } from '@/hooks/useTranslation';
 import type { Comment } from '@repo/types';
 
 interface CommentFormProps {
@@ -15,6 +16,7 @@ interface CommentFormProps {
 
 export function CommentForm({ postId, parentCommentId, isReply = false, onCommentAdded }: CommentFormProps) {
   const { user, isAuthenticated } = useAuthStore();
+  const { t } = useTranslation();
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -42,9 +44,9 @@ export function CommentForm({ postId, parentCommentId, isReply = false, onCommen
       <div className="bg-[#F5F1EB] rounded-xl p-3 text-center">
         <p className="text-sm text-[#4A5568]">
           <a href="/login" className="text-[#B85C38] hover:underline font-medium">
-            Sign in
+            {t('common.signIn')}
           </a>{' '}
-          to leave a comment
+          {t('community.signInToComment')}
         </p>
       </div>
     );
@@ -61,7 +63,7 @@ export function CommentForm({ postId, parentCommentId, isReply = false, onCommen
           value={content}
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && void handleSubmit()}
-          placeholder={isReply ? 'Write a reply…' : 'Write a comment…'}
+          placeholder={isReply ? t('community.writeReply') : t('community.writeComment')}
           className="flex-1 px-3 py-2 border border-[#E8E2D9] rounded-xl focus:outline-none focus:border-[#B85C38] focus:ring-2 focus:ring-[#B85C38]/20 text-sm"
         />
         <button

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { LoginForm, AuthPageShell } from '@/features/auth/components';
 import { useAuthStore } from '@/stores/authStore';
+import { useTranslation } from '@/hooks/useTranslation';
 import {
   buildRegisterUrl,
   completeAuthContinuation,
@@ -15,6 +16,7 @@ function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, isInitializing, user } = useAuthStore();
+  const { t } = useTranslation();
 
   const { redirect: redirectTo, action, bookFormatIds } =
     readPendingActionFromSearchParams(searchParams);
@@ -43,20 +45,18 @@ function LoginPageContent() {
 
   return (
     <AuthPageShell
-      title="Welcome back"
+      title={t('auth.welcomeBack')}
       subtitle={
-        hasPendingPurchase
-          ? 'Sign in to continue your purchase'
-          : 'Sign in to pick up where you left off'
+        hasPendingPurchase ? t('auth.signInPurchaseSubtitle') : t('auth.signInSubtitle')
       }
       footer={
         <p className="text-sm text-[#4A5568]">
-          Don&apos;t have an account?{' '}
+          {t('auth.noAccount')}{' '}
           <Link
             href={registerHref}
             className="text-[#B85C38] hover:text-[#8E735B] font-semibold underline-offset-2 hover:underline transition-colors"
           >
-            Create account
+            {t('auth.createAccount')}
           </Link>
         </p>
       }

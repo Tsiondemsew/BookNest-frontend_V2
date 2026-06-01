@@ -4,8 +4,10 @@ import Link from 'next/link';
 import { Trash2, ArrowRight, ShoppingBag, CreditCard } from 'lucide-react';
 import { useCart } from '@/features/cart/hooks/useCart';
 import { useAuthStore } from '@/stores/authStore';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function CartPage() {
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuthStore();
   const { cart, isLoading, removeItem } = useCart();
 
@@ -13,10 +15,10 @@ export default function CartPage() {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         <ShoppingBag size={64} className="mx-auto text-[#4A5568] mb-4" />
-        <h1 className="text-2xl font-bold text-[#1A2A3A] mb-2">Your Cart</h1>
-        <p className="text-[#4A5568] mb-6">Please login to view your cart.</p>
+        <h1 className="text-2xl font-bold text-[#1A2A3A] mb-2">{t('pages.shoppingCart')}</h1>
+        <p className="text-[#4A5568] mb-6">{t('cart.loginPrompt')}</p>
         <Link href="/login" className="inline-flex items-center gap-2 px-6 py-3 bg-[#2C3E50] text-white rounded-lg hover:bg-[#1A2A3A] transition-colors">
-          Sign In <ArrowRight size={18} />
+          {t('common.signIn')} <ArrowRight size={18} />
         </Link>
       </div>
     );
@@ -25,7 +27,7 @@ export default function CartPage() {
   if (isLoading) {
     return (
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold text-[#1A2A3A] mb-6">Shopping Cart</h1>
+        <h1 className="text-2xl font-bold text-[#1A2A3A] mb-6">{t('pages.shoppingCart')}</h1>
         <div className="space-y-4">
           {[...Array(2)].map((_, i) => (
             <div key={i} className="flex gap-4 p-4 bg-white rounded-xl border border-[#E8E2D9] animate-pulse">
@@ -45,10 +47,10 @@ export default function CartPage() {
     return (
       <div className="max-w-4xl mx-auto text-center py-16">
         <ShoppingBag size={64} className="mx-auto text-[#4A5568] mb-4" />
-        <h1 className="text-2xl font-bold text-[#1A2A3A] mb-2">Your Cart is Empty</h1>
-        <p className="text-[#4A5568] mb-6">Add some books to your cart and they'll appear here.</p>
+        <h1 className="text-2xl font-bold text-[#1A2A3A] mb-2">{t('cart.emptyTitle')}</h1>
+        <p className="text-[#4A5568] mb-6">{t('cart.emptyDesc')}</p>
         <Link href="/market" className="inline-flex items-center gap-2 px-6 py-3 bg-[#2C3E50] text-white rounded-lg hover:bg-[#1A2A3A] transition-colors">
-          Browse Books <ArrowRight size={18} />
+          {t('common.browseBooks')} <ArrowRight size={18} />
         </Link>
       </div>
     );
@@ -58,7 +60,7 @@ export default function CartPage() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold text-[#1A2A3A] mb-6">Shopping Cart</h1>
+      <h1 className="text-2xl font-bold text-[#1A2A3A] mb-6">{t('pages.shoppingCart')}</h1>
 
       <div className="space-y-4">
         {cart.items.map((item) => {
@@ -76,8 +78,8 @@ export default function CartPage() {
               <div className="flex-1">
                 <div className="flex justify-between">
                   <div>
-                    <h3 className="font-semibold text-[#1A2A3A] text-lg">{book?.title || 'Unknown Book'}</h3>
-                    <p className="text-sm text-[#4A5568]">{book?.author_name || 'Unknown Author'}</p>
+                    <h3 className="font-semibold text-[#1A2A3A] text-lg">{book?.title || t('common.unknownBook')}</h3>
+                    <p className="text-sm text-[#4A5568]">{book?.author_name || t('common.unknownAuthor')}</p>
                     <div className="mt-1">
                       <span className="text-xs bg-[#F5F1EB] text-[#4A5568] px-2 py-1 rounded-md">
                         {item.book_format?.format_type || 'Unknown Format'}
@@ -87,7 +89,7 @@ export default function CartPage() {
                   <button
                     onClick={() => removeItem(item.id)}
                     className="text-[#4A5568] hover:text-red-500 transition-colors"
-                    aria-label="Remove from cart"
+                    aria-label={t('common.removeFromCart')}
                   >
                     <Trash2 size={18} />
                   </button>
@@ -104,18 +106,23 @@ export default function CartPage() {
 
       <div className="mt-8 border-t border-[#E8E2D9] pt-6 space-y-4">
         <div className="flex justify-between text-xl font-bold text-[#1A2A3A]">
-          <span>Total ({itemCount} {itemCount === 1 ? 'item' : 'items'})</span>
+          <span>
+            {t('cart.totalItems', {
+              count: itemCount,
+              unit: itemCount === 1 ? t('common.item') : t('common.items'),
+            })}
+          </span>
           <span>{cart.total.toFixed(2)} ETB</span>
         </div>
         <p className="text-sm text-[#4A5568]">
-          All items are purchased together in one secure payment.
+          {t('cart.paymentNote')}
         </p>
         <Link
           href="/checkout?from_cart=1"
           className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#B85C38] px-6 py-3 text-base font-medium text-white transition-colors hover:bg-[#8E735B] sm:w-auto sm:min-w-[240px]"
         >
           <CreditCard size={20} />
-          Proceed to checkout
+          {t('cart.proceedCheckout')}
         </Link>
       </div>
     </div>

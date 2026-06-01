@@ -8,6 +8,7 @@ import { notificationsApi } from '@/lib/api/client';
 import { getNotificationHref } from '@/lib/notifications/navigation';
 import { formatRelativeTime } from '@/features/community/utils/timeFormat';
 import type { AppNotification } from '@repo/types';
+import { NOTIFICATIONS_UPDATED_EVENT } from '@/lib/notifications/dismissOnView';
 
 function NotificationIcon({ type }: { type: AppNotification['type'] }) {
   if (type === 'message') {
@@ -52,8 +53,16 @@ export function NotificationBell() {
   useEffect(() => {
     void loadUnreadCount();
     const interval = window.setInterval(() => void loadUnreadCount(), 45_000);
-    return () => window.clearInterval(interval);
-  }, [loadUnreadCount]);
+    const handleUpdated = () => {
+      void loadUnreadCount();
+      if (open) void loadNotifications();
+    };
+    window.addEventListener(NOTIFICATIONS_UPDATED_EVENT, handleUpdated);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, handleUpdated);
+    };
+  }, [loadUnreadCount, loadNotifications, open]);
 
   useEffect(() => {
     if (!open) return;

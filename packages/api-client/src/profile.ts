@@ -28,6 +28,24 @@ export function createProfileApi(client: ApiClient) {
       );
     },
 
+    getProfilePhotos: () =>
+      client.get<{ success: boolean; data: import('@repo/types').ProfilePhoto[] }>(
+        endpoints.profile.photos
+      ),
+
+    uploadProfilePhoto: (file: File) => {
+      const formData = new FormData();
+      formData.append('photo', file);
+      return client.post<{ success: boolean; data: import('@repo/types').ProfilePhoto }>(
+        endpoints.profile.photos,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
+    },
+
+    deleteProfilePhoto: (photoId: string) =>
+      client.delete<{ success: boolean }>(endpoints.profile.photo(photoId)),
+
     // Update settings
     updateSettings: (settings: {
       is_public: boolean;

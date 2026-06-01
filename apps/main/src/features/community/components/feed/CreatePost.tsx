@@ -13,6 +13,7 @@ import {
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/authStore';
 import { feedApi, usersApi, booksApi } from '@/lib/api/client';
+import { useTranslation } from '@/hooks/useTranslation';
 import type { Post, CommunityUserSearchResult } from '@repo/types';
 
 const EMOJI_QUICK = ['📚', '❤️', '🔥', '✨', '👏', '🎧', '📖', '💡', '🙂', '🎉'];
@@ -29,11 +30,13 @@ interface BookHit {
 
 export function CreatePost({ onPostCreated }: CreatePostProps) {
   const { user } = useAuthStore();
+  const { t } = useTranslation();
   const [content, setContent] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [messageIsError, setMessageIsError] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [tagQuery, setTagQuery] = useState('');
   const [tagMode, setTagMode] = useState<'user' | 'book' | null>(null);
@@ -138,11 +141,13 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
 
       resetComposer();
       onPostCreated?.(response.data);
-      setMessage('Posted!');
+      setMessage(t('community.posted'));
+      setMessageIsError(false);
       setTimeout(() => setMessage(null), 2500);
     } catch (error) {
       console.error('Failed to publish post:', error);
-      setMessage('Could not publish post. Please try again.');
+      setMessage(t('community.publishFailed'));
+      setMessageIsError(true);
     } finally {
       setIsSubmitting(false);
     }
@@ -160,7 +165,7 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
             ref={textareaRef}
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Share a thought, reading update, or book recommendation…"
+            placeholder={t('community.composerPlaceholder')}
             className="w-full px-3 py-2.5 border border-[#E8E2D9] rounded-xl focus:outline-none focus:border-[#B85C38] focus:ring-2 focus:ring-[#B85C38]/20 resize-none min-h-[140px] text-[#1A2A3A]"
           />
 
@@ -189,7 +194,7 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
                 autoFocus
                 value={tagQuery}
                 onChange={(e) => setTagQuery(e.target.value)}
-                placeholder={tagMode === 'user' ? 'Search people…' : 'Search books in market…'}
+                placeholder={tagMode === 'user' ? t('community.searchPeople') : t('community.searchBooks')}
                 className="w-full px-2 py-1.5 text-sm border border-[#E8E2D9] rounded-lg mb-2"
               />
               <ul className="max-h-36 overflow-y-auto space-y-1">
@@ -219,7 +224,7 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
                   ))}
               </ul>
               <button type="button" onClick={() => setTagMode(null)} className="text-xs text-[#4A5568] mt-1">
-                Cancel
+                {t('community.cancel')}
               </button>
             </div>
           )}
@@ -242,7 +247,7 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
           {imagePreview && (
             <div className="relative inline-block">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={imagePreview} alt="Preview" className="rounded-xl object-cover max-h-48 border border-[#E8E2D9]" />
+              <img src={imagePreview} alt={t('community.imagePreview')} className="rounded-xl object-cover max-h-48 border border-[#E8E2D9]" />
               <button
                 type="button"
                 onClick={removeImage}
@@ -259,7 +264,7 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="p-2 text-[#4A5568] hover:text-[#B85C38] hover:bg-[#F5F1EB] rounded-lg"
-                title="Add image"
+                title={t('community.addImage')}
               >
                 <ImageIcon size={20} />
               </button>
@@ -267,7 +272,7 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
                 type="button"
                 onClick={() => setShowEmoji((v) => !v)}
                 className="p-2 text-[#4A5568] hover:text-[#B85C38] hover:bg-[#F5F1EB] rounded-lg"
-                title="Emoji"
+                title={t('community.emoji')}
               >
                 <Smile size={20} />
               </button>
@@ -278,7 +283,7 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
                   setTagQuery('');
                 }}
                 className="p-2 text-[#4A5568] hover:text-[#B85C38] hover:bg-[#F5F1EB] rounded-lg"
-                title="Tag user"
+                title={t('community.tagUser')}
               >
                 <AtSign size={20} />
               </button>
@@ -289,7 +294,7 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
                   setTagQuery('');
                 }}
                 className="p-2 text-[#4A5568] hover:text-[#B85C38] hover:bg-[#F5F1EB] rounded-lg"
-                title="Tag book"
+                title={t('community.tagBook')}
               >
                 <BookOpen size={20} />
               </button>
@@ -303,12 +308,12 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
               className="flex items-center gap-1 px-5 py-2.5 bg-[#B85C38] text-white font-semibold rounded-xl hover:bg-[#A04E2F] disabled:opacity-50"
             >
               {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-              Post
+              {t('community.post')}
             </button>
           </div>
 
           {message && (
-            <p className={`text-sm ${message.includes('Could not') ? 'text-red-600' : 'text-green-600'}`}>
+            <p className={`text-sm ${messageIsError ? 'text-red-600' : 'text-green-600'}`}>
               {message}
             </p>
           )}

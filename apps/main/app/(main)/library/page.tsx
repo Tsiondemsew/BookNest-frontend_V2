@@ -18,6 +18,7 @@ import { LibraryBookCard } from '@/features/library/components/LibraryBookCard';
 import { reviewsApi } from '@/lib/api/client';
 import { saveLibraryCache, getLibraryCache } from '@/lib/offline/libraryCache';
 import { OfflinePageNotice } from '@/components/OfflinePageNotice';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -50,6 +51,7 @@ const fetchLibrary = async (): Promise<LibraryItem[]> => {
 };
 
 export default function LibraryPage() {
+  const { t } = useTranslation();
   const { isAuthenticated, user } = useAuthStore();
   const queryClient = useQueryClient();
   const [libraryWithProgress, setLibraryWithProgress] = useState<LibraryWithProgress[]>([]);
@@ -199,9 +201,13 @@ export default function LibraryPage() {
   }));
   
   if (!result.success) {
-    alert(`Download failed: ${result.error || 'Unknown error'}`);
+    alert(
+      t('library.downloadFailed', {
+        error: result.error || t('common.loading'),
+      })
+    );
   } else {
-    alert(`"${bookTitle}" is ready for offline reading.`);
+    alert(t('library.downloadReady', { title: bookTitle }));
     const info = await checkStorageSpace(0);
     setStorageInfo(info);
   }
@@ -227,10 +233,10 @@ export default function LibraryPage() {
     return (
       <div className="max-w-7xl mx-auto px-4 py-16 text-center">
         <BookOpen size={64} className="mx-auto text-[#4A5568] mb-4" />
-        <h1 className="text-2xl font-bold text-[#1A2A3A] mb-2">My Library</h1>
-        <p className="text-[#4A5568] mb-6">Please login to view your purchased books.</p>
+        <h1 className="text-2xl font-bold text-[#1A2A3A] mb-2">{t('pages.myLibrary')}</h1>
+        <p className="text-[#4A5568] mb-6">{t('library.loginPrompt')}</p>
         <Link href="/login" className="inline-flex items-center gap-2 px-6 py-3 bg-[#2C3E50] text-white rounded-lg hover:bg-[#1A2A3A] transition-colors">
-          Sign In <ArrowRight size={18} />
+          {t('common.signIn')} <ArrowRight size={18} />
         </Link>
       </div>
     );
@@ -240,8 +246,8 @@ export default function LibraryPage() {
     return (
       <div className="max-w-6xl mx-auto px-4 py-4 sm:py-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-[#1A2A3A] bn-serif">My Library</h1>
-          <p className="text-sm text-[#4A5568] mt-1">Loading your collection…</p>
+          <h1 className="text-2xl font-bold text-[#1A2A3A] bn-serif">{t('pages.myLibrary')}</h1>
+          <p className="text-sm text-[#4A5568] mt-1">{t('library.loadingCollection')}</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {[...Array(6)].map((_, i) => (
@@ -264,15 +270,15 @@ export default function LibraryPage() {
       <div className="max-w-6xl mx-auto px-4 py-16 text-center">
         <p className="text-red-600 font-medium">
           {!navigator.onLine
-            ? 'You are offline and no saved library was found.'
-            : 'Could not load your library.'}
+            ? t('library.offlineNoCache')
+            : t('library.loadFailed')}
         </p>
         <p className="text-sm text-[#4A5568] mt-2">
-          {!navigator.onLine ? 'Connect once while signed in, then try again.' : 'Please try again in a moment.'}
+          {!navigator.onLine ? t('library.connectRetry') : t('library.tryAgainLater')}
         </p>
         {navigator.onLine && (
           <button onClick={() => refetch()} className="mt-4 px-4 py-2 bg-[#2C3E50] text-white rounded-lg text-sm hover:bg-[#1A2A3A] transition-colors">
-            Try Again
+            {t('common.tryAgain')}
           </button>
         )}
       </div>
@@ -284,10 +290,10 @@ export default function LibraryPage() {
       <div className="max-w-6xl mx-auto px-4 py-16 text-center">
         <div className="max-w-md mx-auto">
           <BookOpen size={56} className="mx-auto text-[#B85C38]/60 mb-4" />
-          <h1 className="text-2xl font-bold text-[#1A2A3A] bn-serif mb-2">Your library is empty</h1>
-          <p className="text-sm text-[#4A5568] mb-6">Browse the marketplace to find your next read.</p>
+          <h1 className="text-2xl font-bold text-[#1A2A3A] bn-serif mb-2">{t('library.emptyTitle')}</h1>
+          <p className="text-sm text-[#4A5568] mb-6">{t('library.emptyDesc')}</p>
           <Link href="/market" className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#B85C38] text-white rounded-xl text-sm font-semibold hover:bg-[#A04E2F] transition-colors">
-            Browse marketplace <ArrowRight size={16} />
+            {t('common.browseMarketplace')} <ArrowRight size={16} />
           </Link>
         </div>
       </div>
@@ -308,7 +314,7 @@ export default function LibraryPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-4 sm:py-6">
-      <OfflinePageNotice label="library list is from your last online visit" />
+      <OfflinePageNotice label={t('library.offlineNotice')} />
       {exitReview && (
         <ExitReviewPrompt pending={exitReview} onDismiss={() => setExitReview(null)} />
       )}
@@ -323,15 +329,19 @@ export default function LibraryPage() {
 
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-[#1A2A3A] bn-serif">My Library</h1>
-          <p className="text-sm text-[#4A5568] mt-1">{totalBooks} {totalBooks === 1 ? 'book' : 'books'} in your collection</p>
+          <h1 className="text-2xl font-bold text-[#1A2A3A] bn-serif">{t('pages.myLibrary')}</h1>
+          <p className="text-sm text-[#4A5568] mt-1">
+            {totalBooks === 1
+              ? t('library.collectionCount_one', { count: totalBooks })
+              : t('library.collectionCount_other', { count: totalBooks })}
+          </p>
         </div>
         <Link
           href="/dashboard/reading"
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[#E8E2D9] bg-white text-sm font-medium text-[#2C3E50] hover:border-[#B85C38]/30 hover:bg-[#FDFBF7] transition-colors w-fit"
         >
           <TrendingUp size={16} className="text-[#B85C38]" />
-          Reading Journey
+          {t('pages.readingJourney')}
         </Link>
       </div>
 
@@ -344,7 +354,7 @@ export default function LibraryPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-[#1A2A3A]">{totalBooks}</p>
-              <p className="text-xs text-[#4A5568]">Total Books</p>
+              <p className="text-xs text-[#4A5568]">{t('library.totalBooks')}</p>
             </div>
           </div>
         </div>
@@ -355,7 +365,7 @@ export default function LibraryPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-[#1A2A3A]">{readingStats.formats.pdf}</p>
-              <p className="text-xs text-[#4A5568]">eBooks (PDF)</p>
+              <p className="text-xs text-[#4A5568]">{t('library.ebooks')}</p>
             </div>
           </div>
         </div>
@@ -366,7 +376,7 @@ export default function LibraryPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-[#1A2A3A]">{readingStats.formats.audio}</p>
-              <p className="text-xs text-[#4A5568]">Audiobooks</p>
+              <p className="text-xs text-[#4A5568]">{t('library.audiobooks')}</p>
             </div>
           </div>
         </div>
@@ -377,7 +387,7 @@ export default function LibraryPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-[#1A2A3A] tabular-nums">{readingStats.completed}</p>
-              <p className="text-xs text-[#4A5568]">Completed</p>
+              <p className="text-xs text-[#4A5568]">{t('common.completed')}</p>
             </div>
           </div>
         </div>
@@ -386,7 +396,7 @@ export default function LibraryPage() {
       {/* Recently added */}
       {recentlyPurchased.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-sm font-semibold text-[#4A5568] uppercase tracking-wider mb-3">Continue reading</h2>
+          <h2 className="text-sm font-semibold text-[#4A5568] uppercase tracking-wider mb-3">{t('library.continueReading')}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {recentlyPurchased.map((item) => {
               const progress = getDisplayProgress(item);
@@ -413,7 +423,7 @@ export default function LibraryPage() {
 
       {/* All Books Grid */}
       <div>
-        <h2 className="text-sm font-semibold text-[#4A5568] uppercase tracking-wider mb-4">All books</h2>
+        <h2 className="text-sm font-semibold text-[#4A5568] uppercase tracking-wider mb-4">{t('library.allBooks')}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
           {libraryWithProgress.map((item) => {
             const progress = getDisplayProgress(item);

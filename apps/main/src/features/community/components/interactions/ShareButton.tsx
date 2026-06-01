@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Share2, Check, Link2, MessageCircle } from 'lucide-react';
 import { feedApi } from '@/lib/api/client';
 import { ShareToChatModal } from '../chat/ShareToChatModal';
+import { useTranslation } from '@/hooks/useTranslation';
 import type { Post } from '@repo/types';
 
 interface ShareButtonProps {
@@ -14,6 +15,7 @@ interface ShareButtonProps {
 }
 
 export function ShareButton({ postId, post, shareCount, onShareCountChange }: ShareButtonProps) {
+  const { t } = useTranslation();
   const [showOptions, setShowOptions] = useState(false);
   const [showChatModal, setShowChatModal] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -43,7 +45,7 @@ export function ShareButton({ postId, post, shareCount, onShareCountChange }: Sh
     const url = `${window.location.origin}/community?post=${postId}`;
     if (navigator.share) {
       await navigator.share({
-        title: 'Check out this post on BookNest',
+        title: t('community.sharePostTitle'),
         url,
       });
       void recordShare();
@@ -81,7 +83,7 @@ export function ShareButton({ postId, post, shareCount, onShareCountChange }: Sh
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-[#1A2A3A] hover:bg-[#F5F1EB] rounded-lg transition-colors"
                 >
                   <MessageCircle size={16} />
-                  Send in chat
+                  {t('community.sendInChat')}
                 </button>
               )}
               <button
@@ -90,7 +92,7 @@ export function ShareButton({ postId, post, shareCount, onShareCountChange }: Sh
                 className="flex items-center gap-2 w-full px-3 py-2 text-sm text-[#1A2A3A] hover:bg-[#F5F1EB] rounded-lg transition-colors"
               >
                 <Share2 size={16} />
-                Share via…
+                {t('community.shareVia')}
               </button>
               <button
                 type="button"
@@ -98,7 +100,7 @@ export function ShareButton({ postId, post, shareCount, onShareCountChange }: Sh
                 className="flex items-center gap-2 w-full px-3 py-2 text-sm text-[#1A2A3A] hover:bg-[#F5F1EB] rounded-lg transition-colors"
               >
                 {copied ? <Check size={16} className="text-green-500" /> : <Link2 size={16} />}
-                {copied ? 'Copied!' : 'Copy link'}
+                {copied ? t('community.copied') : t('community.copyLink')}
               </button>
             </div>
           </>

@@ -31,6 +31,12 @@ export function createNotificationsApi(client: ApiClient) {
     markAllAsRead: () =>
       client.patch<{ success: boolean; data: null }>(endpoints.notifications.markAllAsRead, {}),
 
+    dismissContext: (payload: { chatId?: string; postId?: string }) =>
+      client.post<{ success: boolean; data: { dismissed: number } }>(
+        endpoints.notifications.dismissContext,
+        payload
+      ),
+
     getVapidPublicKey: () =>
       client.get<{ success: boolean; data: { publicKey: string | null } }>(
         endpoints.notifications.vapidPublicKey

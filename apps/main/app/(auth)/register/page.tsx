@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { RegisterForm, AuthPageShell } from '@/features/auth/components';
 import { useAuthStore } from '@/stores/authStore';
+import { useTranslation } from '@/hooks/useTranslation';
 import {
   appendPendingActionQuery,
   buildLoginUrl,
@@ -13,6 +14,7 @@ import {
 
 function RegisterPageContent() {
   const { isAuthenticated, isInitializing } = useAuthStore();
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -47,16 +49,16 @@ function RegisterPageContent() {
 
   return (
     <AuthPageShell
-      title="Create account"
-      subtitle="Set up your reader profile and start building your library"
+      title={t('auth.createAccount')}
+      subtitle={t('auth.registerSubtitle')}
       footer={
         <p className="text-sm text-[#4A5568]">
-          Already have an account?{' '}
+          {t('auth.alreadyHaveAccount')}{' '}
           <Link
             href={loginHref}
             className="text-[#B85C38] hover:text-[#8E735B] font-semibold underline-offset-2 hover:underline transition-colors"
           >
-            Sign in
+            {t('auth.signIn')}
           </Link>
         </p>
       }

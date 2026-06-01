@@ -37,8 +37,10 @@ apiClient.request = async (...args: Parameters<typeof _request>) => {
     if (error instanceof UnauthorizedError) {
       const path = typeof window !== 'undefined' ? window.location.pathname : '';
       const isMeCheck = typeof args[0] === 'string' && args[0].includes('/api/auth/me');
+      const isCheckoutVerify =
+        typeof args[0] === 'string' && args[0].includes('/api/checkout/verify');
 
-      if (!isPublicAppPath(path) && !isMeCheck && navigator.onLine) {
+      if (!isPublicAppPath(path) && !isMeCheck && !isCheckoutVerify && navigator.onLine) {
         try {
           await useAuthStore.getState().logout();
         } catch {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import GuestLayout from './GuestLayout';
@@ -53,19 +53,27 @@ export default function MainLayout({
   const pathname = usePathname();
   const router = useRouter();
   const { isInitializing, isAuthenticated, isOfflineMode, user } = useAuthStore();
-  const [showDashboard, setShowDashboard] = useState(false);
+
+  const routeMeta = useMemo(() => {
+    const isGuestOnlyRoute = GUEST_ONLY_ROUTES.some((route) => pathname?.startsWith(route));
+    const isPublicRoute =
+      PUBLIC_ROUTE_PREFIXES.some((route) => pathname?.startsWith(route)) ||
+      isPublicProfilePath(pathname);
+    const isProtectedRoute =
+      PROTECTED_ROUTES.some((route) => pathname?.startsWith(route)) &&
+      !isPublicProfilePath(pathname);
+
+    return {
+      isGuestOnlyRoute,
+      isPublicRoute,
+      isProtectedRoute,
+      showDashboard: Boolean(isAuthenticated && !isGuestOnlyRoute),
+    };
+  }, [isAuthenticated, pathname]);
 
   useEffect(() => {
     if (!isInitializing) {
-      const isGuestOnlyRoute = GUEST_ONLY_ROUTES.some((route) => pathname?.startsWith(route));
-      const isPublicRoute =
-        PUBLIC_ROUTE_PREFIXES.some((route) => pathname?.startsWith(route)) ||
-        isPublicProfilePath(pathname);
-      const isProtectedRoute =
-        PROTECTED_ROUTES.some((route) => pathname?.startsWith(route)) &&
-        !isPublicProfilePath(pathname);
-
-      if (isAuthenticated && isGuestOnlyRoute && user) {
+      if (isAuthenticated && routeMeta.isGuestOnlyRoute && user) {
         resolvePostLoginPath(user, DEFAULT_AUTHENTICATED_HOME).then((path) => {
           if (pathname?.startsWith('/onboarding') && path.startsWith('/onboarding')) return;
           router.push(path);
@@ -73,7 +81,7 @@ export default function MainLayout({
         return;
       }
 
-      if (!isAuthenticated && isProtectedRoute && !isPublicRoute) {
+      if (!isAuthenticated && routeMeta.isProtectedRoute && !routeMeta.isPublicRoute) {
         const offline = typeof navigator !== 'undefined' && !navigator.onLine;
         if (offline && canUseOfflineSession()) {
           router.push(offlineLoginPath(true));
@@ -84,10 +92,8 @@ export default function MainLayout({
         }
         return;
       }
-
-      setShowDashboard(isAuthenticated && !isGuestOnlyRoute);
     }
-  }, [isAuthenticated, isInitializing, isOfflineMode, pathname, router, user]);
+  }, [isAuthenticated, isInitializing, isOfflineMode, pathname, routeMeta, router, user]);
 
   if (isInitializing) {
     return (
@@ -97,11 +103,9 @@ export default function MainLayout({
     );
   }
 
-  // Use DashboardLayout for authenticated users
-  if (showDashboard) {
-    return <DashboardLayout user={user}>{children}</DashboardLayout>;
-  }
-
-  // Use GuestLayout for non-authenticated users
-  return <GuestLayout>{children}</GuestLayout>;
+  return routeMeta.showDashboard ? (
+    <DashboardLayout user={user}>{children}</DashboardLayout>
+  ) : (
+    <GuestLayout>{children}</GuestLayout>
+  );
 }

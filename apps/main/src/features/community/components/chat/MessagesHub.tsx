@@ -19,6 +19,7 @@ import {
   ui,
 } from '@/features/community/ui';
 import type { Chat } from '@repo/types';
+import { dismissMessageNotifications } from '@/lib/notifications/dismissOnView';
 
 interface MessagesHubProps {
   initialChatId?: string;
@@ -28,6 +29,7 @@ export function MessagesHub({ initialChatId }: MessagesHubProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const selectedChatId = searchParams.get('chat') || initialChatId || null;
+  const chatOpen = Boolean(selectedChatId);
 
   const [chats, setChats] = useState<Chat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -143,6 +145,10 @@ export function MessagesHub({ initialChatId }: MessagesHubProps) {
       ? activeChat.participants[0]?.name
       : activeChat?.name;
 
+  const shellHeight = chatOpen
+    ? 'h-[calc(100dvh-3.5rem)] lg:h-[calc(100dvh-4.5rem)]'
+    : 'h-[calc(100dvh-3.5rem-4rem-env(safe-area-inset-bottom,0px))] lg:h-[calc(100dvh-4.5rem)]';
+
   if (isLoading) {
     return (
       <div className={cn(ui.page, 'flex justify-center items-center min-h-[50vh]')}>
@@ -154,13 +160,13 @@ export function MessagesHub({ initialChatId }: MessagesHubProps) {
   return (
     <div
       className={cn(
-        selectedChatId
-          ? 'fixed inset-x-0 bottom-0 top-14 z-20 lg:static lg:z-auto flex flex-col bg-white lg:max-w-6xl lg:mx-auto lg:px-4 lg:py-4 lg:h-auto'
-          : 'max-w-6xl mx-auto px-4 py-4'
+        'flex flex-col min-h-0 overflow-hidden w-full max-w-6xl mx-auto',
+        shellHeight,
+        !chatOpen && 'px-4 py-4 lg:px-4 lg:py-4'
       )}
     >
       {loadError && !selectedChatId ? (
-        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 shrink-0">
           {loadError}
           <button
             type="button"
@@ -175,19 +181,17 @@ export function MessagesHub({ initialChatId }: MessagesHubProps) {
       <div
         className={cn(
           'flex flex-1 min-h-0 overflow-hidden bg-white',
-          selectedChatId
-            ? 'h-full lg:h-[calc(100dvh-11rem)] lg:min-h-[420px] lg:max-h-[820px] lg:rounded-2xl lg:border lg:border-bn-border/70 lg:shadow-md'
-            : 'h-[calc(100dvh-9rem)] min-h-[420px] max-h-[820px] rounded-2xl border border-bn-border/70 shadow-md'
+          'rounded-none lg:rounded-2xl border-0 lg:border lg:border-bn-border/70 lg:shadow-md'
         )}
       >
         {/* Chat list — left panel */}
         <div
           className={cn(
-            'w-full md:w-[340px] lg:w-[380px] flex-shrink-0 border-r border-bn-border/70 flex flex-col bg-bn-surface/30',
+            'w-full md:w-[340px] lg:w-[380px] flex-shrink-0 border-r border-bn-border/70 flex flex-col min-h-0 overflow-hidden bg-bn-surface/30',
             selectedChatId ? 'hidden md:flex' : 'flex'
           )}
         >
-          <div className="p-4 space-y-3 border-b border-bn-border/60">
+          <div className="p-4 space-y-3 border-b border-bn-border/60 shrink-0">
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
                 <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-bn-muted" />
@@ -227,7 +231,7 @@ export function MessagesHub({ initialChatId }: MessagesHubProps) {
             />
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
             {filteredChats.length === 0 ? (
               <div className="py-12">
                 <EmptyState
@@ -254,7 +258,7 @@ export function MessagesHub({ initialChatId }: MessagesHubProps) {
                         chat.unreadCount > 0 && !isActive && 'bg-bn-primary/[0.04]'
                       )}
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
                         {chat.type === 'group' ? (
                           <div
                             className={cn(
@@ -311,7 +315,7 @@ export function MessagesHub({ initialChatId }: MessagesHubProps) {
         {/* Chat panel — right side */}
         <div
           className={cn(
-            'flex-1 flex flex-col min-w-0 bg-white',
+            'flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden bg-white',
             !selectedChatId ? 'hidden md:flex' : 'flex'
           )}
         >
@@ -349,7 +353,7 @@ export function MessagesHub({ initialChatId }: MessagesHubProps) {
       />
 
       {showNewChat && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
           <CommunityCard padding className="max-w-md w-full">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-bn-ink">New direct chat</h2>

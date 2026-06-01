@@ -2,6 +2,7 @@
 
 import { Heart } from 'lucide-react';
 import { useIsInWishlist, useToggleWishlist } from '../hooks/useWishlist';
+import { useBookPurchaseStatus } from '@/features/books/hooks/useBookPurchaseStatus';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'next/navigation';
 
@@ -22,6 +23,12 @@ export function WishlistButton({
   const { isAuthenticated } = useAuthStore();
   const { data: isInWishlist, isLoading: isChecking } = useIsInWishlist(bookId);
   const { toggleWishlist, isPending } = useToggleWishlist();
+  const { ownedFormatIds, isOwnBook } = useBookPurchaseStatus(bookId);
+  const inLibrary = isAuthenticated && (isOwnBook || ownedFormatIds.length > 0);
+
+  if (inLibrary) {
+    return null;
+  }
 
   const handleClick = async (e: React.MouseEvent) => {
     e.preventDefault();

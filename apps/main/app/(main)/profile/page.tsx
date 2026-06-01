@@ -10,8 +10,19 @@ import type { Profile } from '@repo/types';
 import { Camera, Save, Loader2, TrendingUp, Globe, Bell, Shield, User, Mail, MapPin, Link as LinkIcon, ExternalLink, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { BackLink } from '@/features/community/ui';
+import { ProfilePhotoGrid } from '@/features/community/components/profile/ProfilePhotoGrid';
+import { bnInputClass, bnTextareaClass } from '@/components/ui/inputStyles';
+import { formatJoinDate } from '@/lib/utils/formatJoinDate';
+import { useTranslation } from '@/hooks/useTranslation';
+import { ImageLightbox } from '@/components/ui/ImageLightbox';
+import type { ProfilePhoto } from '@repo/types';
 
 export default function ProfilePage() {
+  const { t, locale } = useTranslation();
+  const [profilePhotos, setProfilePhotos] = useState<ProfilePhoto[]>([]);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
   const router = useRouter();
   const { user, isAuthenticated } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -53,6 +64,13 @@ export default function ProfilePage() {
       const response = await profileApi.getProfile();
       const data = response.data;
       setProfile(data);
+
+      try {
+        const photosRes = await profileApi.getProfilePhotos();
+        setProfilePhotos(photosRes.data || []);
+      } catch {
+        setProfilePhotos([]);
+      }
 
       const roleData = data.profile_data as Record<string, string> | null;
       setFormData({
@@ -99,7 +117,7 @@ export default function ProfilePage() {
       const avatarUrl = response.data.avatar_url;
       setProfile((prev) => (prev ? { ...prev, avatar_url: avatarUrl } : null));
       
-      setSuccessMessage('Avatar updated successfully');
+      setSuccessMessage(t('profile.saved'));
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error('Failed to upload avatar:', error);
@@ -109,7 +127,70 @@ export default function ProfilePage() {
     }
   };
 
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    const role = user?.role || 'reader';
+    const name = (
+      role === 'author'
+        ? formData.pen_name
+        : role === 'publisher'
+          ? formData.company_name
+          : formData.display_name
+    ).trim();
+    if (!name) {
+      errors.display_name = t('profile.validation.displayNameRequired');
+    } else if (name.length > 80) {
+      errors.display_name = t('profile.validation.displayNameMax');
+    }
+    if (formData.bio.length > 500) {
+      errors.bio = t('profile.validation.bioMax');
+    }
+    if (formData.location.length > 120) {
+      errors.location = t('profile.validation.locationMax');
+    }
+    if (formData.website_url.trim()) {
+      try {
+        const url = formData.website_url.startsWith('http')
+          ? formData.website_url
+          : `https://${formData.website_url}`;
+        new URL(url);
+      } catch {
+        errors.website_url = t('profile.validation.websiteInvalid');
+      }
+    }
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleAddProfilePhoto = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      alert(t('profile.avatarHint'));
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert(t('profile.avatarHint'));
+      return;
+    }
+    setUploadingPhoto(true);
+    try {
+      const res = await profileApi.uploadProfilePhoto(file);
+      setProfilePhotos((prev) => [...prev, res.data]);
+      setSuccessMessage(t('profile.saved'));
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch {
+      alert(t('profile.saveFailed'));
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const handleDeleteProfilePhoto = async (photoId: string) => {
+    await profileApi.deleteProfilePhoto(photoId);
+    setProfilePhotos((prev) => prev.filter((p) => p.id !== photoId));
+  };
+
   const handleSave = async () => {
+    if (!validateForm()) return;
     setIsSaving(true);
     try {
       const profilePayload: Parameters<typeof profileApi.updateProfile>[0] = {
@@ -163,11 +244,11 @@ export default function ProfilePage() {
         void unsubscribeFromStreakPush();
       }
 
-      setSuccessMessage('Profile updated successfully');
+      setSuccessMessage(t('profile.saved'));
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error('Failed to save profile:', error);
-      alert('Failed to save profile');
+      alert(t('profile.saveFailed'));
     } finally {
       setIsSaving(false);
     }
@@ -197,6 +278,9 @@ export default function ProfilePage() {
   const isPublisher = userRole === 'publisher';
   const isReader = userRole === 'reader';
   const settingsBackHref = isAuthor || isPublisher ? '/studio' : '/community';
+  const memberSince = profile?.created_at
+    ? formatJoinDate(profile.created_at, locale === 'am' ? 'am-ET' : 'en-US')
+    : '';
 
   if (isLoading) {
     return (
@@ -208,13 +292,13 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 px-4 py-6">
-      <BackLink href={settingsBackHref} label="Back" />
+      <BackLink href={settingsBackHref} label={t('common.back')} />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-[#1A2A3A]">Profile Settings</h1>
-          <p className="text-[#4A5568] mt-1">Manage your profile information and preferences</p>
+          <h1 className="text-2xl font-bold text-[#1A2A3A]">{t('profile.title')}</h1>
+          <p className="text-[#4A5568] mt-1">{t('profile.subtitle')}</p>
         </div>
         {profile?.id && (
           <Link
@@ -222,7 +306,7 @@ export default function ProfilePage() {
             className="inline-flex items-center gap-2 text-sm font-medium text-[#B85C38] hover:text-[#8E735B]"
           >
             <ExternalLink size={16} />
-            View public profile
+            {t('profile.viewPublic')}
           </Link>
         )}
       </div>
@@ -238,7 +322,11 @@ export default function ProfilePage() {
       <div className="bg-white rounded-xl border border-[#E8E2D9] p-6">
         <div className="flex items-center gap-6">
           <div className="relative">
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#2C3E50] to-[#B85C38] flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
+            <button
+              type="button"
+              onClick={() => profile?.avatar_url && setAvatarPreviewOpen(true)}
+              className="w-24 h-24 rounded-full bg-gradient-to-br from-[#2C3E50] to-[#B85C38] flex items-center justify-center text-white text-2xl font-bold overflow-hidden"
+            >
               {profile?.avatar_url ? (
                 <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
@@ -246,8 +334,9 @@ export default function ProfilePage() {
                 formData.pen_name?.charAt(0)?.toUpperCase() || 
                 user?.email?.charAt(0)?.toUpperCase() || 'U'
               )}
-            </div>
+            </button>
             <button
+              type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadingAvatar}
               className="absolute bottom-0 right-0 p-1.5 bg-[#B85C38] text-white rounded-full hover:bg-[#8E735B] transition-colors disabled:opacity-50"
@@ -262,9 +351,24 @@ export default function ProfilePage() {
               className="hidden"
             />
           </div>
-          <div>
-            <p className="font-medium text-[#1A2A3A]">Profile Picture</p>
-            <p className="text-sm text-[#4A5568]">JPG, PNG or WEBP. Max 5MB.</p>
+          <div className="flex-1 min-w-0 space-y-3">
+            <p className="font-medium text-[#1A2A3A]">{t('profile.profilePicture')}</p>
+            <p className="text-sm text-[#4A5568]">{t('profile.avatarHint')}</p>
+            {memberSince && (
+              <p className="text-sm text-[#4A5568]">{t('profile.joinedOn', { date: memberSince })}</p>
+            )}
+            <div>
+              <p className="text-sm font-medium text-[#1A2A3A] mb-1">{t('profile.photoGallery')}</p>
+              <p className="text-xs text-[#4A5568] mb-2">{t('profile.photoGalleryHint')}</p>
+              <ProfilePhotoGrid
+                avatarUrl={profile?.avatar_url}
+                photos={profilePhotos}
+                canEdit
+                isUploading={uploadingPhoto}
+                onAddPhoto={handleAddProfilePhoto}
+                onDeletePhoto={handleDeleteProfilePhoto}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -280,7 +384,7 @@ export default function ProfilePage() {
           }`}
         >
           <User size={16} className="inline mr-2" />
-          Profile
+          {t('profile.tabProfile')}
         </button>
         <button
           onClick={() => setActiveTab('privacy')}
@@ -291,7 +395,7 @@ export default function ProfilePage() {
           }`}
         >
           <Shield size={16} className="inline mr-2" />
-          Privacy
+          {t('profile.tabPrivacy')}
         </button>
         <button
           onClick={() => setActiveTab('notifications')}
@@ -302,7 +406,7 @@ export default function ProfilePage() {
           }`}
         >
           <Bell size={16} className="inline mr-2" />
-          Notifications
+          {t('profile.tabNotifications')}
         </button>
       </div>
 
@@ -311,12 +415,12 @@ export default function ProfilePage() {
         <div className="bg-white rounded-xl border border-[#E8E2D9] p-6 space-y-5">
           {/* Email (read-only) */}
           <div>
-            <label className="block text-sm font-medium text-[#1A2A3A] mb-1">Email Address</label>
+            <label className="block text-sm font-medium text-[#1A2A3A] mb-1">{t('profile.emailAddress')}</label>
             <div className="flex items-center gap-2 p-3 bg-[#F5F1EB] rounded-lg text-[#4A5568]">
               <Mail size={16} />
               <span>{profile?.email || user?.email}</span>
             </div>
-            <p className="text-xs text-[#4A5568] mt-1">Your email cannot be changed</p>
+            <p className="text-xs text-[#4A5568] mt-1">{t('profile.emailReadonly')}</p>
           </div>
 
           {/* Role-specific fields */}
@@ -327,7 +431,7 @@ export default function ProfilePage() {
                 type="text"
                 value={formData.pen_name}
                 onChange={(e) => setFormData(prev => ({ ...prev, pen_name: e.target.value }))}
-                className="w-full px-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38]"
+                className={bnInputClass(Boolean(fieldErrors.pen_name))}
                 placeholder="Your pen name (publicly visible)"
               />
             </div>
@@ -340,7 +444,7 @@ export default function ProfilePage() {
                 type="text"
                 value={formData.company_name}
                 onChange={(e) => setFormData(prev => ({ ...prev, company_name: e.target.value }))}
-                className="w-full px-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38]"
+                className={bnInputClass(Boolean(fieldErrors.pen_name))}
                 placeholder="Your publishing company name"
               />
             </div>
@@ -353,8 +457,8 @@ export default function ProfilePage() {
               type="text"
               value={formData.display_name}
               onChange={(e) => setFormData(prev => ({ ...prev, display_name: e.target.value }))}
-              className="w-full px-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38]"
-              placeholder="How you want to be seen"
+              className={bnInputClass(Boolean(fieldErrors.display_name))}
+              placeholder={t('profile.displayNamePlaceholder')}
             />
           </div>
 
@@ -364,10 +468,13 @@ export default function ProfilePage() {
               value={formData.bio}
               onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
               rows={4}
-              className="w-full px-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38] resize-none"
-              placeholder="Tell us about yourself..."
+              className={bnTextareaClass(Boolean(fieldErrors.bio))}
+              placeholder={t('profile.bioPlaceholder')}
             />
-            <p className="text-xs text-[#4A5568] mt-1">{formData.bio.length} characters</p>
+            <p className="text-xs text-[#4A5568] mt-1">
+              {t('profile.charCount', { count: formData.bio.length })}
+            </p>
+            {fieldErrors.bio && <p className="text-xs text-red-600 mt-1">{fieldErrors.bio}</p>}
           </div>
 
           <div className={isAuthor || isPublisher ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : ''}>
@@ -379,8 +486,8 @@ export default function ProfilePage() {
                   type="text"
                   value={formData.location}
                   onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                  className="w-full pl-10 pr-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38]"
-                  placeholder="City, Country"
+                  className={`${bnInputClass(Boolean(fieldErrors.location))} pl-10`}
+                  placeholder={t('profile.locationPlaceholder')}
                 />
               </div>
             </div>
@@ -394,8 +501,8 @@ export default function ProfilePage() {
                     type="url"
                     value={formData.website_url}
                     onChange={(e) => setFormData(prev => ({ ...prev, website_url: e.target.value }))}
-                    className="w-full pl-10 pr-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38]"
-                    placeholder="https://yourwebsite.com"
+                    className={`${bnInputClass(Boolean(fieldErrors.website_url))} pl-10`}
+                    placeholder={t('profile.websitePlaceholder')}
                   />
                 </div>
               </div>
@@ -540,6 +647,14 @@ export default function ProfilePage() {
         </div>
       )}
 
+      {profile?.avatar_url && (
+        <ImageLightbox
+          images={[{ id: 'avatar', url: profile.avatar_url, alt: 'Avatar' }]}
+          isOpen={avatarPreviewOpen}
+          onClose={() => setAvatarPreviewOpen(false)}
+        />
+      )}
+
       {/* Save + danger zone */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <button
@@ -549,7 +664,7 @@ export default function ProfilePage() {
           className="inline-flex items-center gap-2 px-4 py-2 text-red-600 border border-red-200 rounded-lg hover:bg-red-50 disabled:opacity-50"
         >
           {isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-          Delete account
+          {t('profile.deleteAccount')}
         </button>
         <button
           onClick={handleSave}
@@ -557,7 +672,7 @@ export default function ProfilePage() {
           className="flex items-center gap-2 px-6 py-2 bg-[#B85C38] text-white rounded-lg hover:bg-[#8E735B] transition-colors disabled:opacity-50"
         >
           {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-          {isSaving ? 'Saving...' : 'Save Changes'}
+          {isSaving ? t('profile.saving') : t('profile.saveChanges')}
         </button>
       </div>
     </div>

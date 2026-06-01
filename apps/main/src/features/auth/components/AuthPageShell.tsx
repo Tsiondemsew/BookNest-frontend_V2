@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { BookOpen, Globe, Library, Users, Sparkles } from 'lucide-react';
+import { BookOpen, Library, Users, Sparkles } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 interface AuthPageShellProps {
   children: React.ReactNode;
@@ -10,16 +12,17 @@ interface AuthPageShellProps {
   footer?: React.ReactNode;
 }
 
-const highlights = [
-  { icon: Library, text: 'Your personal library, always with you' },
-  { icon: Users, text: 'Follow readers and authors you love' },
-  { icon: Sparkles, text: 'Track streaks and reading progress' },
-];
-
 export function AuthPageShell({ children, title, subtitle, footer }: AuthPageShellProps) {
+  const { t } = useTranslation();
+
+  const highlights = [
+    { icon: Library, text: t('auth.highlightLibrary') },
+    { icon: Users, text: t('auth.highlightCommunity') },
+    { icon: Sparkles, text: t('auth.highlightStreaks') },
+  ];
+
   return (
     <div className="h-dvh overflow-hidden flex flex-col lg:flex-row bg-[#FDFBF7]">
-      {/* Brand panel — fixed on desktop, hidden on mobile */}
       <aside className="relative hidden lg:block flex-shrink-0 lg:fixed lg:inset-y-0 lg:left-0 lg:w-[44%] xl:w-[42%] lg:h-dvh overflow-hidden bg-[#1A2A3A] text-white z-20">
         <div className="absolute inset-0 bg-gradient-to-br from-[#2C3E50] via-[#1A2A3A] to-[#152028]" />
         <div className="absolute top-0 right-0 w-72 h-72 bg-[#B85C38]/20 rounded-full blur-3xl pointer-events-none" />
@@ -42,14 +45,13 @@ export function AuthPageShell({ children, title, subtitle, footer }: AuthPageShe
 
           <div className="hidden lg:flex flex-1 flex-col justify-center py-8 max-w-md min-h-0">
             <p className="text-[#B85C38] text-sm font-semibold uppercase tracking-wider mb-4">
-              Reader platform
+              {t('auth.readerPlatform')}
             </p>
             <h2 className="text-2xl xl:text-4xl font-bold leading-tight tracking-tight">
-              Books, community, and progress — in one place.
+              {t('auth.brandTitle')}
             </h2>
             <p className="mt-4 text-white/65 leading-relaxed text-sm xl:text-base">
-              Discover titles in the marketplace, build your library, and connect with people who
-              read what you read.
+              {t('auth.brandSubtitle')}
             </p>
 
             <ul className="mt-8 xl:mt-10 space-y-3 xl:space-y-4">
@@ -70,7 +72,6 @@ export function AuthPageShell({ children, title, subtitle, footer }: AuthPageShe
         </div>
       </aside>
 
-      {/* Form panel — only this column scrolls */}
       <main className="flex-1 flex flex-col min-h-0 lg:ml-[44%] xl:ml-[42%] h-dvh overflow-hidden">
         <header className="lg:hidden flex-shrink-0 border-b border-[#E8E2D9] bg-white/90 backdrop-blur-sm">
           <div className="px-4 sm:px-6 py-3.5 flex items-center justify-between">
@@ -78,20 +79,14 @@ export function AuthPageShell({ children, title, subtitle, footer }: AuthPageShe
               <BookOpen className="w-5 h-5 text-[#B85C38]" />
               <span className="font-bold text-[#1A2A3A]">BookNest</span>
             </Link>
-            <button
-              type="button"
-              className="inline-flex items-center gap-1 text-xs text-[#4A5568] hover:text-[#B85C38] transition-colors"
-            >
-              <Globe size={14} />
-              EN
-            </button>
+            <LanguageSwitcher variant="compact" />
           </div>
         </header>
 
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
           <div className="min-h-full flex items-center justify-center px-4 sm:px-6 py-8 sm:py-10 lg:py-12">
             <div className="w-full max-w-[420px] my-auto">
-              <div className="bg-white rounded-2xl border border-[#E8E2D9] shadow-sm shadow-[#2C3E50]/5 p-6 sm:p-8">
+              <div className="bn-auth-surface bg-white rounded-2xl border border-[#E8E2D9] shadow-sm shadow-[#2C3E50]/5 p-6 sm:p-8">
                 <div className="mb-6 sm:mb-7">
                   <h1 className="text-2xl sm:text-[1.65rem] font-bold text-[#1A2A3A] tracking-tight">
                     {title}
@@ -109,13 +104,7 @@ export function AuthPageShell({ children, title, subtitle, footer }: AuthPageShe
               </div>
 
               <div className="hidden lg:flex mt-5 justify-center">
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-1.5 text-sm text-[#4A5568] hover:text-[#B85C38] transition-colors"
-                >
-                  <Globe size={14} />
-                  English
-                </button>
+                <LanguageSwitcher variant="inline" />
               </div>
             </div>
           </div>

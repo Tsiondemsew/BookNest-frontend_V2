@@ -15,16 +15,19 @@ import {
   Check,
   X,
 } from 'lucide-react';
-import { CommentSection } from '../comments/CommentSection';
+import { CommentsFloatPanel } from '../comments/CommentsFloatPanel';
 import { ShareButton } from '../interactions/ShareButton';
 import { ReportButton } from '../interactions/ReportButton';
-import { formatRelativeTime } from '../../utils/timeFormat';
+import { useFormatRelativeTime } from '../../utils/timeFormat';
 import { useAuthStore } from '@/stores/authStore';
 import { feedApi } from '@/lib/api/client';
+import { useTranslation } from '@/hooks/useTranslation';
+import { ImageLightbox } from '@/components/ui/ImageLightbox';
 import type { Post, PostTag } from '@repo/types';
 
 interface FeedPostProps {
   post: Post;
+  highlighted?: boolean;
   onLikeToggle?: (postId: string, nextLiked: boolean) => void;
   onPostUpdated?: (post: Post) => void;
   onPostDeleted?: (postId: string) => void;
@@ -67,14 +70,18 @@ function PostTags({ tags }: { tags: PostTag[] }) {
 
 export function FeedPost({
   post,
+  highlighted = false,
   onLikeToggle,
   onPostUpdated,
   onPostDeleted,
   showComments = false,
 }: FeedPostProps) {
   const { user } = useAuthStore();
+  const { t } = useTranslation();
+  const [imageLightboxOpen, setImageLightboxOpen] = useState(false);
+  const formatRelativeTime = useFormatRelativeTime();
   const menuRef = useRef<HTMLDivElement>(null);
-  const [expandedComments, setExpandedComments] = useState(showComments);
+  const [commentsOpen, setCommentsOpen] = useState(showComments);
   const [isLiked, setIsLiked] = useState(post.isLiked);
   const [likeCount, setLikeCount] = useState(post.likeCount);
   const [shareCount, setShareCount] = useState(post.shareCount);
@@ -123,14 +130,14 @@ export function FeedPost({
       onPostUpdated?.({ ...post, content: updated.content });
     } catch (error) {
       console.error('Failed to update post:', error);
-      alert('Could not update post. Please try again.');
+      alert(t('community.updateFailed'));
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Delete this post? This cannot be undone.')) return;
+    if (!window.confirm(t('community.deleteConfirm'))) return;
 
     setIsDeleting(true);
     try {
@@ -139,7 +146,7 @@ export function FeedPost({
       onPostDeleted?.(post.id);
     } catch (error) {
       console.error('Failed to delete post:', error);
-      alert('Could not delete post. Please try again.');
+      alert(t('community.deleteFailed'));
     } finally {
       setIsDeleting(false);
     }
@@ -149,12 +156,14 @@ export function FeedPost({
     switch (role) {
       case 'author':
         return (
-          <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Author</span>
+          <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
+            {t('community.author')}
+          </span>
         );
       case 'publisher':
         return (
           <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">
-            Publisher
+            {t('community.publisher')}
           </span>
         );
       default:
@@ -163,7 +172,14 @@ export function FeedPost({
   };
 
   return (
-    <article className="bg-white rounded-xl border border-[#E8E2D9] overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+    <article
+      id={highlighted ? `post-${post.id}` : undefined}
+      className={`bg-white rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow scroll-mt-24 ${
+        highlighted
+          ? 'border-[#B85C38] ring-2 ring-[#B85C38]/30 shadow-md'
+          : 'border-[#E8E2D9]'
+      }`}
+    >
       <div className="p-4 pb-2">
         <div className="flex items-start justify-between">
           <Link
@@ -188,7 +204,7 @@ export function FeedPost({
                 {getRoleBadge(post.author.role)}
                 {post.isFromFollowing && (
                   <span className="text-xs bg-[#B85C38]/10 text-[#B85C38] px-1.5 py-0.5 rounded font-medium">
-                    Following
+                    {t('community.following')}
                   </span>
                 )}
               </div>
@@ -208,7 +224,7 @@ export function FeedPost({
                     setMenuOpen((value) => !value);
                   }}
                   className="p-1 text-[#4A5568] hover:text-[#1A2A3A] touch-manipulation"
-                  aria-label="Post options"
+                  aria-label={t('community.postOptions')}
                 >
                   <MoreHorizontal size={18} />
                 </button>
@@ -223,7 +239,7 @@ export function FeedPost({
                       className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-[#F5F1EB] text-left"
                     >
                       <Pencil size={14} />
-                      Edit post
+                      {t('community.editPost')}
                     </button>
                     <button
                       type="button"
@@ -232,7 +248,7 @@ export function FeedPost({
                       className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-[#F5F1EB] text-left text-red-600"
                     >
                       <Trash2 size={14} />
-                      Delete post
+                      {t('community.deletePost')}
                     </button>
                   </div>
                 )}
@@ -270,7 +286,7 @@ export function FeedPost({
                   setEditContent(displayContent);
                 }}
                 className="p-2 rounded-lg text-[#4A5568] hover:bg-[#F5F1EB] transition-colors"
-                aria-label="Cancel edit"
+                aria-label={t('community.cancelEdit')}
               >
                 <X size={18} />
               </button>
@@ -279,7 +295,7 @@ export function FeedPost({
                 disabled={!editContent.trim() || isSaving}
                 onClick={() => void handleSaveEdit()}
                 className="p-2 rounded-lg bg-[#B85C38] text-white hover:bg-[#A04E2F] disabled:opacity-50 transition-colors"
-                aria-label="Save edit"
+                aria-label={t('community.saveEdit')}
               >
                 {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
               </button>
@@ -290,10 +306,25 @@ export function FeedPost({
         )}
         {post.tags && post.tags.length > 0 && <PostTags tags={post.tags} />}
         {post.imageUrl && (
-          <div className="mt-3 rounded-xl overflow-hidden border border-[#E8E2D9]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={post.imageUrl} alt="Post" className="w-full object-cover max-h-[28rem]" />
-          </div>
+          <>
+            <button
+              type="button"
+              onClick={() => setImageLightboxOpen(true)}
+              className="mt-3 block w-full rounded-xl overflow-hidden border border-[#E8E2D9] hover:ring-2 hover:ring-[#B85C38]/30 transition-shadow text-left"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={post.imageUrl}
+                alt={t('community.postImageAlt')}
+                className="w-full object-cover max-h-[28rem] cursor-zoom-in"
+              />
+            </button>
+            <ImageLightbox
+              images={[{ id: post.id, url: post.imageUrl, alt: t('community.postImageAlt') }]}
+              isOpen={imageLightboxOpen}
+              onClose={() => setImageLightboxOpen(false)}
+            />
+          </>
         )}
       </div>
 
@@ -312,11 +343,12 @@ export function FeedPost({
 
           <button
             type="button"
-            onClick={() => setExpandedComments(!expandedComments)}
+            onClick={() => setCommentsOpen(true)}
             className="flex items-center gap-1 text-sm text-[#4A5568] hover:text-[#B85C38] transition-colors"
+            aria-label={t('community.openComments')}
           >
             <MessageCircle size={18} />
-            <span>{post.commentCount}</span>
+            <span>{post.commentCount > 0 ? post.commentCount : ''}</span>
           </button>
 
           <ShareButton
@@ -336,7 +368,15 @@ export function FeedPost({
         </button>
       </div>
 
-      {expandedComments && <CommentSection postId={post.id} />}
+      <CommentsFloatPanel
+        isOpen={commentsOpen}
+        onClose={() => setCommentsOpen(false)}
+        postId={post.id}
+        authorName={post.author.name}
+        authorUsername={post.author.username}
+        postPreview={displayContent}
+        commentCount={post.commentCount}
+      />
     </article>
   );
 }

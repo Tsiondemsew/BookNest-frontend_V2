@@ -28,6 +28,10 @@ export const ui = {
   avatarGradient: 'bg-gradient-to-br from-[#2C3E50] to-[#B85C38]',
   unread:
     'inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-[#B85C38] text-white text-[10px] font-bold',
+  menuDropdown:
+    'absolute bg-[#FAF8F5] border border-[#E8E2D9] rounded-xl shadow-lg py-1 z-50 min-w-[11rem]',
+  menuItem:
+    'w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left text-[#1A2A3A] hover:bg-[#F5F1EB] touch-manipulation',
 };
 
 interface CommunityCardProps {

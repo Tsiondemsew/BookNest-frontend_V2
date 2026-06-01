@@ -18,6 +18,7 @@ import { onReadingActivityRecorded } from '@/lib/reading/recordActivity';
 import { OfflinePageNotice } from '@/components/OfflinePageNotice';
 import { ActivitySyncBanner } from '@/components/ActivitySyncBanner';
 import { StreakPushPrompt } from '@/components/StreakPushPrompt';
+import { useTranslation } from '@/hooks/useTranslation';
 import type { DailyReadingActivity, GamificationProfile } from '@repo/types';
 import { WeeklyActivityChart } from './WeeklyActivityChart';
 import { AchievementsSection } from './AchievementsSection';
@@ -37,6 +38,7 @@ function normalizeProfile(profile: GamificationProfile): GamificationProfile {
 }
 
 export function ReadingJourneyView() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
@@ -78,7 +80,7 @@ export function ReadingJourneyView() {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-3">
         <Loader2 className="animate-spin text-[#B85C38]" size={36} />
-        <p className="text-sm text-[#4A5568]">Loading your stats…</p>
+        <p className="text-sm text-[#4A5568]">{t('reading.loadingStats')}</p>
       </div>
     );
   }
@@ -86,11 +88,11 @@ export function ReadingJourneyView() {
   if (!profileData) {
     return (
       <div className="max-w-md mx-auto text-center py-16 px-4 space-y-4">
-        <p className="text-red-600 font-medium">Could not load reading data.</p>
+        <p className="text-red-600 font-medium">{t('reading.loadFailed')}</p>
         <p className="text-sm text-[#4A5568]">
           {navigator.onLine
-            ? 'Something went wrong on our end. Please try again.'
-            : 'Check your connection and try again.'}
+            ? t('reading.errorOnline')
+            : t('reading.errorOffline')}
         </p>
         <button
           type="button"
@@ -99,7 +101,7 @@ export function ReadingJourneyView() {
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#B85C38] text-white text-sm font-semibold disabled:opacity-60 hover:bg-[#A04E2F] transition-colors"
         >
           {isFetching ? <Loader2 size={16} className="animate-spin" /> : null}
-          Retry
+          {t('common.retry')}
         </button>
       </div>
     );
@@ -112,28 +114,28 @@ export function ReadingJourneyView() {
   const readToday = profile.today.pages_read > 0 || profile.today.minutes_read > 0;
   const streakMessage =
     streak >= 30
-      ? 'Legendary consistency — keep it up!'
+      ? t('reading.streakMsg30')
       : streak >= 7
-        ? 'A full week strong. Keep the momentum!'
+        ? t('reading.streakMsg7')
         : streak >= 1
           ? readToday
-            ? 'Streak extended today.'
-            : 'Read today to keep your streak alive.'
-          : 'Read a page today to start your streak.';
+            ? t('reading.streakExtended')
+            : t('reading.streakKeepAlive')
+          : t('reading.streakStart');
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      <OfflinePageNotice label="stats may be from your last online session" />
+      <OfflinePageNotice label={t('reading.offlineNotice')} />
       {showStale && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex flex-col sm:flex-row sm:items-center gap-3">
-          <span>Showing last saved stats — live sync failed.</span>
+          <span>{t('reading.staleStats')}</span>
           <button
             type="button"
             onClick={() => void refetch()}
             disabled={isFetching}
             className="shrink-0 px-3 py-1.5 rounded-lg bg-white border border-amber-200 font-medium hover:bg-amber-50/80 transition-colors"
           >
-            {isFetching ? 'Refreshing…' : 'Refresh'}
+            {isFetching ? t('reading.refreshing') : t('reading.refresh')}
           </button>
         </div>
       )}
@@ -150,16 +152,20 @@ export function ReadingJourneyView() {
               {streak > 0 ? (
                 <>
                   <Flame className="inline-block text-[#FF8C42] mb-1 mr-2" size={28} />
-                  {streak}-day streak
+                  {t('reading.streakDays', { count: streak })}
                 </>
               ) : (
-                'Start your streak'
+                t('reading.startStreak')
               )}
             </h2>
             <p className="text-white/75">{streakMessage}</p>
             <p className="text-white/90 text-sm font-medium">
-              {lifetimePages} {lifetimePages === 1 ? 'page' : 'pages'} read · {lifetimeMinutes}{' '}
-              {lifetimeMinutes === 1 ? 'minute' : 'minutes'} listened
+              {t('reading.lifetimeStats', {
+                pages: lifetimePages,
+                pagesLabel: lifetimePages === 1 ? t('common.page') : t('common.pages'),
+                minutes: lifetimeMinutes,
+                minutesLabel: lifetimeMinutes === 1 ? t('common.minute') : t('common.minutes'),
+              })}
             </p>
             <div className="flex flex-wrap gap-2 pt-1">
               <Link
@@ -167,12 +173,12 @@ export function ReadingJourneyView() {
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#B85C38] hover:bg-[#A04E2F] text-white text-sm font-semibold transition-colors"
               >
                 <Library size={16} />
-                Open library
+                {t('reading.openLibrary')}
               </Link>
               {profile.today.pages_read === 0 && profile.today.minutes_read === 0 && (
                 <span className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/10 text-white/90 text-sm">
                   <Zap size={16} />
-                  Read or listen today
+                  {t('reading.readToday')}
                 </span>
               )}
               <StreakPushPrompt streak={streak} compact />
@@ -180,10 +186,10 @@ export function ReadingJourneyView() {
           </div>
 
           <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:min-w-[260px]">
-            <HeroStat label="Best streak" value={profile.streak.longest} suffix="days" />
-            <HeroStat label="Books done" value={profile.total_books_completed} />
-            <HeroStat label="Pages today" value={profile.today.pages_read} />
-            <HeroStat label="Minutes today" value={profile.today.minutes_read} suffix="min" />
+            <HeroStat label={t('reading.bestStreak')} value={profile.streak.longest} suffix={t('common.days')} />
+            <HeroStat label={t('reading.booksDone')} value={profile.total_books_completed} />
+            <HeroStat label={t('reading.pagesToday')} value={profile.today.pages_read} />
+            <HeroStat label={t('reading.minutesToday')} value={profile.today.minutes_read} suffix={t('reading.minSuffix')} />
           </div>
         </div>
       </section>
@@ -192,30 +198,30 @@ export function ReadingJourneyView() {
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
           icon={Flame}
-          label="Current streak"
+          label={t('reading.currentStreak')}
           value={profile.streak.current}
-          sub={`Best ${profile.streak.longest} days`}
+          sub={t('reading.bestDays', { count: profile.streak.longest })}
           color="#B85C38"
         />
         <StatCard
           icon={BookOpen}
-          label="Books completed"
+          label={t('reading.booksCompleted')}
           value={profile.total_books_completed}
-          sub="All time"
+          sub={t('reading.allTime')}
           color="#2C3E50"
         />
         <StatCard
           icon={TrendingUp}
-          label="Total pages"
+          label={t('reading.totalPages')}
           value={profile.lifetime.total_pages}
-          sub="Lifetime"
+          sub={t('reading.lifetime')}
           color="#2D6A4F"
         />
         <StatCard
           icon={Clock}
-          label="Listening time"
+          label={t('reading.listeningTime')}
           value={profile.lifetime.total_minutes}
-          sub="Minutes (lifetime)"
+          sub={t('reading.minutesLifetime')}
           color="#8E735B"
         />
       </section>
@@ -225,13 +231,13 @@ export function ReadingJourneyView() {
         <WeeklyActivityChart
           data={profile.weekly_activity}
           metric="pages"
-          title="Pages per day"
+          title={t('reading.pagesPerDay')}
           accentColor="#B85C38"
         />
         <WeeklyActivityChart
           data={profile.weekly_activity}
           metric="minutes"
-          title="Listening & reading minutes"
+          title={t('reading.minutesPerDay')}
           accentColor="#2C3E50"
         />
       </section>
@@ -239,7 +245,7 @@ export function ReadingJourneyView() {
       <AchievementsSection profile={profile} achievements={profile.achievements} />
 
       <p className="text-center text-xs text-[#4A5568] pb-2">
-        Streaks count new pages or 20+ seconds of listening per day.
+        {t('reading.streakFootnote')}
       </p>
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import type { Genre } from '@repo/types';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface BookFiltersProps {
   genres: Genre[];
@@ -22,6 +23,7 @@ export function BookFilters({
   onFormatChange,
   onSearchChange,
 }: BookFiltersProps) {
+  const { t } = useTranslation();
   const [searchInput, setSearchInput] = useState(initialSearch);
   const lastEmittedSearch = useRef(initialSearch);
 
@@ -45,7 +47,7 @@ export function BookFilters({
         <div className="flex-1">
           <input
             type="text"
-            placeholder="Search by title or author..."
+            placeholder={t('books.searchPlaceholder')}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className="w-full px-4 py-2.5 border border-[#E8E2D9] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#B85C38] focus:border-[#B85C38] transition-all text-[#1A2A3A] placeholder:text-[#4A5568]"
@@ -58,7 +60,7 @@ export function BookFilters({
             onChange={(e) => onGenreChange(e.target.value)}
             className="w-full px-4 py-2.5 border border-[#E8E2D9] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#B85C38] focus:border-[#B85C38] transition-all text-[#1A2A3A] bg-white cursor-pointer"
           >
-            <option value="">All Genres</option>
+            <option value="">{t('books.allGenres')}</option>
             {genres.map((genre) => (
               <option key={genre.id} value={genre.id}>
                 {genre.name}
@@ -73,7 +75,7 @@ export function BookFilters({
             onChange={(e) => onFormatChange(e.target.value)}
             className="w-full px-4 py-2.5 border border-[#E8E2D9] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#B85C38] focus:border-[#B85C38] transition-all text-[#1A2A3A] bg-white cursor-pointer"
           >
-            <option value="">All Formats</option>
+            <option value="">{t('books.allFormats')}</option>
             <option value="PDF">PDF</option>
             <option value="Audio">Audio</option>
           </select>

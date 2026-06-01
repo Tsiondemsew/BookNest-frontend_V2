@@ -12,11 +12,16 @@ import {
   Heart,
   Library,
   TrendingUp,
+  Crown,
+  BarChart3,
+  DollarSign,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { useCommerceCounts } from '@/hooks/useCommerceCounts';
+import { useTranslation } from '@/hooks/useTranslation';
 import { NavCountBadge } from '@/components/NavCountBadge';
+import { isNavHrefActive, pickActiveGroupId } from '@/lib/navigation/navActive';
 
 type NavItem = { label: string; href: string; icon: LucideIcon };
 
@@ -28,40 +33,102 @@ type NavGroup = {
   isActive: (pathname: string | null) => boolean;
 };
 
-function buildGroups(role: string | undefined): NavGroup[] {
+function buildStudioItems(
+  role: string | undefined,
+  t: (key: string) => string
+): NavItem[] {
+  const isPublisher = role === 'publisher';
+  return [
+    { label: t('nav.studio'), href: '/studio', icon: Crown },
+    {
+      label: isPublisher ? t('nav.catalog') : t('nav.myBooks'),
+      href: '/studio/books',
+      icon: isPublisher ? Library : BookOpen,
+    },
+    { label: t('nav.analytics'), href: '/studio/analytics', icon: BarChart3 },
+    {
+      label: isPublisher ? t('nav.payouts') : t('nav.earnings'),
+      href: '/studio/earnings',
+      icon: DollarSign,
+    },
+  ];
+}
+
+function buildGroups(role: string | undefined, t: (key: string) => string): NavGroup[] {
   const isAuthor = role === 'author';
   const isPublisher = role === 'publisher';
 
-  const marketItems: NavItem[] = isPublisher
-    ? [{ label: 'Browse', href: '/market', icon: Store }]
-    : [
-        { label: 'Browse', href: '/market', icon: Store },
-        { label: 'Cart', href: '/cart', icon: ShoppingCart },
-        { label: 'Wishlist', href: '/wishlist', icon: Heart },
-      ];
+  const communityGroup: NavGroup = {
+    id: 'community',
+    label: t('nav.community'),
+    icon: Users,
+    items: [
+      { label: t('nav.feed'), href: '/community', icon: Users },
+      { label: t('nav.messages'), href: '/messages', icon: MessageCircle },
+    ],
+    isActive: (p) =>
+      !!p && (p === '/community' || p.startsWith('/community/') || p.startsWith('/messages')),
+  };
 
-  const readingItems: NavItem[] = isAuthor || isPublisher
-    ? [{ label: 'My Library', href: '/library', icon: Library }]
-    : [
-        { label: 'My Library', href: '/library', icon: Library },
-        { label: 'Reading Journey', href: '/dashboard/reading', icon: TrendingUp },
-      ];
+  const studioGroup: NavGroup = {
+    id: 'studio',
+    label: t('nav.studio'),
+    icon: Crown,
+    items: buildStudioItems(role, t),
+    isActive: (p) => !!p && p.startsWith('/studio'),
+  };
+
+  if (isPublisher) {
+    return [studioGroup, communityGroup];
+  }
+
+  if (isAuthor) {
+    return [
+      studioGroup,
+      communityGroup,
+      {
+        id: 'market',
+        label: t('nav.market'),
+        icon: Store,
+        items: [
+          { label: t('nav.browse'), href: '/market', icon: Store },
+          { label: t('nav.cart'), href: '/cart', icon: ShoppingCart },
+          { label: t('nav.wishlist'), href: '/wishlist', icon: Heart },
+        ],
+        isActive: (p) =>
+          !!p &&
+          (p === '/market' ||
+            p.startsWith('/market/') ||
+            p === '/cart' ||
+            p === '/wishlist'),
+      },
+      {
+        id: 'reading',
+        label: t('nav.reading'),
+        icon: BookOpen,
+        items: [{ label: t('nav.myLibrary'), href: '/library', icon: Library }],
+        isActive: (p) =>
+          !!p && (p === '/library' || p.startsWith('/reader/')),
+      },
+    ];
+  }
+
+  const marketItems: NavItem[] = [
+    { label: t('nav.browse'), href: '/market', icon: Store },
+    { label: t('nav.cart'), href: '/cart', icon: ShoppingCart },
+    { label: t('nav.wishlist'), href: '/wishlist', icon: Heart },
+  ];
+
+  const readingItems: NavItem[] = [
+    { label: t('nav.myLibrary'), href: '/library', icon: Library },
+    { label: t('nav.readingJourney'), href: '/dashboard/reading', icon: TrendingUp },
+  ];
 
   return [
-    {
-      id: 'community',
-      label: 'Community',
-      icon: Users,
-      items: [
-        { label: 'Feed', href: '/community', icon: Users },
-        { label: 'Messages', href: '/messages', icon: MessageCircle },
-      ],
-      isActive: (p) =>
-        !!p && (p === '/community' || p.startsWith('/community/') || p.startsWith('/messages')),
-    },
+    communityGroup,
     {
       id: 'market',
-      label: 'Market',
+      label: t('nav.market'),
       icon: Store,
       items: marketItems,
       isActive: (p) =>
@@ -73,7 +140,7 @@ function buildGroups(role: string | undefined): NavGroup[] {
     },
     {
       id: 'reading',
-      label: 'Reading',
+      label: t('nav.reading'),
       icon: BookOpen,
       items: readingItems,
       isActive: (p) =>
@@ -103,8 +170,12 @@ function MobileBottomNavInner() {
   const navRef = useRef<HTMLDivElement>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const groups = buildGroups(user?.role);
+  const { t } = useTranslation();
+  const groups = buildGroups(user?.role, t);
   const { cartCount, wishlistCount, marketBadgeCount } = useCommerceCounts();
+
+  const activeGroupId = pickActiveGroupId(pathname, groups);
+  const focusedGroupId = openGroupId ?? activeGroupId;
 
   const itemBadgeCount = (href: string) => {
     if (href === '/cart') return cartCount;
@@ -143,6 +214,11 @@ function MobileBottomNavInner() {
 
   const openGroup = groups.find((g) => g.id === openGroupId);
 
+  const openGroupPanel = (groupId: string) => {
+    cancelClose();
+    setOpenGroupId((current) => (current === groupId ? null : groupId));
+  };
+
   if (shouldHideBottomNav(pathname, chatId)) {
     return null;
   }
@@ -165,9 +241,7 @@ function MobileBottomNavInner() {
             <div className="bg-white rounded-2xl border border-[#E8E2D9] shadow-xl shadow-[#1A2A3A]/10 p-2 flex flex-wrap gap-1.5 justify-center">
               {openGroup.items.map((item, index) => {
                 const ItemIcon = item.icon;
-                const itemActive =
-                  pathname === item.href ||
-                  (item.href !== '/community' && pathname?.startsWith(item.href + '/'));
+                const itemActive = isNavHrefActive(pathname, item.href);
                 const badge = itemBadgeCount(item.href);
                 return (
                   <Link
@@ -199,7 +273,7 @@ function MobileBottomNavInner() {
         <div className="flex items-stretch justify-around h-16 max-w-lg mx-auto px-2">
           {groups.map((group) => {
             const Icon = group.icon;
-            const active = group.isActive(pathname);
+            const isFocused = focusedGroupId === group.id;
             const isOpen = openGroupId === group.id;
 
             return (
@@ -210,20 +284,21 @@ function MobileBottomNavInner() {
                   cancelClose();
                   setOpenGroupId(group.id);
                 }}
-                onClick={() => setOpenGroupId(isOpen ? null : group.id)}
+                onClick={() => openGroupPanel(group.id)}
                 className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 min-w-0 px-1 transition-colors select-none ${
-                  active || isOpen ? 'text-[#B85C38]' : 'text-[#4A5568]'
+                  isFocused ? 'text-[#B85C38]' : 'text-[#4A5568]'
                 }`}
                 aria-expanded={isOpen}
+                aria-current={isFocused && !isOpen ? 'page' : undefined}
                 aria-haspopup="true"
               >
-                {(active || isOpen) && (
+                {isFocused && (
                   <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#B85C38] rounded-full" />
                 )}
                 <span className="relative">
                   <Icon
                     size={22}
-                    strokeWidth={active || isOpen ? 2.25 : 2}
+                    strokeWidth={isFocused ? 2.25 : 2}
                     className={`transition-transform duration-200 ${isOpen ? 'scale-110' : ''}`}
                   />
                   {group.id === 'market' && marketBadgeCount > 0 && (
@@ -235,7 +310,7 @@ function MobileBottomNavInner() {
                   )}
                 </span>
                 <span
-                  className={`text-[10px] truncate max-w-full ${active || isOpen ? 'font-semibold' : 'font-medium'}`}
+                  className={`text-[10px] truncate max-w-full ${isFocused ? 'font-semibold' : 'font-medium'}`}
                 >
                   {group.label}
                 </span>

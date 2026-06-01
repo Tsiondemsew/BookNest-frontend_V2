@@ -7,6 +7,7 @@ import { WishlistButton } from '@/features/wishlist/components/WishlistButton';
 import { AddToCartButton } from '@/features/cart/components/AddToCartButton';
 import { useBookPurchaseStatus } from '@/features/books/hooks/useBookPurchaseStatus';
 import { useAuthStore } from '@/stores/authStore';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface BookCardProps {
   book: Book;
@@ -19,6 +20,7 @@ function formatPrice(price: number) {
 }
 
 export function BookCard({ book, showWishlistButton = true, showQuickAdd = true }: BookCardProps) {
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuthStore();
   const { isOwnBook, ownedFormatIds } = useBookPurchaseStatus(book.id);
 
@@ -32,18 +34,23 @@ export function BookCard({ book, showWishlistButton = true, showQuickAdd = true 
     formats[0]
   );
 
+  const ownsAnyFormat = ownedFormatIds.length > 0;
+  const ownsAllFormats =
+    formats.length > 0 && formats.every((f) => ownedFormatIds.includes(f.id));
   const cheapestOwned = cheapestFormat ? ownedFormatIds.includes(cheapestFormat.id) : false;
+  const inLibrary = isAuthenticated && (isOwnBook || ownsAnyFormat);
   const hideQuickAdd =
     !showQuickAdd || !cheapestFormat || (isAuthenticated && (isOwnBook || cheapestOwned));
+  const hideWishlist = !showWishlistButton || inLibrary;
 
   const rating = book.avg_rating ?? 0;
   const reviewCount = book.review_count ?? 0;
   const hasRating = reviewCount > 0 && rating > 0;
 
   return (
-    <article className="group relative flex flex-col h-full bg-white rounded-2xl border border-[#E8E2D9] shadow-sm hover:shadow-md hover:border-[#B85C38]/25 transition-all duration-200">
-      <Link href={`/market/${book.id}`} className="block relative">
-        <div className="aspect-[2/3] relative overflow-hidden rounded-t-2xl bg-[#F5F1EB]">
+    <article className="group relative flex flex-col h-full min-w-0 bg-white rounded-xl sm:rounded-2xl border border-[#E8E2D9] shadow-sm hover:shadow-md hover:border-[#B85C38]/25 transition-all duration-200">
+      <Link href={`/market/${book.id}`} className="block relative min-w-0">
+        <div className="aspect-[2/3] sm:aspect-[3/4] relative overflow-hidden rounded-t-xl sm:rounded-t-2xl bg-[#F5F1EB]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={book.cover_image_url}
@@ -67,20 +74,20 @@ export function BookCard({ book, showWishlistButton = true, showQuickAdd = true 
           {minPrice > 0 && (
             <div className="absolute bottom-0 inset-x-0 p-2.5 pointer-events-none">
               <span className="inline-block text-[10px] font-bold bg-[#2C3E50]/95 text-white px-2 py-1 rounded-md shadow-sm tabular-nums">
-                from {formatPrice(minPrice)}
+                {t('books.fromPrice', { price: formatPrice(minPrice) })}
               </span>
             </div>
           )}
         </div>
       </Link>
 
-      {showWishlistButton && (
-        <div className="absolute top-3 right-3 z-10">
+      {!hideWishlist && (
+        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10">
           <WishlistButton bookId={book.id} size="sm" className="shadow-sm backdrop-blur-sm bg-white/95" />
         </div>
       )}
 
-      <div className="flex flex-col flex-1 p-4">
+      <div className="flex flex-col flex-1 p-3 sm:p-4 min-w-0">
         <Link href={`/market/${book.id}`} className="block min-w-0">
           <h3 className="font-semibold text-[#1A2A3A] text-sm sm:text-base line-clamp-2 leading-snug group-hover:text-[#B85C38] transition-colors bn-serif">
             {book.title}
@@ -103,28 +110,35 @@ export function BookCard({ book, showWishlistButton = true, showQuickAdd = true 
               </span>
             </>
           ) : (
-            <span className="text-xs text-[#4A5568]/80">No reviews yet</span>
+            <span className="text-xs text-[#4A5568]/80">{t('books.noReviewsYet')}</span>
           )}
         </div>
 
         <div className="mt-auto pt-4">
           {isOwnBook ? (
-            <span className="block w-full py-2.5 rounded-xl bg-[#F5F1EB] text-center text-xs font-medium text-[#4A5568]">
-              Your book
+            <span className="block w-full py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-[#F5F1EB] text-center text-[11px] sm:text-xs font-medium text-[#4A5568]">
+              {t('books.yourBook')}
             </span>
+          ) : ownsAllFormats || (ownsAnyFormat && !cheapestFormat) ? (
+            <Link
+              href={`/library`}
+              className="block w-full py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-emerald-50 border border-emerald-200 text-center text-[11px] sm:text-sm font-semibold text-emerald-800 hover:bg-emerald-100 transition-colors"
+            >
+              {t('books.openInLibrary')}
+            </Link>
           ) : cheapestOwned ? (
             <Link
               href={`/reader/${book.id}${cheapestFormat ? `?format_id=${cheapestFormat.id}` : ''}`}
               className="block w-full py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-center text-xs sm:text-sm font-semibold text-emerald-800 hover:bg-emerald-100 transition-colors"
             >
-              Open in library
+              {t('books.openInLibrary')}
             </Link>
           ) : hideQuickAdd || !cheapestFormat ? (
             <Link
               href={`/market/${book.id}`}
               className="block w-full py-2.5 rounded-xl bg-[#2C3E50] text-white text-center text-xs sm:text-sm font-semibold hover:bg-[#1A2A3A] transition-colors"
             >
-              View details
+              {t('books.viewDetails')}
             </Link>
           ) : (
             <AddToCartButton

@@ -4,18 +4,26 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Loader2, Users } from 'lucide-react';
 import { chatApi } from '@/lib/api/chat';
+import { useAuthStore } from '@/stores/authStore';
 import { BackLink, CommunityCard, ui, cn } from '@/features/community/ui';
 
 export default function JoinGroupPage() {
   const params = useParams();
   const router = useRouter();
   const token = params.token as string;
+  const { isAuthenticated, isInitializing } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
   const [groupName, setGroupName] = useState<string | null>(null);
   const [isJoining, setIsJoining] = useState(true);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token || isInitializing) return;
+
+    if (!isAuthenticated) {
+      const returnPath = `/messages/join/${encodeURIComponent(token)}`;
+      router.replace(`/login?redirect=${encodeURIComponent(returnPath)}`);
+      return;
+    }
 
     void (async () => {
       try {
@@ -27,9 +35,9 @@ export default function JoinGroupPage() {
         setIsJoining(false);
       }
     })();
-  }, [token, router]);
+  }, [token, router, isAuthenticated, isInitializing]);
 
-  if (isJoining && !error) {
+  if (isInitializing || (isJoining && !error)) {
     return (
       <div className={cn(ui.page, 'flex flex-col items-center justify-center min-h-[50vh] gap-3')}>
         <Loader2 size={32} className="animate-spin text-bn-primary" />

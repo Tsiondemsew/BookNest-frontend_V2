@@ -10,6 +10,7 @@ import {
   WifiOff,
 } from 'lucide-react';
 import { LibraryReviewButton } from '@/features/reviews/components/LibraryReviewButton';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export interface LibraryBookCardItem {
   id: string;
@@ -48,6 +49,7 @@ export function LibraryBookCard({
   onRemoveOffline,
   onReviewClick,
 }: LibraryBookCardProps) {
+  const { t } = useTranslation();
   const readerHref = `/reader/${item.book.id}?format_id=${item.format.id}`;
   const isComplete = progress === 100;
   const inProgress = progress > 0 && progress < 100;
@@ -67,13 +69,13 @@ export function LibraryBookCard({
               {isDownloaded && (
                 <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide bg-emerald-600/95 text-white px-2 py-1 rounded-md shadow-sm">
                   <CheckCircle size={10} />
-                  Offline
+                  {t('common.offline')}
                 </span>
               )}
               {isOffline && !isDownloaded && (
                 <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide bg-amber-500/95 text-white px-2 py-1 rounded-md shadow-sm">
                   <WifiOff size={10} />
-                  Online only
+                  {t('common.onlineOnly')}
                 </span>
               )}
             </div>
@@ -104,7 +106,7 @@ export function LibraryBookCard({
         {inProgress && (
           <div className="mt-3">
             <div className="flex justify-between text-[11px] text-[#4A5568] mb-1">
-              <span>Progress</span>
+              <span>{t('common.progress')}</span>
               <span className="tabular-nums font-medium">{progress}%</span>
             </div>
             <div className="w-full bg-[#E8E2D9] rounded-full h-1.5">
@@ -119,7 +121,7 @@ export function LibraryBookCard({
         {isComplete && (
           <p className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
             <CheckCircle size={12} />
-            Finished
+            {t('common.finished')}
           </p>
         )}
 
@@ -128,7 +130,11 @@ export function LibraryBookCard({
             href={readerHref}
             className="flex-1 inline-flex items-center justify-center px-3 py-2 rounded-xl bg-[#2C3E50] text-white text-xs sm:text-sm font-semibold hover:bg-[#1A2A3A] transition-colors"
           >
-            {isComplete ? 'Read again' : inProgress ? 'Continue' : 'Start reading'}
+            {isComplete
+              ? t('library.readAgain')
+              : inProgress
+                ? t('library.continue')
+                : t('library.startReading')}
           </Link>
 
           {isDownloaded ? (
@@ -136,7 +142,7 @@ export function LibraryBookCard({
               type="button"
               onClick={onRemoveOffline}
               className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-colors"
-              title="Remove offline copy"
+              title={t('library.removeOffline')}
             >
               <CheckCircle size={16} />
             </button>
@@ -146,7 +152,7 @@ export function LibraryBookCard({
               onClick={onDownload}
               disabled={isDownloading}
               className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-[#E8E2D9] bg-[#FDFBF7] text-[#4A5568] hover:border-[#B85C38]/30 hover:text-[#B85C38] transition-colors disabled:opacity-50"
-              title="Download for offline"
+              title={t('library.downloadOffline')}
             >
               {isDownloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
             </button>
@@ -164,7 +170,13 @@ export function LibraryBookCard({
         </div>
 
         <p className="mt-2 text-[10px] text-[#4A5568]/80">
-          Added {new Date(item.purchased_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+          {t('library.addedOn', {
+            date: new Date(item.purchased_at).toLocaleDateString(undefined, {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            }),
+          })}
         </p>
       </div>
     </article>

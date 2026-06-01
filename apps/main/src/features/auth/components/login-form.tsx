@@ -10,6 +10,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { DEFAULT_AUTHENTICATED_HOME } from '@/lib/routes/defaultRoutes';
 import { completeAuthContinuation } from '@/lib/auth/pendingAuthAction';
 import { Eye, EyeOff, AlertCircle, Loader2, CheckCircle, WifiOff } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const inputClass = (hasError: boolean) =>
   `w-full px-4 py-2.5 border rounded-xl bg-[#FDFBF7]/50 text-[#1A2A3A] placeholder:text-[#4A5568]/60 focus:outline-none focus:ring-2 focus:ring-[#B85C38]/30 focus:border-[#B85C38] disabled:opacity-60 disabled:bg-[#E8E2D9]/30 transition-colors ${
@@ -29,6 +30,7 @@ export function LoginForm() {
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(false);
   const { login } = useAuthStore();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const sync = () => setIsOffline(!navigator.onLine);
@@ -97,18 +99,14 @@ export function LoginForm() {
       {verified && (
         <div className="p-4 bg-emerald-50 border border-emerald-200/80 rounded-xl flex items-start gap-3">
           <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-emerald-800">
-            Your email is verified. Sign in to continue.
-          </p>
+          <p className="text-sm text-emerald-800">{t('auth.emailVerified')}</p>
         </div>
       )}
 
       {passwordReset && (
         <div className="p-4 bg-emerald-50 border border-emerald-200/80 rounded-xl flex items-start gap-3">
           <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-emerald-800">
-            Your password was updated. Sign in with your new password.
-          </p>
+          <p className="text-sm text-emerald-800">{t('auth.passwordUpdated')}</p>
         </div>
       )}
 
@@ -116,16 +114,11 @@ export function LoginForm() {
         <div className="p-4 bg-amber-50 border border-amber-200/80 rounded-xl flex items-start gap-3">
           <WifiOff className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-amber-900">
-            <p className="font-medium">You are offline</p>
+            <p className="font-medium">{t('auth.offline')}</p>
             {sessionExpired ? (
-              <p className="mt-1">
-                Your session has ended. Connect to the internet to sign in again.
-              </p>
+              <p className="mt-1">{t('auth.sessionEnded')}</p>
             ) : (
-              <p className="mt-1">
-                Sign in requires an internet connection. If you still have a valid session, reopen the
-                installed BookNest app to read downloaded books offline.
-              </p>
+              <p className="mt-1">{t('auth.offlineSignInHint')}</p>
             )}
           </div>
         </div>
@@ -142,7 +135,7 @@ export function LoginForm() {
                   href="/resend-verification"
                   className="text-sm text-[#B85C38] hover:text-[#8E735B] font-medium mt-2 inline-block"
                 >
-                  Resend verification email →
+                  {t('auth.resendVerification')}
                 </Link>
               )}
             </div>
@@ -152,7 +145,7 @@ export function LoginForm() {
 
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-[#2C3E50] mb-1.5">
-          Email
+          {t('auth.email')}
         </label>
         <input
           id="email"
@@ -160,7 +153,7 @@ export function LoginForm() {
           autoComplete="email"
           disabled={isSubmitting}
           className={inputClass(!!errors.email)}
-          placeholder="you@example.com"
+          placeholder={t('auth.emailPlaceholder')}
           {...register('email')}
         />
         {errors.email && (
@@ -173,7 +166,7 @@ export function LoginForm() {
 
       <div>
         <label htmlFor="password" className="block text-sm font-medium text-[#2C3E50] mb-1.5">
-          Password
+          {t('auth.password')}
         </label>
         <div className="relative">
           <input
@@ -182,7 +175,7 @@ export function LoginForm() {
             autoComplete="current-password"
             disabled={isSubmitting}
             className={`${inputClass(!!errors.password)} pr-11`}
-            placeholder="Enter your password"
+            placeholder={t('auth.passwordPlaceholder')}
             {...register('password')}
           />
           <button
@@ -190,7 +183,7 @@ export function LoginForm() {
             onClick={() => setShowPassword(!showPassword)}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A5568] hover:text-[#2C3E50] transition-colors p-0.5"
             tabIndex={-1}
-            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
           >
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
@@ -211,13 +204,13 @@ export function LoginForm() {
             className="w-4 h-4 rounded border-[#E8E2D9] text-[#B85C38] focus:ring-[#B85C38]/30"
             {...register('remember_me')}
           />
-          <span className="text-sm text-[#4A5568]">Remember me</span>
+          <span className="text-sm text-[#4A5568]">{t('auth.rememberMe')}</span>
         </label>
         <Link
           href="/forgot-password"
           className="text-sm text-[#B85C38] hover:text-[#8E735B] font-medium transition-colors whitespace-nowrap"
         >
-          Forgot password?
+          {t('auth.forgotPassword')}
         </Link>
       </div>
 
@@ -229,10 +222,10 @@ export function LoginForm() {
         {isSubmitting ? (
           <span className="flex items-center justify-center gap-2">
             <Loader2 className="w-4 h-4 animate-spin" />
-            Signing in...
+            {t('auth.signingIn')}
           </span>
         ) : (
-          'Sign in'
+          t('auth.signIn')
         )}
       </button>
     </form>

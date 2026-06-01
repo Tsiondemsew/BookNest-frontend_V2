@@ -7,7 +7,8 @@ import { CommentForm } from './CommentForm';
 import { ReplyItem } from './ReplyItem';
 import { LikeButton } from '../interactions/LikeButton';
 import { ReportButton } from '../interactions/ReportButton';
-import { formatRelativeTime } from '../../utils/timeFormat';
+import { useFormatRelativeTime } from '../../utils/timeFormat';
+import { useTranslation } from '@/hooks/useTranslation';
 import type { Comment } from '@repo/types';
 
 interface CommentItemProps {
@@ -18,6 +19,8 @@ interface CommentItemProps {
 }
 
 export function CommentItem({ comment, postId, onReplyAdded, isReply = false }: CommentItemProps) {
+  const { t } = useTranslation();
+  const formatRelativeTime = useFormatRelativeTime();
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [showReplies, setShowReplies] = useState(false);
 
@@ -68,7 +71,7 @@ export function CommentItem({ comment, postId, onReplyAdded, isReply = false }: 
               className="text-xs text-[#4A5568] hover:text-[#B85C38] transition-colors flex items-center gap-1"
             >
               <MessageCircle size={12} />
-              Reply
+              {t('community.reply')}
             </button>
             <span className="text-xs text-[#4A5568]">{formatRelativeTime(comment.createdAt)}</span>
           </div>
@@ -93,7 +96,10 @@ export function CommentItem({ comment, postId, onReplyAdded, isReply = false }: 
               onClick={() => setShowReplies(true)}
               className="text-xs text-[#B85C38] hover:underline mt-1 ml-2 font-medium"
             >
-              View {comment.replyCount} {comment.replyCount === 1 ? 'reply' : 'replies'}
+              {t(
+                comment.replyCount === 1 ? 'community.viewReply_one' : 'community.viewReply_other',
+                { count: comment.replyCount }
+              )}
             </button>
           )}
 
@@ -107,7 +113,7 @@ export function CommentItem({ comment, postId, onReplyAdded, isReply = false }: 
                 onClick={() => setShowReplies(false)}
                 className="text-xs text-[#4A5568] hover:underline mt-1 ml-2"
               >
-                Show less
+                {t('community.showLess')}
               </button>
             </div>
           )}

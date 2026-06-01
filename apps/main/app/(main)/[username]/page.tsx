@@ -111,6 +111,7 @@ function PublicProfileContent() {
           role: profile.role,
           bio: profile.bio,
           avatarUrl: profile.avatarUrl,
+          photos: profile.photos,
           coverUrl: null,
           location: profile.location,
           website: profile.website,
