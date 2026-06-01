@@ -1,7 +1,7 @@
 import type { PendingBook, QueueStatus } from '@/features/books/types';
 
 const styles: Record<string, string> = {
-  NEW: 'bg-violet-500/15 text-violet-700 ring-violet-500/25 dark:text-violet-300',
+  NEW: 'bg-surface0/15 text-violet-700 ring-violet-500/25 dark:text-violet-300',
   UPDATE: 'bg-blue-500/15 text-blue-700 ring-blue-500/25 dark:text-blue-300',
   RESUBMITTED: 'bg-amber-500/15 text-amber-800 ring-amber-500/25 dark:text-amber-300',
   pending_review: 'bg-amber-500/15 text-amber-800 ring-amber-500/25',

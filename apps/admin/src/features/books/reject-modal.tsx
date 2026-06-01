@@ -36,8 +36,8 @@ export function RejectModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4 backdrop-blur-sm">
-      <div className="my-8 w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Reject submission</h3>
+      <div className="my-8 w-full max-w-lg rounded-2xl bg-card p-6 shadow-2xl dark:bg-slate-900">
+        <h3 className="text-lg font-semibold text-slate-900">Reject submission</h3>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
           <strong>{bookTitle}</strong>
         </p>

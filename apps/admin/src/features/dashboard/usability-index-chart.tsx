@@ -23,7 +23,7 @@ function ChartTooltip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white px-3 py-2 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+    <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-lg dark:border-border dark:bg-primary">
       {payload.map((entry) => (
         <p key={entry.name} className="text-xs font-semibold" style={{ color: entry.color }}>
           {entry.name}: {entry.value}
@@ -41,12 +41,12 @@ export function UsabilityIndexChart({
   loading?: boolean;
 }) {
   if (loading) {
-    return <div className="h-72 animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-800" />;
+    return <div className="h-72 animate-pulse rounded-xl bg-surface dark:bg-surface" />;
   }
 
   if (!data.length) {
     return (
-      <p className="flex h-72 items-center justify-center text-sm text-zinc-500">
+      <p className="flex h-72 items-center justify-center text-sm text-muted">
         No activity data available.
       </p>
     );

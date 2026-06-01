@@ -1,61 +1,33 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-
-const BACKEND =
-  process.env.BACKEND_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  'http://localhost:5000';
-
-async function isAdminAuthenticated(token: string | undefined): Promise<boolean> {
-  if (!token) return false;
-
-  try {
-    const base = BACKEND.replace(/\/+$/, '');
-    const res = await fetch(`${base}/api/admin/me`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Cookie: `token=${token}`,
-      },
-      cache: 'no-store',
-    });
-
-    const data = await res.json();
-    return res.ok && Boolean(data?.authenticated);
-  } catch {
-    return false;
-  }
-}
+import { getClearCookieOptions } from '@/lib/auth-cookie';
+import { isActiveSessionToken } from '@/lib/session-token';
+import { looksLikeJwtAccessToken } from '@/lib/supabase/admin-auth';
 
 function clearAuthCookies(response: NextResponse) {
-  response.cookies.set('token', '', { path: '/', maxAge: 0 });
-  response.cookies.set('admin-session', '', { path: '/', maxAge: 0 });
+  response.cookies.set('token', '', getClearCookieOptions());
   return response;
 }
 
+/** Fast cookie gate; full Supabase check runs in dashboard layout. */
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
   const { pathname } = request.nextUrl;
+  const hasSession = isActiveSessionToken(token);
 
   if (pathname.startsWith('/dashboard')) {
-    const ok = await isAdminAuthenticated(token);
-
-    if (!ok) {
+    if (!hasSession) {
       const response = NextResponse.redirect(new URL('/login', request.url));
-      return clearAuthCookies(response);
+      if (token) return clearAuthCookies(response);
+      return response;
     }
-
     return NextResponse.next();
   }
 
-  if (pathname === '/login') {
-    if (token && (await isAdminAuthenticated(token))) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-
-    if (token) {
-      const response = NextResponse.next();
-      return clearAuthCookies(response);
-    }
+  // Only skip login for a valid access JWT. Refresh-token cookies must be verified
+  // via /api/admin/me — otherwise stale tokens cause a login ↔ dashboard redirect loop.
+  if (pathname === '/login' && hasSession && token && looksLikeJwtAccessToken(token)) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   return NextResponse.next();

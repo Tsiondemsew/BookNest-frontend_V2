@@ -4,6 +4,7 @@ export interface DashboardOverviewData {
     systemHealth: { value: number; formatted: string; status: string };
     activeUsers: { value: number; online: number; change: number; changeLabel: string };
     pendingApprovals: { value: number; urgent: number; actionRequired: boolean };
+    userRoleCounts: { users: number; authors: number; publishers: number };
   };
   usabilityIndex: Array<{
     day: string;

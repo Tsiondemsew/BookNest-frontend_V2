@@ -10,10 +10,10 @@ interface ChartContainerProps {
 
 function ChartContainer({ title, subtitle, children }: ChartContainerProps) {
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+    <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-zinc-900">{title}</h3>
-        {subtitle && <p className="text-sm text-zinc-600">{subtitle}</p>}
+        <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+        {subtitle && <p className="text-sm text-muted">{subtitle}</p>}
       </div>
       {children}
     </div>

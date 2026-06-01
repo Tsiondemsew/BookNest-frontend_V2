@@ -2,28 +2,40 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ChevronLeft, Plus } from 'lucide-react';
+import {
+  BookOpen,
+  CheckCircle2,
+  ChevronLeft,
+  FileText,
+  LayoutDashboard,
+  LogOut,
+  Mail,
+  Settings,
+  User,
+  Users,
+} from 'lucide-react';
 import { useState } from 'react';
+import { useAdminSession } from '@/hooks/useAdminSession';
 import { useSidebar } from './sidebar-context';
-import { useTheme } from './theme-provider';
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: '▦' },
-  { href: '/dashboard/users', label: 'Users', icon: '👥' },
-  { href: '/dashboard/books', label: 'Approvals', icon: '✓' },
-  { href: '/dashboard/reports', label: 'Reports', icon: '📋' },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard/users', label: 'Users', icon: Users },
+  { href: '/dashboard/invitations', label: 'Invitations', icon: Mail },
+  { href: '/dashboard/books', label: 'Approvals', icon: CheckCircle2 },
+  { href: '/dashboard/reports', label: 'Reports', icon: FileText },
 ];
 
 const bottomItems = [
-  { href: '/dashboard/settings', label: 'Settings', icon: '⚙' },
-  { href: '/dashboard/support', label: 'Support', icon: '?' },
+  { href: '/dashboard/profile', label: 'My Profile', icon: User },
+  { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { theme, toggleTheme, mounted } = useTheme();
   const { collapsed, closeSidebar } = useSidebar();
+  const { displayName, email, initials } = useAdminSession();
   const [loggingOut, setLoggingOut] = useState(false);
 
   const handleLogout = async () => {
@@ -37,82 +49,90 @@ export function Sidebar() {
     }
   };
 
+  const isLinkActive = (href: string) => {
+    if (href === '/dashboard') return pathname === '/dashboard';
+    if (href === '/dashboard/profile') {
+      return pathname === '/dashboard/profile' || pathname.startsWith('/dashboard/profile/');
+    }
+    if (href === '/dashboard/settings') {
+      return pathname === '/dashboard/settings' || pathname.startsWith('/dashboard/settings/');
+    }
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
+
   const linkClass = (href: string) => {
-    const isActive =
-      pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
-    return `mb-1 flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition ${
+    const isActive = isLinkActive(href);
+    return `mb-1 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
       isActive
-        ? 'bg-violet-600 text-white'
-        : 'text-slate-300 hover:bg-slate-700/60 hover:text-white'
+        ? 'bg-primary text-white'
+        : 'text-muted hover:bg-surface hover:text-foreground'
     }`;
   };
 
   return (
-    <>
-      <aside
-        className={`fixed left-0 top-0 z-20 flex h-screen w-64 flex-col bg-[#1e293b] text-slate-200 transition-transform duration-300 dark:border-r dark:border-slate-800 dark:bg-slate-950 ${
-          collapsed ? '-translate-x-full' : 'translate-x-0'
-        }`}
-      >
-        <div className="flex items-start justify-between border-b border-slate-700/80 px-6 py-6">
-          <Link href="/dashboard" className="block min-w-0 flex-1">
-            <p className="text-lg font-bold text-white">LibrarianPro</p>
-            <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-              Admin Console
+    <aside
+      className={`fixed left-0 top-0 z-20 flex h-screen w-64 flex-col border-r border-border bg-card transition-transform duration-300 ${
+        collapsed ? '-translate-x-full' : 'translate-x-0'
+      }`}
+    >
+      <div className="flex items-center justify-between border-b border-border px-4 py-5">
+        <Link href="/dashboard" className="flex min-w-0 flex-1 items-center gap-2">
+          <BookOpen className="h-6 w-6 shrink-0 text-accent" />
+          <div className="min-w-0">
+            <p className="truncate text-xl font-bold text-foreground">BookNest</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted">
+              Admin
             </p>
-          </Link>
-          <button
-            type="button"
-            onClick={closeSidebar}
-            className="ml-2 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-700/60 hover:text-white"
-            aria-label="Hide sidebar"
-            title="Hide sidebar"
-          >
-            <ChevronLeft size={18} />
-          </button>
+          </div>
+        </Link>
+        <button
+          type="button"
+          onClick={closeSidebar}
+          className="rounded-lg bg-accent p-1.5 text-white transition hover:opacity-90"
+          aria-label="Hide sidebar"
+          title="Hide sidebar"
+        >
+          <ChevronLeft size={18} />
+        </button>
+      </div>
+
+      <div className="flex items-center gap-3 border-b border-border px-4 py-4">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">
+          {initials}
         </div>
-
-        <nav className="flex-1 overflow-y-auto px-3 py-4">
-          {navItems.map((item) => (
-            <Link key={item.href} href={item.href} className={linkClass(item.href)}>
-              <span>{item.icon}</span>
-              {item.label}
-            </Link>
-          ))}
-
-          <Link
-            href="/dashboard/books"
-            className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-violet-500"
-          >
-            <Plus size={18} />
-            New Submission
-          </Link>
-        </nav>
-
-        <div className="border-t border-slate-700/80 px-3 py-4">
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="mb-2 w-full rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 hover:bg-slate-700/60"
-          >
-            {!mounted ? 'Theme' : theme === 'dark' ? '☀ Light mode' : '🌙 Dark mode'}
-          </button>
-          {bottomItems.map((item) => (
-            <Link key={item.href} href={item.href} className={linkClass(item.href)}>
-              <span>{item.icon}</span>
-              {item.label}
-            </Link>
-          ))}
-          <button
-            type="button"
-            onClick={handleLogout}
-            disabled={loggingOut}
-            className="mt-2 w-full rounded-lg border border-slate-600 px-4 py-2.5 text-sm font-medium text-slate-200 hover:bg-slate-700/60 disabled:opacity-60"
-          >
-            {loggingOut ? 'Signing out…' : 'Sign out'}
-          </button>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
+          <p className="truncate text-xs text-muted">{email}</p>
         </div>
-      </aside>
-    </>
+      </div>
+
+      <nav className="flex-1 overflow-y-auto px-3 py-4">
+        {navItems.map((item) => (
+          <Link key={item.href} href={item.href} className={linkClass(item.href)}>
+            <item.icon size={18} className="shrink-0" />
+            {item.label}
+          </Link>
+        ))}
+
+      </nav>
+
+      <div className="space-y-1 border-t border-border p-3">
+        {bottomItems.map((item) => (
+          <Link key={item.href} href={item.href} className={linkClass(item.href)}>
+            <item.icon size={18} className="shrink-0" />
+            {item.label}
+          </Link>
+        ))}
+        <button
+          type="button"
+          onClick={handleLogout}
+          disabled={loggingOut}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted transition hover:bg-red-500/10 hover:text-red-500 disabled:opacity-60 dark:hover:bg-red-500/20"
+        >
+          <LogOut size={18} />
+          {loggingOut ? 'Signing out…' : 'Logout'}
+        </button>
+      </div>
+    </aside>
   );
 }

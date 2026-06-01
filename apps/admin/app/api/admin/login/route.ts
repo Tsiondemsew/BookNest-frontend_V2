@@ -1,11 +1,12 @@
+import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { backendUrl } from '@/lib/api';
+import { getAuthCookieOptions } from '@/lib/auth-cookie';
+import { loginAdminWithSupabase } from '@/lib/supabase/admin-auth';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Admin login — validates against Express/Supabase (role=admin).
- * Sets httpOnly `token` cookie for dashboard + approval API routes.
+ * Admin login — Supabase signInWithPassword + role=admin check.
  */
 export async function POST(request: Request) {
   let body: { email?: string; password?: string };
@@ -23,67 +24,19 @@ export async function POST(request: Request) {
     );
   }
 
-  const email = body?.email?.trim();
-  const password = body?.password;
+  const result = await loginAdminWithSupabase(
+    String(body?.email ?? ''),
+    String(body?.password ?? ''),
+  );
 
-  if (!email || !password) {
+  if (!result.ok) {
     return NextResponse.json(
       {
         success: false,
         authenticated: false,
-        message: 'Email and password are required.',
+        message: result.message,
       },
-      { status: 400 },
-    );
-  }
-
-  let backendRes: Response;
-
-  try {
-    backendRes = await fetch(backendUrl('/api/admin/login'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-      cache: 'no-store',
-    });
-  } catch {
-    return NextResponse.json(
-      {
-        success: false,
-        authenticated: false,
-        message:
-          'Cannot reach the API server. Start the backend on http://localhost:5000 and try again.',
-      },
-      { status: 503 },
-    );
-  }
-
-  const payload = await backendRes.json();
-
-  if (!backendRes.ok || payload?.success === false) {
-    return NextResponse.json(
-      {
-        success: false,
-        authenticated: false,
-        message:
-          payload?.error?.message ||
-          payload?.message ||
-          'Invalid admin credentials. Please use your admin email and password.',
-      },
-      { status: backendRes.status >= 400 ? backendRes.status : 401 },
-    );
-  }
-
-  const token = payload?.data?.token as string | undefined;
-
-  if (!token) {
-    return NextResponse.json(
-      {
-        success: false,
-        authenticated: false,
-        message: 'Login succeeded but no session token was returned.',
-      },
-      { status: 500 },
+      { status: 401 },
     );
   }
 
@@ -91,18 +44,20 @@ export async function POST(request: Request) {
     success: true,
     authenticated: true,
     data: {
-      email,
-      user: payload.data?.user ?? null,
+      email: result.email,
+      user: { id: result.userId, email: result.email, role: 'admin' },
     },
   });
 
-  response.cookies.set('token', token, {
-    httpOnly: true,
-    path: '/',
-    maxAge: 60 * 60 * 24 * 7,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-  });
+  const cookieOptions = getAuthCookieOptions();
+  response.cookies.set('token', result.refreshToken, cookieOptions);
+
+  try {
+    const cookieStore = await cookies();
+    cookieStore.set('token', result.refreshToken, cookieOptions);
+  } catch {
+    // cookies() may be unavailable in some runtimes; Set-Cookie on response is enough
+  }
 
   return response;
 }

@@ -13,7 +13,7 @@ type AdminProfileChipProps = {
 };
 
 export function AdminProfileChip({
-  subtitle = 'System Superuser',
+  subtitle = 'Admin',
   className = '',
   showText = true,
 }: AdminProfileChipProps) {
@@ -22,15 +22,15 @@ export function AdminProfileChip({
   return (
     <Link
       href={ADMIN_PROFILE_PATH}
-      className={`flex items-center gap-3 rounded-xl px-2 py-1 transition hover:bg-zinc-100 dark:hover:bg-zinc-800 ${className}`}
+      className={`flex items-center gap-3 rounded-lg px-2 py-1 transition hover:bg-surface ${className}`}
       aria-label="View and edit your profile"
     >
       {showText && (
         <div className="hidden text-right sm:block">
-          <p className="text-sm font-semibold text-zinc-900 dark:text-white">
+          <p className="text-sm font-semibold text-foreground">
             {loading ? 'Loading…' : displayName}
           </p>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">
             {subtitle}
           </p>
         </div>

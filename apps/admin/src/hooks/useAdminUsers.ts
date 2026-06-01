@@ -70,7 +70,10 @@ export function useAdminUsers(options: {
         page: String(activePage),
         limit: String(activeLimit),
       });
-      if (activeSearch.trim()) params.set('search', activeSearch.trim());
+      if (activeSearch.trim()) {
+        params.set('search', activeSearch.trim());
+        params.set('q', activeSearch.trim());
+      }
       if (activeRole) params.set('role', activeRole);
       if (activeSegment && activeSegment !== 'all') params.set('segment', activeSegment);
 

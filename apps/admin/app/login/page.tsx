@@ -1,15 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { BookOpen, Loader2, Lock, Mail } from 'lucide-react';
+import { useActionState, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { AdminThemeToggle } from '@/components/admin-theme-toggle';
+import { requestPasswordReset, type ForgotPasswordState } from './forgot-password-action';
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [loginPending, setLoginPending] = useState(false);
+  const [resetState, resetAction, resetPending] = useActionState<
+    ForgotPasswordState | undefined,
+    FormData
+  >(requestPasswordReset, undefined);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -17,12 +24,17 @@ export default function LoginPage() {
         const response = await fetch('/api/admin/me', {
           method: 'GET',
           credentials: 'include',
+          cache: 'no-store',
         });
         const payload = await response.json();
 
         if (response.ok && payload.authenticated) {
           router.replace('/dashboard');
+          return;
         }
+
+        // Clear stale cookie so middleware does not bounce back to dashboard
+        await fetch('/api/admin/logout', { method: 'POST', credentials: 'include' });
       } catch {
         // not logged in
       } finally {
@@ -33,114 +45,159 @@ export default function LoginPage() {
     checkSession();
   }, [router]);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setError(null);
-    setLoading(true);
+    setLoginError(null);
+    setLoginPending(true);
 
     try {
       const response = await fetch('/api/admin/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password }),
         credentials: 'include',
+        cache: 'no-store',
       });
 
       const payload = await response.json();
 
-      if (!response.ok || payload?.success === false || !payload?.authenticated) {
-        setError(
+      if (!response.ok || !payload?.authenticated) {
+        setLoginError(
           payload?.message ||
-            payload?.error?.message ||
-            'Invalid admin credentials. Please use your admin email and password.',
+            'Invalid email or password. Use your Supabase admin account (role = admin).',
         );
         return;
       }
 
-      router.replace('/dashboard');
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to sign in.');
+      // Full page load so the httpOnly cookie is applied before dashboard renders
+      window.location.assign('/dashboard');
+    } catch {
+      setLoginError('Unable to sign in. Check your connection and try again.');
     } finally {
-      setLoading(false);
+      setLoginPending(false);
     }
   };
 
   if (checkingSession) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50">
-        <p className="text-sm text-zinc-600">Checking session…</p>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="animate-spin text-primary" size={32} />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4 py-10">
-      <div className="w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-10 shadow-xl">
-        <div className="mb-8 text-center">
-          <p className="text-sm uppercase tracking-[0.24em] text-blue-600">Admin Portal</p>
-          <h1 className="mt-4 text-3xl font-semibold text-zinc-900">Sign in to Admin</h1>
-          <p className="mt-2 text-sm text-zinc-600">
-            Use your admin credentials to manage books, users, and reports.
+    <div className="relative flex min-h-screen items-center justify-center bg-background px-4 py-10">
+      <div className="absolute right-4 top-4">
+        <AdminThemeToggle />
+      </div>
+
+      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
+        <div className="mb-6 text-center">
+          <div className="mx-auto mb-4 flex items-center justify-center gap-2">
+            <BookOpen className="h-8 w-8 text-accent" />
+            <span className="text-2xl font-bold text-foreground">BookNest</span>
+          </div>
+          <h1 className="text-xl font-semibold text-foreground">Admin sign in</h1>
+          <p className="mt-2 text-sm text-muted">
+            Sign in with your admin email and Supabase password.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-zinc-700">
-              Email address
+            <label htmlFor="admin-email-in-form" className="mb-1 block text-sm font-medium text-foreground">
+              Admin email
             </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-              autoComplete="email"
-              className="mt-2 w-full rounded-3xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+              <input
+                id="admin-email-in-form"
+                name="email"
+                type="email"
+                value={email}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  setLoginError(null);
+                }}
+                required
+                autoComplete="email"
+                placeholder="you@example.com"
+                className="w-full rounded-lg border border-border bg-card py-2.5 pl-10 pr-4 text-sm text-foreground outline-none transition placeholder:text-[var(--placeholder)] focus:border-accent focus:ring-1 focus:ring-accent"
+              />
+            </div>
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-zinc-700">
+            <label htmlFor="password" className="mb-1 block text-sm font-medium text-foreground">
               Password
             </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              autoComplete="current-password"
-              className="mt-2 w-full rounded-3xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+              <input
+                id="password"
+                name="password"
+                type="password"
+                value={password}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                  setLoginError(null);
+                }}
+                required
+                autoComplete="current-password"
+                placeholder="••••••••"
+                className="w-full rounded-lg border border-border bg-card py-2.5 pl-10 pr-4 text-sm text-foreground outline-none transition placeholder:text-[var(--placeholder)] focus:border-accent focus:ring-1 focus:ring-accent"
+              />
+            </div>
           </div>
 
-          {error && (
-            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {error}
+          {loginError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+              {loginError}
+            </div>
+          )}
+
+          {resetState?.success && (
+            <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 dark:border-green-900/50 dark:bg-green-950/40 dark:text-green-300">
+              {resetState.success}
+            </div>
+          )}
+
+          {resetState?.error && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300">
+              {resetState.error}
             </div>
           )}
 
           <button
             type="submit"
-            disabled={loading}
-            className="flex w-full items-center justify-center rounded-3xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={loginPending}
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loading ? 'Signing in…' : 'Sign in'}
+            {loginPending ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Signing in…
+              </>
+            ) : (
+              <>
+                <Lock size={16} />
+                Sign in
+              </>
+            )}
           </button>
         </form>
 
-        <div className="mt-8 rounded-3xl border border-zinc-200 bg-zinc-50 p-5 text-sm text-zinc-600">
-          <p className="font-medium text-zinc-900">Admin only</p>
-          <p className="mt-2">
-            Sign in with your BookNest admin account (Supabase user with{' '}
-            <span className="font-medium">role = admin</span>). The API must be running on port
-            5000.
-          </p>
-        </div>
+        <form action={resetAction} className="mt-3 text-center">
+          <input type="hidden" name="email" value={email} />
+          <button
+            type="submit"
+            disabled={resetPending || !email.trim()}
+            className="text-xs text-accent underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {resetPending ? 'Sending reset link…' : 'Forgot password?'}
+          </button>
+        </form>
       </div>
     </div>
   );

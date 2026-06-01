@@ -31,7 +31,7 @@ export function VerificationBadge({ status }: { status: UserVerificationStatus }
 
   if (status === 'inactive') {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-600 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-400">
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 text-xs font-semibold text-muted ring-1 ring-zinc-200 dark:bg-surface dark:text-muted">
         <UserX size={14} />
         {LABELS.inactive}
       </span>

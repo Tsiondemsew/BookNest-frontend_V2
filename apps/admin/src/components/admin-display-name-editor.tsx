@@ -9,7 +9,7 @@ import { useAdminSession } from '@/hooks/useAdminSession';
 import type { AdminSession } from '@/context/admin-session-context';
 
 type AdminDisplayNameEditorProps = {
-  variant?: 'card' | 'row';
+  variant?: 'card' | 'inline';
   className?: string;
 };
 
@@ -43,15 +43,15 @@ export function AdminDisplayNameEditor({
       toast('Name must be at least 2 characters', 'error');
       return;
     }
-    if (trimmed === displayName) {
+    if (trimmed === displayName.trim()) {
       setEditing(false);
       return;
     }
 
     setSaving(true);
     try {
-      const res = await fetch('/api/admin/profile', {
-        method: 'PATCH',
+      const res = await fetch('/api/admin/profile/name', {
+        method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ displayName: trimmed, display_name: trimmed }),
@@ -73,12 +73,15 @@ export function AdminDisplayNameEditor({
         throw new Error(getApiErrorMessage(payload, 'Failed to update name'));
       }
 
-      const savedName = payload.data?.user?.publicName?.trim() || trimmed;
+      patchDisplayName(trimmed);
+
       if (payload.data?.user) {
-        applySession(payload.data);
-      } else {
-        patchDisplayName(savedName);
+        applySession({
+          ...payload.data,
+          user: { ...payload.data.user, publicName: trimmed },
+        });
       }
+
       setEditing(false);
       toast('Display name updated', 'success');
     } catch (err) {
@@ -90,7 +93,13 @@ export function AdminDisplayNameEditor({
 
   if (editing) {
     return (
-      <div className={`flex items-center gap-2 ${className}`}>
+      <form
+        className={`flex flex-wrap items-center justify-center gap-2 ${variant === 'card' ? 'mt-5 w-full' : ''} ${className}`}
+        onSubmit={(e) => {
+          e.preventDefault();
+          save();
+        }}
+      >
         <input
           ref={inputRef}
           type="text"
@@ -99,37 +108,32 @@ export function AdminDisplayNameEditor({
           disabled={saving}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') save();
             if (e.key === 'Escape') cancel();
           }}
-          className={`rounded-lg border border-indigo-300 bg-white px-3 py-2 text-zinc-900 outline-none ring-indigo-100 focus:ring-2 dark:border-indigo-700 dark:bg-zinc-800 dark:text-white ${
+          className={`rounded-lg border border-accent/40 bg-card px-3 py-2 text-foreground outline-none ring-indigo-100 focus:ring-2 dark:border-accent/30 dark:bg-surface ${
             variant === 'card'
-              ? 'w-full text-center text-lg font-bold'
+              ? 'min-w-[200px] flex-1 text-center text-lg font-bold'
               : 'min-w-[180px] text-sm'
           }`}
+          aria-label="Display name"
         />
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={save}
-            disabled={saving}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
-            aria-label="Save name"
-          >
-            {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-            Save name
-          </button>
-          <button
-            type="button"
-            onClick={cancel}
-            disabled={saving}
-            className="rounded-lg border border-zinc-200 p-2 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300"
-            aria-label="Cancel"
-          >
-            <X size={16} />
-          </button>
-        </div>
-      </div>
+        <button
+          type="submit"
+          disabled={saving}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-50"
+        >
+          {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+          Save name
+        </button>
+        <button
+          type="button"
+          onClick={cancel}
+          disabled={saving}
+          className="rounded-lg border border-border px-3 py-2 text-sm text-muted hover:bg-surface dark:border-border dark:text-muted"
+        >
+          Cancel
+        </button>
+      </form>
     );
   }
 
@@ -138,15 +142,14 @@ export function AdminDisplayNameEditor({
       <button
         type="button"
         onClick={() => setEditing(true)}
-        className={`group mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg px-2 py-1 transition hover:bg-zinc-100 dark:hover:bg-zinc-800 ${className}`}
+        className={`group mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg px-2 py-1 transition hover:bg-surface dark:hover:bg-primary/90 ${className}`}
         aria-label="Edit display name"
       >
-        <span className="text-xl font-bold text-zinc-900 dark:text-white">{displayName}</span>
+        <span className="text-xl font-bold text-foreground">{displayName}</span>
         <Pencil
           size={14}
-          className="text-zinc-400 opacity-0 transition group-hover:opacity-100"
+          className="text-muted opacity-0 transition group-hover:opacity-100"
         />
-        <span className="sr-only">Click to edit and save your name</span>
       </button>
     );
   }
@@ -155,11 +158,11 @@ export function AdminDisplayNameEditor({
     <button
       type="button"
       onClick={() => setEditing(true)}
-      className={`group inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 font-medium text-zinc-900 transition hover:bg-zinc-100 dark:text-white dark:hover:bg-zinc-800 ${className}`}
+      className={`group inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 font-medium text-foreground transition hover:bg-surface dark:hover:bg-primary/90 ${className}`}
       aria-label="Edit display name"
     >
       {displayName}
-      <Pencil size={12} className="text-zinc-400 opacity-0 transition group-hover:opacity-100" />
+      <Pencil size={12} className="text-muted opacity-0 transition group-hover:opacity-100" />
     </button>
   );
 }

@@ -45,8 +45,8 @@ export function NotifyAuthorModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4 backdrop-blur-sm">
-      <div className="my-8 w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Notify author</h3>
+      <div className="my-8 w-full max-w-lg rounded-2xl bg-card p-6 shadow-2xl dark:bg-slate-900">
+        <h3 className="text-lg font-semibold text-slate-900">Notify author</h3>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
           <strong>{bookTitle}</strong>
         </p>
@@ -115,7 +115,7 @@ export function NotifyAuthorModal({
                 severity,
               })
             }
-            className="flex-1 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+            className="flex-1 rounded-xl bg-gradient-to-r from-primary to-accent py-2.5 text-sm font-semibold text-white disabled:opacity-50"
           >
             {loading ? 'Sending…' : 'Notify author'}
           </button>

@@ -14,6 +14,7 @@ type Theme = 'light' | 'dark';
 
 type ThemeContextValue = {
   theme: Theme;
+  setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
   mounted: boolean;
 };
@@ -45,6 +46,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setMounted(true);
   }, []);
 
+  const setThemeExplicit = useCallback((next: Theme) => {
+    localStorage.setItem('admin-theme', next);
+    applyTheme(next);
+    setTheme(next);
+  }, []);
+
   const toggleTheme = useCallback(() => {
     setTheme((prev) => {
       const next = prev === 'light' ? 'dark' : 'light';
@@ -55,8 +62,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ theme, toggleTheme, mounted }),
-    [theme, toggleTheme, mounted],
+    () => ({ theme, setTheme: setThemeExplicit, toggleTheme, mounted }),
+    [theme, setThemeExplicit, toggleTheme, mounted],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

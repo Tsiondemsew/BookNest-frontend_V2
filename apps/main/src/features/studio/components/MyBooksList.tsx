@@ -114,10 +114,10 @@ export function MyBooksList() {
                   <Eye size={14} /> View
                 </Link>
                 <Link
-                  href={`/studio/books/${book.id}/edit`}
-                  className="text-sm text-[#4A5568] hover:text-[#1A2A3A] transition-colors flex items-center gap-1"
+                  href={`/studio/books/${book.id}`}
+                  className="text-sm text-[#B85C38] hover:text-[#8E735B] transition-colors flex items-center gap-1 font-medium"
                 >
-                  <Edit size={14} /> Edit
+                  <Edit size={14} /> Review submission
                 </Link>
                 <button
                   onClick={() => deleteBook.mutate(book.id)}

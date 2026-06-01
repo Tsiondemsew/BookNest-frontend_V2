@@ -16,6 +16,7 @@ export type AdminSessionUser = {
   account_status?: string;
   publicName?: string;
   avatarUrl?: string | null;
+  bio?: string | null;
 };
 
 export type AdminSession = {
@@ -32,6 +33,7 @@ type AdminSessionContextValue = {
   session: AdminSession | null;
   loading: boolean;
   displayName: string;
+  bio: string;
   email: string;
   initials: string;
   avatarUrl: string | null;
@@ -40,6 +42,8 @@ type AdminSessionContextValue = {
   refresh: () => Promise<void>;
   applySession: (next: AdminSession | null) => void;
   patchDisplayName: (name: string) => void;
+  patchProfile: (name: string, bio: string | null) => void;
+  patchAvatarUrl: (url: string | null) => void;
 };
 
 const AdminSessionContext = createContext<AdminSessionContextValue | null>(null);
@@ -70,6 +74,7 @@ export function AdminSessionProvider({ children }: { children: ReactNode }) {
 
   const email = session?.user?.email ?? '';
   const displayName = session?.user?.publicName || (email ? nameFromEmail(email) : 'Admin User');
+  const bio = session?.user?.bio ?? '';
   const initials = displayName
     .split(/\s+/)
     .map((part) => part[0])
@@ -94,11 +99,41 @@ export function AdminSessionProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, []);
 
+  const patchProfile = useCallback((name: string, nextBio: string | null) => {
+    setSession((prev) =>
+      prev
+        ? {
+            ...prev,
+            user: {
+              ...prev.user,
+              publicName: name,
+              bio: nextBio,
+              avatarUrl: prev.user.avatarUrl ?? null,
+            },
+          }
+        : prev,
+    );
+    setLoading(false);
+  }, []);
+
+  const patchAvatarUrl = useCallback((url: string | null) => {
+    setSession((prev) =>
+      prev
+        ? {
+            ...prev,
+            user: { ...prev.user, avatarUrl: url },
+          }
+        : prev,
+    );
+    setLoading(false);
+  }, []);
+
   const value = useMemo(
     () => ({
       session,
       loading,
       displayName,
+      bio,
       email,
       initials,
       avatarUrl: session?.user?.avatarUrl ?? null,
@@ -107,8 +142,10 @@ export function AdminSessionProvider({ children }: { children: ReactNode }) {
       refresh: loadSession,
       applySession,
       patchDisplayName,
+      patchProfile,
+      patchAvatarUrl,
     }),
-    [session, loading, displayName, email, initials, loadSession, applySession, patchDisplayName],
+    [session, loading, displayName, bio, email, initials, loadSession, applySession, patchDisplayName, patchProfile, patchAvatarUrl],
   );
 
   return <AdminSessionContext.Provider value={value}>{children}</AdminSessionContext.Provider>;

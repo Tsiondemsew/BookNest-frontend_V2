@@ -1,26 +1,14 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { backendUrl } from '@/lib/api';
+import { fetchAdminBackend } from '@/lib/admin-backend-fetch';
+import { getClearCookieOptions } from '@/lib/auth-cookie';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('token')?.value;
-
-  if (token) {
-    try {
-      await fetch(backendUrl('/api/auth/logout'), {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Cookie: `token=${token}`,
-        },
-        cache: 'no-store',
-      });
-    } catch {
-      // still clear local cookies
-    }
+  try {
+    await fetchAdminBackend('/api/auth/logout', { method: 'POST' });
+  } catch {
+    // still clear local cookies
   }
 
   const response = NextResponse.json({
@@ -29,19 +17,8 @@ export async function POST() {
     message: 'Logged out successfully.',
   });
 
-  response.cookies.set('token', '', {
-    httpOnly: true,
-    path: '/',
-    maxAge: 0,
-    sameSite: 'lax',
-  });
-
-  response.cookies.set('admin-session', '', {
-    httpOnly: true,
-    path: '/',
-    maxAge: 0,
-    sameSite: 'lax',
-  });
+  response.cookies.set('token', '', getClearCookieOptions());
+  response.cookies.set('admin-session', '', getClearCookieOptions());
 
   return response;
 }

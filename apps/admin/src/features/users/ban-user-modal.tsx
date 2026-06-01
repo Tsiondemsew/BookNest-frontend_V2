@@ -34,20 +34,20 @@ export function BanUserModal({
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <button type="button" className="absolute inset-0 bg-black/50" aria-label="Close" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900">
+      <div className="relative w-full max-w-md rounded-2xl bg-card p-6 shadow-xl dark:bg-primary">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h3 className="text-lg font-bold text-zinc-900 dark:text-white">{title}</h3>
-            <p className="mt-1 text-sm text-zinc-500">
+            <h3 className="text-lg font-bold text-foreground">{title}</h3>
+            <p className="mt-1 text-sm text-muted">
               Restrict access for <strong>{userName}</strong>
             </p>
           </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-100">
+          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-muted hover:bg-surface">
             <X size={18} />
           </button>
         </div>
 
-        <label className="mt-5 block text-xs font-bold uppercase tracking-wider text-zinc-500">
+        <label className="mt-5 block text-xs font-bold uppercase tracking-wider text-muted">
           Ban reason{requiresReason ? ' *' : ' (optional)'}
         </label>
         <textarea
@@ -59,17 +59,17 @@ export function BanUserModal({
               ? 'Explain why this author account is being suspended…'
               : 'Optional note for internal records…'
           }
-          className="mt-2 w-full rounded-xl border border-zinc-200 p-3 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 dark:border-zinc-700 dark:bg-zinc-800"
+          className="mt-2 w-full rounded-xl border border-border p-3 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 dark:border-border dark:bg-surface"
         />
         {requiresReason && (
-          <p className="mt-1 text-xs text-zinc-500">Minimum 5 characters required for authors.</p>
+          <p className="mt-1 text-xs text-muted">Minimum 5 characters required for authors.</p>
         )}
 
         <div className="mt-6 flex gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 rounded-xl border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-700"
+            className="flex-1 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-muted"
           >
             Cancel
           </button>

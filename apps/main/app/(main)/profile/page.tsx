@@ -7,6 +7,8 @@ import { apiClient } from '@/lib/api/client';
 import { followApi } from '@/lib/api/follow';
 import { Camera, Save, Loader2, TrendingUp, Globe, Bell, Shield, User, Mail, MapPin, Link as LinkIcon } from 'lucide-react';
 
+const BIO_MAX = 100;
+
 interface UserProfile {
   id: string;
   email: string;
@@ -45,7 +47,7 @@ interface FollowUser {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, fetchMe } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -56,6 +58,7 @@ export default function ProfilePage() {
   const [isLoadingFollows, setIsLoadingFollows] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'privacy' | 'notifications'>('profile');
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Form state
@@ -84,8 +87,17 @@ export default function ProfilePage() {
 
   const fetchProfile = async () => {
     try {
-      const response = await apiClient.get<{ success: boolean; data: UserProfile }>('/api/users/profile');
-      const data = response.data;
+      const response = await apiClient.get<{
+        success: boolean;
+        data: UserProfile | { id: string; email: string; role: string; profile: UserProfile['profile'] };
+      }>('/api/users/profile');
+      const raw = response.data;
+      const data: UserProfile = {
+        id: 'id' in raw && raw.id ? raw.id : user?.id || '',
+        email: 'email' in raw ? raw.email : user?.email || '',
+        role: 'role' in raw ? raw.role : user?.role || 'reader',
+        profile: ('profile' in raw ? raw.profile : raw) as UserProfile['profile'],
+      };
       setProfile(data);
       
       // Populate form
@@ -135,61 +147,88 @@ export default function ProfilePage() {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Image must be less than 5MB');
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Image must be less than 2MB');
       return;
     }
 
+    const preview = URL.createObjectURL(file);
+    setAvatarPreview(preview);
     setUploadingAvatar(true);
-    const formData = new FormData();
-    formData.append('avatar', file);
+
+    const uploadData = new FormData();
+    uploadData.append('avatar', file);
 
     try {
-      const response = await apiClient.post<{ success: boolean; data: { avatar_url: string } }>(
-        '/api/users/avatar',
-        formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
+      const response = await apiClient.post<{
+        success: boolean;
+        data: { avatar_url: string; user?: { avatarUrl?: string | null } };
+      }>('/api/users/profile/avatar', uploadData);
+
+      const avatarUrl = response.data?.avatar_url || response.data?.user?.avatarUrl || null;
+
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              profile: { ...prev.profile, avatar_url: avatarUrl ?? prev.profile?.avatar_url },
+            }
+          : null,
       );
-      
-      setProfile(prev => prev ? {
-        ...prev,
-        profile: { ...prev.profile, avatar_url: response.data.avatar_url }
-      } : null);
-      
-      setSuccessMessage('Avatar updated successfully');
+
+      if (avatarUrl) {
+        setAvatarPreview(null);
+        URL.revokeObjectURL(preview);
+      }
+
+      setSuccessMessage('Profile photo updated');
       setTimeout(() => setSuccessMessage(null), 3000);
+      await fetchMe();
     } catch (error) {
       console.error('Failed to upload avatar:', error);
-      alert('Failed to upload avatar');
+      setAvatarPreview(null);
+      URL.revokeObjectURL(preview);
+      alert('Failed to upload profile photo');
     } finally {
       setUploadingAvatar(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
+  const shownAvatar =
+    avatarPreview || profile?.profile?.avatar_url || null;
+
   const handleSave = async () => {
+    const trimmedBio = formData.bio.trim();
+    if (trimmedBio.length > BIO_MAX) {
+      alert(`Bio must be ${BIO_MAX} characters or less`);
+      return;
+    }
+
     setIsSaving(true);
     try {
+      const previousAvatar = profile?.profile?.avatar_url ?? null;
+
       await apiClient.put('/api/users/profile', {
-        display_name: formData.display_name,
-        pen_name: formData.pen_name,
-        company_name: formData.company_name,
-        bio: formData.bio,
-        website_url: formData.website_url,
-        location: formData.location,
-        privacy: {
-          is_public: formData.is_public,
-          show_email: formData.show_email,
-          show_reading_stats: formData.show_reading_stats,
-        },
-        notifications: {
-          email_notifications: formData.email_notifications,
-          push_notifications: formData.push_notifications,
-          marketing_emails: formData.marketing_emails,
-        },
+        display_name: formData.display_name.trim(),
+        pen_name: formData.pen_name.trim(),
+        company_name: formData.company_name.trim(),
+        bio: trimmedBio || null,
+        website_url: formData.website_url.trim() || null,
       });
-      
+
+      setFormData((prev) => ({ ...prev, bio: trimmedBio }));
       setSuccessMessage('Profile updated successfully');
       setTimeout(() => setSuccessMessage(null), 3000);
+      await fetchProfile();
+      if (previousAvatar) {
+        setProfile((prev) =>
+          prev && !prev.profile?.avatar_url
+            ? { ...prev, profile: { ...prev.profile, avatar_url: previousAvatar } }
+            : prev,
+        );
+      }
+      await fetchMe();
     } catch (error) {
       console.error('Failed to save profile:', error);
       alert('Failed to save profile');
@@ -230,8 +269,8 @@ export default function ProfilePage() {
         <div className="flex items-center gap-6">
           <div className="relative flex-shrink-0">
             <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#2C3E50] to-[#B85C38] flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
-              {profile?.profile?.avatar_url ? (
-                <img src={profile.profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+              {shownAvatar ? (
+                <img src={shownAvatar} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
                 formData.display_name?.charAt(0)?.toUpperCase() || 
                 formData.pen_name?.charAt(0)?.toUpperCase() || 
@@ -365,12 +404,17 @@ export default function ProfilePage() {
             <label className="block text-sm font-medium text-[#1A2A3A] mb-1">Bio</label>
             <textarea
               value={formData.bio}
-              onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, bio: e.target.value.slice(0, BIO_MAX) }))
+              }
+              maxLength={BIO_MAX}
               rows={4}
               className="w-full px-3 py-2 border border-[#E8E2D9] rounded-lg focus:outline-none focus:border-[#B85C38] text-black placeholder-[#b2958a] resize-none"
               placeholder="Tell us about yourself..."
             />
-            <p className="text-xs text-[#4A5568] mt-1">{formData.bio.length} characters</p>
+            <p className="text-xs text-[#4A5568] mt-1">
+              {formData.bio.length}/{BIO_MAX} characters
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

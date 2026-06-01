@@ -161,12 +161,19 @@ export function useApprovalBooks(options: UseApprovalBooksOptions) {
     return payload.data as PendingBook;
   };
 
-  const approveBook = async (id: string) => {
+  const approveBook = async (
+    id: string,
+    options?: { skipValidation?: boolean; approveChanges?: boolean; skipContent?: boolean },
+  ) => {
     const res = await fetch(`/api/admin/books/${id}/approve`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({}),
+      body: JSON.stringify({
+        skipValidation: options?.skipValidation === true,
+        approveChanges: options?.approveChanges === true,
+        skipContent: options?.skipContent === true,
+      }),
     });
     const payload = await res.json();
     if (!res.ok || !payload.success) {

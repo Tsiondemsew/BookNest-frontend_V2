@@ -79,6 +79,7 @@ export default function ReaderPage() {
         bookFormatId={selectedFormat.id}
         bookTitle={book.title}
         bookAuthor={book.author_name}
+        bookDescription={book.description}
         coverImage={book.cover_image_url}
         audioUrl={fileUrl}
         totalDuration={selectedFormat.duration_sec || 3600}

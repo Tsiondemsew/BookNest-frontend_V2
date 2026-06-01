@@ -1,26 +1,44 @@
 'use client';
 
-import {
-  Activity,
-  BarChart3,
-  ChevronDown,
-  Download,
-  FileText,
-  RefreshCw,
-  TrendingDown,
-  TrendingUp,
-} from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { ChevronDown, Download, RefreshCw } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AdminTopHeader } from '@/components/admin-top-header';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { SaleFormatToggle } from '@/components/sale-format-toggle';
 import { useAdminReports } from '@/hooks/useAdminReports';
-import { RevenueTrendChart } from './revenue-trend-chart';
-import type { ReportTransaction, TxStatus } from './types';
+import { matchesSaleFormat, parseSaleFormatParam, type SaleFormatFilter } from '@/lib/sale-format';
+import {
+  formatPeriodLabel,
+  isValidDateRange,
+  parsePeriodFromSearchParams,
+  periodFromCustomRange,
+  periodFromPreset,
+  toReportsQuery,
+  todayDateInput,
+  type AppliedReportPeriod,
+  type ReportDaysPreset,
+} from '@/lib/report-period';
+import { ErrorLogsSection } from './error-logs-section';
+import { OperationalReportsSection } from './operational-reports-section';
+import { RevenueReportsSection } from './revenue-reports-section';
+import { UserGrowthSection } from './user-growth-section';
+import type { ReportTransaction } from './types';
 
-const DATE_RANGES = [
-  { label: 'Last 7 Days', days: 7 },
-  { label: 'Last 30 Days', days: 30 },
-  { label: 'Last 90 Days', days: 90 },
+const DATE_PRESETS: { label: string; days: ReportDaysPreset }[] = [
+  { label: 'Last 7 days', days: 7 },
+  { label: 'Last 30 days', days: 30 },
+  { label: 'Last 90 days', days: 90 },
 ];
+
+function ReportSectionTitle({ title, subtitle }: { title: string; subtitle?: string }) {
+  return (
+    <div className="border-b border-border pb-3">
+      <h2 className="text-xl font-bold tracking-tight text-foreground">{title}</h2>
+      {subtitle ? <p className="mt-1 text-sm text-muted">{subtitle}</p> : null}
+    </div>
+  );
+}
 
 const CATEGORIES = [
   { id: 'all', label: 'All Reports' },
@@ -30,90 +48,114 @@ const CATEGORIES = [
   { id: 'error-logs', label: 'Error Logs' },
 ] as const;
 
-function MetricCard({
-  label,
-  value,
-  changeLabel,
-  change,
-  loading,
-}: {
-  label: string;
-  value: string;
-  changeLabel: string;
-  change: number;
-  loading: boolean;
-}) {
-  const positive = change >= 0;
-  const isLatency = label === 'System Latency';
-  const good = isLatency ? change < 0 : positive;
-
-  return (
-    <div className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">{label}</p>
-      <p className="mt-2 text-3xl font-bold text-zinc-900 dark:text-white">
-        {loading ? '—' : value}
-      </p>
-      <div
-        className={`mt-2 inline-flex items-center gap-1 text-xs font-semibold ${
-          good ? 'text-emerald-600' : change === 0 ? 'text-zinc-500' : 'text-red-600'
-        }`}
-      >
-        {change > 0 ? <TrendingUp size={14} /> : change < 0 ? <TrendingDown size={14} /> : null}
-        {loading ? '—' : changeLabel}
-      </div>
-    </div>
-  );
-}
-
-function StatusDot({ status }: { status: TxStatus }) {
-  const colors: Record<TxStatus, string> = {
-    cleared: 'bg-emerald-500',
-    pending: 'bg-amber-400',
-    refunded: 'bg-zinc-400',
-  };
-  const labels: Record<TxStatus, string> = {
-    cleared: 'Cleared',
-    pending: 'Pending',
-    refunded: 'Refunded',
-  };
-  return (
-    <span className="inline-flex items-center gap-2 text-xs font-semibold capitalize text-zinc-700 dark:text-zinc-300">
-      <span className={`h-2 w-2 rounded-full ${colors[status]}`} />
-      {labels[status]}
-    </span>
-  );
-}
-
-function EngagementBar({ label, value, max, unit }: { label: string; value: number; max: number; unit: string }) {
-  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
-  return (
-    <div>
-      <div className="mb-2 flex items-center justify-between text-sm">
-        <span className="font-medium text-zinc-700 dark:text-zinc-300">{label}</span>
-        <span className="text-zinc-500">
-          {value.toLocaleString()} {unit}
-        </span>
-      </div>
-      <div className="h-2.5 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-600 transition-all"
-          style={{ width: `${Math.max(pct, 8)}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
 export function ReportsCenter() {
-  const [searchInput, setSearchInput] = useState('');
-  const [days, setDays] = useState(30);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('search') ?? '');
+  const debouncedSearch = useDebouncedValue(searchInput, 400);
+  const [saleFormat, setSaleFormat] = useState<SaleFormatFilter>('all');
+  const [appliedPeriod, setAppliedPeriod] = useState<AppliedReportPeriod>(() =>
+    periodFromPreset(30),
+  );
+  const [selectedPreset, setSelectedPreset] = useState<ReportDaysPreset | 'custom'>(30);
+  const [startDate, setStartDate] = useState(() => periodFromPreset(30).from);
+  const [endDate, setEndDate] = useState(() => todayDateInput());
+  const [dateError, setDateError] = useState<string | null>(null);
+  const [appliedFormat, setAppliedFormat] = useState<SaleFormatFilter>('all');
   const [rangeOpen, setRangeOpen] = useState(false);
   const [category, setCategory] = useState<(typeof CATEGORIES)[number]['id']>('all');
-  const [reportType, setReportType] = useState('summary');
+  const [growthFetchKey, setGrowthFetchKey] = useState(0);
+  const [errorLogsExport, setErrorLogsExport] = useState<(() => Promise<void>) | null>(null);
 
-  const { data, loading, error, refetch } = useAdminReports(days);
+  useEffect(() => {
+    const c = searchParams.get('category');
+    if (c === 'revenue' || c === 'operational' || c === 'user-growth' || c === 'error-logs' || c === 'all') {
+      setCategory(c);
+      if (c === 'user-growth') {
+        setGrowthFetchKey((k) => k + 1);
+      }
+    }
+    const formatFromUrl = parseSaleFormatParam(searchParams.get('format'));
+    setSaleFormat(formatFromUrl);
+    setAppliedFormat(formatFromUrl);
 
-  const rangeLabel = DATE_RANGES.find((r) => r.days === days)?.label ?? 'Last 30 Days';
+    const period = parsePeriodFromSearchParams(searchParams);
+    setAppliedPeriod(period);
+    setStartDate(period.from);
+    setEndDate(period.to);
+    setSelectedPreset(period.preset);
+  }, [searchParams]);
+
+  const applyFormatFilter = useCallback(
+    (format: SaleFormatFilter) => {
+      setSaleFormat(format);
+      setAppliedFormat(format);
+      const p = new URLSearchParams(searchParams.toString());
+      if (format === 'all') p.delete('format');
+      else p.set('format', format);
+      router.replace(`/dashboard/reports?${p.toString()}`, { scroll: false });
+    },
+    [router, searchParams],
+  );
+
+  const setCategoryAndUrl = (id: (typeof CATEGORIES)[number]['id']) => {
+    setCategory(id);
+    if (id === 'user-growth' || id === 'all') {
+      setGrowthFetchKey((k) => k + 1);
+    }
+    const p = new URLSearchParams(searchParams.toString());
+    if (id === 'all') p.delete('category');
+    else p.set('category', id);
+    router.replace(`/dashboard/reports?${p.toString()}`, { scroll: false });
+  };
+
+  const reportsQuery = useMemo(
+    () => toReportsQuery(appliedPeriod, appliedFormat),
+    [appliedPeriod, appliedFormat],
+  );
+
+  const { data, loading, error, refetch } = useAdminReports(reportsQuery);
+  const allReportsView = category === 'all';
+  const showRevenuePanel = category === 'revenue' || allReportsView;
+  const showFormatFilter = showRevenuePanel;
+  const revenueOnly = category === 'revenue';
+  const operationalOnly = category === 'operational';
+  const errorLogsOnly = category === 'error-logs';
+  const userGrowthOnly = category === 'user-growth';
+  const rangeLabel = formatPeriodLabel(appliedPeriod);
+
+  const selectPreset = (presetDays: ReportDaysPreset) => {
+    const period = periodFromPreset(presetDays);
+    setSelectedPreset(presetDays);
+    setStartDate(period.from);
+    setEndDate(period.to);
+    setDateError(null);
+  };
+
+  const handleApplyFilters = () => {
+    if (!isValidDateRange(startDate, endDate)) {
+      setDateError('End date must be on or after the start date.');
+      return;
+    }
+    setDateError(null);
+    const period = periodFromCustomRange(startDate, endDate);
+    setAppliedPeriod(period);
+    setAppliedFormat(saleFormat);
+    setSaleFormat(saleFormat);
+    setRangeOpen(false);
+    setSelectedPreset('custom');
+
+    const p = new URLSearchParams(searchParams.toString());
+    p.set('preset', 'custom');
+    p.set('from', period.from);
+    p.set('to', period.to);
+    p.set('days', String(period.days));
+    router.replace(`/dashboard/reports?${p.toString()}`, { scroll: false });
+
+    if (category === 'user-growth' || allReportsView) {
+      setGrowthFetchKey((k) => k + 1);
+    }
+  };
 
   const filteredTransactions = useMemo(() => {
     const rows = data?.financial.transactions ?? [];
@@ -121,15 +163,37 @@ export function ReportsCenter() {
     let filtered = rows;
 
     if (category === 'revenue') {
-      filtered = filtered.filter((t) => t.category === 'revenue');
+      filtered = filtered.filter(
+        (t) => t.category === 'revenue' && (t.status === 'cleared' || !t.status),
+      );
     } else if (category === 'operational') {
       filtered = filtered.filter((t) => t.category === 'operational' || t.status === 'refunded');
-    } else if (category === 'user-growth') {
-      filtered = filtered.filter((t) => t.source.toLowerCase().includes('subscription'));
-    } else if (category === 'error-logs') {
-      filtered = filtered.filter((t) => t.status === 'refunded');
     }
 
+    if (appliedFormat !== 'all') {
+      filtered = filtered.filter((t) => matchesSaleFormat(t.format, appliedFormat));
+    }
+
+    if (q) {
+      filtered = filtered.filter(
+        (t) =>
+          t.id.toLowerCase().includes(q) ||
+          t.source.toLowerCase().includes(q) ||
+          t.date.toLowerCase().includes(q) ||
+          (t.format || '').toLowerCase().includes(q) ||
+          (t.customer || '').toLowerCase().includes(q),
+      );
+    }
+
+    return filtered;
+  }, [data, category, searchInput, appliedFormat]);
+
+  const operationalTransactions = useMemo(() => {
+    const rows = data?.financial.transactions ?? [];
+    const q = searchInput.trim().toLowerCase();
+    let filtered = rows.filter(
+      (t) => t.category === 'operational' || t.status === 'refunded' || t.status === 'pending',
+    );
     if (q) {
       filtered = filtered.filter(
         (t) =>
@@ -138,17 +202,43 @@ export function ReportsCenter() {
           t.date.toLowerCase().includes(q),
       );
     }
-
     return filtered;
-  }, [data, category, searchInput]);
+  }, [data, searchInput]);
 
-  const maxEngagement = Math.max(
-    data?.usability.searchIntent.value ?? 0,
-    data?.usability.assetDownloads.value ?? 0,
-    1,
-  );
+  const registerErrorLogsExport = useCallback((handler: (() => Promise<void>) | null) => {
+    setErrorLogsExport(() => handler);
+  }, []);
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    if (errorLogsOnly && errorLogsExport) {
+      await errorLogsExport();
+      return;
+    }
+
+    if (operationalOnly && data?.operational) {
+      const op = data.operational;
+      const lines = [
+        'Metric,Value',
+        `Active users (24h),${op.metrics.activeUsers24h}`,
+        `Pending moderation,${op.metrics.pendingModeration}`,
+        `Unresolved errors,${op.errorLogs.unresolved}`,
+        `Suspended accounts,${op.metrics.suspendedAccounts}`,
+        `Failed payments,${op.metrics.failedPayments}`,
+        `Pending payments,${op.metrics.pendingPayments}`,
+        `Error logs total,${op.errorLogs.total}`,
+        `Errors (level),${op.errorLogs.byLevel.error}`,
+        `Warnings (level),${op.errorLogs.byLevel.warn}`,
+      ];
+      const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `operational-report-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
+
     const rows = filteredTransactions;
     if (!rows.length) return;
     const header = 'Transaction ID,Source,Amount,Date,Status\n';
@@ -167,7 +257,7 @@ export function ReportsCenter() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA] dark:bg-zinc-950">
+    <div className="min-h-screen bg-background">
       <AdminTopHeader
         searchPlaceholder="Search reports, logs, or transactions..."
         searchValue={searchInput}
@@ -178,52 +268,170 @@ export function ReportsCenter() {
       <div className="px-8 py-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
               Reports Center
             </h1>
-            <p className="mt-2 max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
-              Audit and visualize system-wide performance and fiscal metrics.
+            <p className="mt-2 max-w-2xl text-sm text-muted">
+              {allReportsView
+                ? 'Full system overview — revenue, operations, user growth, error logs, and completed sales in one place.'
+                : 'Audit system performance and book sales revenue from completed purchases.'}
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-3">
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setRangeOpen((o) => !o)}
-                className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-              >
-                {rangeLabel}
-                <ChevronDown size={16} />
-              </button>
-              {rangeOpen && (
-                <div className="absolute right-0 z-10 mt-2 w-44 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
-                  {DATE_RANGES.map((r) => (
-                    <button
-                      key={r.days}
-                      type="button"
-                      onClick={() => {
-                        setDays(r.days);
-                        setRangeOpen(false);
-                      }}
-                      className={`block w-full px-4 py-2.5 text-left text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 ${
-                        days === r.days ? 'font-semibold text-indigo-600' : 'text-zinc-700 dark:text-zinc-300'
-                      }`}
-                    >
-                      {r.label}
-                    </button>
-                  ))}
-                </div>
-              )}
+          <button
+            type="button"
+            onClick={() => void handleExport()}
+            disabled={
+              errorLogsOnly
+                ? !errorLogsExport
+                : operationalOnly
+                  ? loading || !data?.operational
+                  : loading || !filteredTransactions.length
+            }
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-primary/90 disabled:opacity-50"
+          >
+            <Download size={18} />
+            {errorLogsOnly
+              ? 'Export Error Logs'
+              : operationalOnly
+                ? 'Export Operational'
+                : 'Export Data'}
+          </button>
+        </div>
+
+        <div className="mt-6 rounded-2xl border border-border bg-card p-5 shadow-sm dark:border-border dark:bg-primary">
+          <div className="flex flex-col gap-5">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-muted">Filter by Category</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setCategoryAndUrl(cat.id)}
+                    className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
+                      category === cat.id
+                        ? 'bg-primary text-white shadow-md'
+                        : 'border border-border bg-surface text-muted hover:bg-surface dark:border-border dark:bg-surface dark:text-muted'
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={handleExport}
-              disabled={loading || !filteredTransactions.length}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#4f46e5] px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-indigo-700 disabled:opacity-50"
-            >
-              <Download size={18} />
-              Export Data
-            </button>
+
+            <div className="flex flex-col gap-4 border-t border-border pt-5 lg:flex-row lg:flex-wrap lg:items-end lg:justify-between dark:border-border">
+              <div className="flex flex-wrap items-end gap-4">
+                {showFormatFilter && (
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted">Format</p>
+                    <SaleFormatToggle
+                      className="mt-2"
+                      value={appliedFormat}
+                      disabled={loading}
+                      onChange={applyFormatFilter}
+                    />
+                  </div>
+                )}
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted">Report Period</p>
+                  <div className="relative mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setRangeOpen((o) => !o)}
+                      className="inline-flex min-w-[180px] max-w-full items-center justify-between gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-medium text-foreground"
+                    >
+                      <span className="truncate">{rangeLabel}</span>
+                      <ChevronDown size={16} className="shrink-0 text-muted" />
+                    </button>
+                    {rangeOpen && (
+                      <div className="absolute left-0 z-20 mt-2 w-72 overflow-hidden rounded-xl border border-border bg-card p-3 shadow-lg dark:border-border dark:bg-primary">
+                        <p className="px-1 text-[10px] font-bold uppercase tracking-wider text-muted">
+                          Quick range
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {DATE_PRESETS.map((r) => (
+                            <button
+                              key={r.days}
+                              type="button"
+                              onClick={() => selectPreset(r.days)}
+                              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                                selectedPreset === r.days
+                                  ? 'bg-primary text-white'
+                                  : 'border border-border bg-surface text-muted hover:bg-card'
+                              }`}
+                            >
+                              {r.label}
+                            </button>
+                          ))}
+                        </div>
+                        <p className="mt-4 px-1 text-[10px] font-bold uppercase tracking-wider text-muted">
+                          Specific dates
+                        </p>
+                        <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                          <label className="block text-xs font-medium text-muted">
+                            Start date
+                            <input
+                              type="date"
+                              value={startDate}
+                              max={endDate}
+                              onChange={(e) => {
+                                setStartDate(e.target.value);
+                                setSelectedPreset('custom');
+                                setDateError(null);
+                              }}
+                              className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+                            />
+                          </label>
+                          <label className="block text-xs font-medium text-muted">
+                            End date
+                            <input
+                              type="date"
+                              value={endDate}
+                              min={startDate}
+                              max={todayDateInput()}
+                              onChange={(e) => {
+                                setEndDate(e.target.value);
+                                setSelectedPreset('custom');
+                                setDateError(null);
+                              }}
+                              className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+                            />
+                          </label>
+                        </div>
+                        {dateError && (
+                          <p className="mt-2 text-xs font-medium text-red-600">{dateError}</p>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setRangeOpen(false)}
+                          className="mt-3 w-full rounded-lg bg-primary/10 py-2 text-xs font-semibold text-primary hover:bg-primary/15"
+                        >
+                          Done
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+
+              <div className="flex flex-col items-stretch gap-1 sm:items-end">
+                {dateError && (
+                  <p className="text-xs font-medium text-red-600">{dateError}</p>
+                )}
+                <button
+                  type="button"
+                  onClick={handleApplyFilters}
+                  disabled={loading}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-primary/90 disabled:opacity-50"
+                >
+                  <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+                  Apply Filters
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -236,249 +444,83 @@ export function ReportsCenter() {
           </div>
         )}
 
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard
-            label="Total Revenue"
-            value={data?.metrics.totalRevenue.formatted ?? String(data?.metrics.totalRevenue.value ?? 0)}
-            changeLabel={data?.metrics.totalRevenue.changeLabel ?? '—'}
-            change={data?.metrics.totalRevenue.change ?? 0}
-            loading={loading}
-          />
-          <MetricCard
-            label="Active Sessions"
-            value={(data?.metrics.activeSessions.value ?? 0).toLocaleString()}
-            changeLabel={data?.metrics.activeSessions.changeLabel ?? '—'}
-            change={data?.metrics.activeSessions.change ?? 0}
-            loading={loading}
-          />
-          <MetricCard
-            label="System Latency"
-            value={data?.metrics.systemLatency.formatted ?? '42ms'}
-            changeLabel={data?.metrics.systemLatency.changeLabel ?? '—'}
-            change={data?.metrics.systemLatency.change ?? 0}
-            loading={loading}
-          />
-          <MetricCard
-            label="Failed Auth"
-            value={String(data?.metrics.failedAuth.value ?? 0)}
-            changeLabel={data?.metrics.failedAuth.changeLabel ?? '—'}
-            change={data?.metrics.failedAuth.change ?? 0}
-            loading={loading}
-          />
-        </div>
+        {showRevenuePanel && (
+          <section className={allReportsView ? 'mt-8 space-y-4' : 'mt-8'}>
+            {allReportsView && (
+              <ReportSectionTitle
+                title="Revenue Reports"
+                subtitle={`Sales, commission, and trends for ${rangeLabel.toLowerCase()}`}
+              />
+            )}
+            <RevenueReportsSection
+              data={data}
+              loading={loading}
+              transactions={filteredTransactions}
+              formatFilter={appliedFormat}
+              onFormatSelect={applyFormatFilter}
+            />
+          </section>
+        )}
 
-        <div className="mt-8 grid gap-6 xl:grid-cols-5">
-          <div className="xl:col-span-3">
-            <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 px-6 py-4 dark:border-zinc-800">
-                <div className="flex items-center gap-2">
-                  <FileText size={18} className="text-indigo-600" />
-                  <h2 className="text-base font-bold text-zinc-900 dark:text-white">Financial Reports</h2>
-                </div>
-                <div className="flex gap-4 text-xs font-semibold text-indigo-600">
-                  <button type="button" className="hover:underline">
-                    Detailed Logs
-                  </button>
-                  <button type="button" className="hover:underline">
-                    Tax Audit
-                  </button>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[560px] text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-zinc-100 bg-zinc-50/80 text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/50">
-                      <th className="px-6 py-3">Transaction ID</th>
-                      <th className="px-4 py-3">Source</th>
-                      <th className="px-4 py-3">Amount</th>
-                      <th className="px-4 py-3">Date</th>
-                      <th className="px-4 py-3">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loading &&
-                      Array.from({ length: 4 }).map((_, i) => (
-                        <tr key={i} className="border-b border-zinc-100 dark:border-zinc-800">
-                          <td colSpan={5} className="px-6 py-4">
-                            <div className="h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
-                          </td>
-                        </tr>
-                      ))}
-
-                    {!loading && filteredTransactions.length === 0 && (
-                      <tr>
-                        <td colSpan={5} className="px-6 py-10 text-center text-zinc-500">
-                          No transactions match your filters.
-                        </td>
-                      </tr>
-                    )}
-
-                    {!loading &&
-                      filteredTransactions.map((tx) => (
-                        <tr
-                          key={tx.id}
-                          className="border-b border-zinc-100 transition hover:bg-zinc-50/50 dark:border-zinc-800 dark:hover:bg-zinc-800/30"
-                        >
-                          <td className="px-6 py-3.5 font-mono text-xs font-semibold text-zinc-800 dark:text-zinc-200">
-                            #{tx.id}
-                          </td>
-                          <td className="px-4 py-3.5 text-zinc-700 dark:text-zinc-300">{tx.source}</td>
-                          <td
-                            className={`px-4 py-3.5 font-semibold ${
-                              tx.amount < 0 ? 'text-zinc-500' : 'text-zinc-900 dark:text-white'
-                            }`}
-                          >
-                            {tx.amount < 0 ? `(${tx.amountFormatted.replace('-', '')})` : tx.amountFormatted}
-                          </td>
-                          <td className="px-4 py-3.5 text-zinc-600 dark:text-zinc-400">{tx.date}</td>
-                          <td className="px-4 py-3.5">
-                            <StatusDot status={tx.status} />
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="border-t border-zinc-100 px-6 py-5 dark:border-zinc-800">
-                <div className="mb-4 flex items-center justify-between">
-                  <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-                    Revenue Trend ({days}D)
-                  </p>
-                  <span
-                    className={`text-xs font-bold ${
-                      (data?.financial.trendChange ?? '').startsWith('-')
-                        ? 'text-red-600'
-                        : 'text-emerald-600'
-                    }`}
-                  >
-                    {loading ? '—' : data?.financial.trendChange}
-                  </span>
-                </div>
-                <RevenueTrendChart data={data?.financial.revenueTrend ?? []} loading={loading} />
-                {!loading && data?.financial.trendSummary && (
-                  <p className="mt-3 text-xs text-zinc-500">
-                    Period total:{' '}
-                    <span className="font-semibold text-zinc-700 dark:text-zinc-300">
-                      {data.financial.trendSummary}
-                    </span>
-                  </p>
-                )}
-              </div>
-            </div>
+        {allReportsView && (
+          <div className="mt-10 space-y-10">
+            <section className="space-y-4">
+              <ReportSectionTitle
+                title="Operational Reports"
+                subtitle={`Platform health, moderation, and payments for ${rangeLabel.toLowerCase()}`}
+              />
+              <OperationalReportsSection
+                data={data}
+                loading={loading}
+                days={appliedPeriod.days}
+                transactions={operationalTransactions}
+                embedded
+              />
+            </section>
+            <section className="space-y-4">
+              <ReportSectionTitle
+                title="User Growth"
+                subtitle="Signups and active users by role"
+              />
+              <UserGrowthSection period={appliedPeriod} fetchKey={growthFetchKey} embedded />
+            </section>
+            <section className="space-y-4">
+              <ReportSectionTitle
+                title="Error Logs"
+                subtitle="System errors and warnings"
+              />
+              <ErrorLogsSection period={appliedPeriod} search={debouncedSearch} embedded />
+            </section>
           </div>
+        )}
 
-          <div className="xl:col-span-2">
-            <div className="h-full rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-              <div className="flex items-center gap-2">
-                <BarChart3 size={18} className="text-violet-600" />
-                <h2 className="text-base font-bold text-zinc-900 dark:text-white">Usability Reports</h2>
-              </div>
+        {errorLogsOnly && (
+          <ErrorLogsSection
+            period={appliedPeriod}
+            search={debouncedSearch}
+            onRegisterExport={registerErrorLogsExport}
+          />
+        )}
 
-              <div className="mt-6 space-y-5">
-                <EngagementBar
-                  label={data?.usability.searchIntent.label ?? 'Search Intent'}
-                  value={data?.usability.searchIntent.value ?? 0}
-                  max={maxEngagement}
-                  unit={data?.usability.searchIntent.unit ?? 'ops'}
-                />
-                <EngagementBar
-                  label={data?.usability.assetDownloads.label ?? 'Asset Downloads'}
-                  value={data?.usability.assetDownloads.value ?? 0}
-                  max={maxEngagement}
-                  unit={data?.usability.assetDownloads.unit ?? 'ops'}
-                />
-              </div>
+        {userGrowthOnly && (
+          <UserGrowthSection period={appliedPeriod} fetchKey={growthFetchKey} />
+        )}
 
-              <p className="mb-3 mt-8 text-xs font-bold uppercase tracking-wider text-zinc-500">System Health</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl border border-zinc-100 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-800/50">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Avg Load Time</p>
-                  <p className="mt-1 text-xl font-bold text-zinc-900 dark:text-white">
-                    {loading ? '—' : data?.usability.avgLoadTime.value}
-                  </p>
-                  <span className="mt-1 inline-block text-[10px] font-bold text-emerald-600">
-                    {data?.usability.avgLoadTime.status ?? 'OPTIMAL'}
-                  </span>
-                </div>
-                <div className="rounded-xl border border-zinc-100 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-800/50">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Error Rate</p>
-                  <p className="mt-1 text-xl font-bold text-zinc-900 dark:text-white">
-                    {loading ? '—' : data?.usability.errorRate.value}
-                  </p>
-                  <span className="mt-1 inline-block text-[10px] font-bold text-emerald-600">
-                    {data?.usability.errorRate.status ?? 'STABLE'}
-                  </span>
-                </div>
-              </div>
+        {operationalOnly && (
+          <OperationalReportsSection
+            data={data}
+            loading={loading}
+            days={appliedPeriod.days}
+            transactions={operationalTransactions}
+          />
+        )}
 
-              <div className="mt-8 flex items-center justify-center">
-                <div className="relative flex h-36 w-36 items-center justify-center rounded-full bg-gradient-to-br from-slate-800 to-slate-950 shadow-inner">
-                  <div className="absolute inset-3 rounded-full border border-indigo-500/30" />
-                  <div className="absolute inset-6 rounded-full border border-violet-400/20" />
-                  <Activity size={32} className="text-indigo-400/80" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-8 rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-zinc-500">Filter by Category</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {CATEGORIES.map((cat) => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => setCategory(cat.id)}
-                    className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
-                      category === cat.id
-                        ? 'bg-[#4f46e5] text-white shadow-md'
-                        : 'border border-zinc-200 bg-zinc-50 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
-                    }`}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="flex flex-wrap items-end gap-4">
-              <div>
-                <label htmlFor="report-type" className="text-xs font-bold uppercase tracking-wider text-zinc-500">
-                  Report Type
-                </label>
-                <select
-                  id="report-type"
-                  value={reportType}
-                  onChange={(e) => setReportType(e.target.value)}
-                  className="mt-2 block w-full min-w-[200px] rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
-                >
-                  <option value="summary">Summary (Aggregate)</option>
-                  <option value="detailed">Detailed (Line Items)</option>
-                  <option value="audit">Audit Trail</option>
-                </select>
-              </div>
-              <button
-                type="button"
-                onClick={() => refetch()}
-                className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-100 px-5 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-              >
-                <RefreshCw size={16} />
-                Apply Filters
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <footer className="mt-10 flex flex-col gap-2 border-t border-zinc-200 pt-6 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800">
+        <footer className="mt-10 flex flex-col gap-2 border-t border-border pt-6 text-xs text-muted sm:flex-row sm:items-center sm:justify-between dark:border-border">
           <p>© {new Date().getFullYear()} LibrarianPro Systems. All rights reserved.</p>
           <div className="flex gap-4">
-            <span className="cursor-pointer hover:text-zinc-700">Compliance Center</span>
-            <span className="cursor-pointer hover:text-zinc-700">Privacy Policy</span>
-            <span className="cursor-pointer hover:text-zinc-700">API Docs</span>
+            <span className="cursor-pointer hover:text-muted">Compliance Center</span>
+            <span className="cursor-pointer hover:text-muted">Privacy Policy</span>
+            <span className="cursor-pointer hover:text-muted">API Docs</span>
           </div>
         </footer>
       </div>

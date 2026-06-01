@@ -72,24 +72,24 @@ export function ExportUsersModal({
         aria-label="Close export dialog"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
+      <div className="relative w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl dark:border-border dark:bg-primary">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-bold text-zinc-900 dark:text-white">Export Options</h2>
-            <p className="mt-1 text-sm text-zinc-500">Choose what to include in your CSV download.</p>
+            <h2 className="text-lg font-bold text-foreground">Export Options</h2>
+            <p className="mt-1 text-sm text-muted">Choose what to include in your CSV download.</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            className="rounded-lg p-1.5 text-muted hover:bg-surface dark:hover:bg-primary/90"
           >
             <X size={18} />
           </button>
         </div>
 
-        <div className="mt-5 rounded-xl bg-zinc-50 p-4 dark:bg-zinc-800/50">
-          <p className="text-xs font-bold uppercase tracking-wider text-zinc-500">Active filters</p>
-          <ul className="mt-2 space-y-1 text-sm text-zinc-700 dark:text-zinc-300">
+        <div className="mt-5 rounded-xl bg-surface p-4 dark:bg-surface/50">
+          <p className="text-xs font-bold uppercase tracking-wider text-muted">Active filters</p>
+          <ul className="mt-2 space-y-1 text-sm text-muted">
             <li>
               <span className="font-medium">Role:</span> {ROLE_LABELS[role || 'all']}
             </li>
@@ -104,10 +104,10 @@ export function ExportUsersModal({
         </div>
 
         <fieldset className="mt-5 space-y-3">
-          <legend className="text-xs font-bold uppercase tracking-wider text-zinc-500">
+          <legend className="text-xs font-bold uppercase tracking-wider text-muted">
             Export choice
           </legend>
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-zinc-200 p-3 has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-50/50 dark:border-zinc-700 dark:has-[:checked]:bg-indigo-950/30">
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border p-3 has-[:checked]:border-indigo-500 has-[:checked]:bg-surface/50 dark:border-border dark:has-[:checked]:bg-indigo-950/30">
             <input
               type="radio"
               name="export-scope"
@@ -117,16 +117,16 @@ export function ExportUsersModal({
               className="mt-1"
             />
             <span>
-              <span className="block text-sm font-semibold text-zinc-900 dark:text-white">
+              <span className="block text-sm font-semibold text-foreground">
                 All filtered results
               </span>
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-muted">
                 Export every user matching the role and search filters ({totalFiltered.toLocaleString()}{' '}
                 users)
               </span>
             </span>
           </label>
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-zinc-200 p-3 has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-50/50 dark:border-zinc-700 dark:has-[:checked]:bg-indigo-950/30">
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border p-3 has-[:checked]:border-indigo-500 has-[:checked]:bg-surface/50 dark:border-border dark:has-[:checked]:bg-indigo-950/30">
             <input
               type="radio"
               name="export-scope"
@@ -136,10 +136,10 @@ export function ExportUsersModal({
               className="mt-1"
             />
             <span>
-              <span className="block text-sm font-semibold text-zinc-900 dark:text-white">
+              <span className="block text-sm font-semibold text-foreground">
                 Current page only
               </span>
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-muted">
                 Export the {currentPageUsers.length} users visible on this page
               </span>
             </span>
@@ -156,7 +156,7 @@ export function ExportUsersModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 rounded-xl border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300"
+            className="flex-1 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-muted hover:bg-surface dark:border-border dark:text-muted"
           >
             Cancel
           </button>
@@ -164,7 +164,7 @@ export function ExportUsersModal({
             type="button"
             onClick={handleDownload}
             disabled={exporting}
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#4f46e5] px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60"
           >
             <Download size={16} />
             {exporting ? 'Preparing…' : 'Download CSV'}

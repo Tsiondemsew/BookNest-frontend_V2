@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { AnimatedCounter } from '@/components/moderation/animated-counter';
 import { BookCardSkeleton } from '@/components/moderation/book-card-skeleton';
@@ -14,7 +15,9 @@ import { useApprovalBooks } from '@/hooks/useApprovalBooks';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { RejectModal } from './reject-modal';
 import { NotifyAuthorModal } from './notify-author-modal';
-import { ChangeDetailPanel } from './change-detail-panel';
+import { AuthorProfileAccess } from './author-profile-access';
+import { bookChangesPath } from './book-change-details';
+import { UserDetailPanel } from '@/features/users/user-detail-panel';
 import { authorNotificationToast } from '@/lib/author-notification-toast';
 import type { FilterTab, PendingBook, QueueStatus, SortOption } from './types';
 
@@ -31,6 +34,12 @@ function formatDate(iso: string) {
     return iso;
   }
 }
+
+const reviewNavBtnSm =
+  'inline-flex min-h-[36px] items-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-800 transition hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-200 dark:hover:bg-indigo-950/60';
+
+const reviewNavBtnLg =
+  'flex w-full items-center justify-center rounded-xl border-2 border-dashed border-indigo-300 bg-indigo-50/80 py-3 text-sm font-semibold text-indigo-800 transition hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-200 dark:hover:bg-indigo-950/60';
 
 function descriptionPreview(text: string | null, max = 120) {
   if (!text) return 'No description';
@@ -49,7 +58,7 @@ function BookCover({ url, title }: { url: string | null; title: string }) {
     );
   }
   return (
-    <div className="flex h-28 w-20 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-2xl font-bold text-white shadow-md">
+    <div className="flex h-28 w-20 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-2xl font-bold text-white shadow-md">
       {title.charAt(0).toUpperCase()}
     </div>
   );
@@ -72,8 +81,8 @@ function StatPill({
       onClick={onClick}
       className={`rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${
         active
-          ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-500/25'
-          : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:shadow-sm dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-600'
+          ? 'bg-gradient-to-r from-primary to-accent text-white shadow-md shadow-indigo-500/25'
+          : 'bg-card text-slate-600 ring-1 ring-slate-200 hover:shadow-sm dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-600'
       }`}
     >
       {label} (<AnimatedCounter value={count} />)
@@ -81,11 +90,22 @@ function StatPill({
   );
 }
 
+function parseQueueStatusFromUrl(raw: string | null): QueueStatus | null {
+  if (!raw) return null;
+  if (raw === 'all') return 'all';
+  if (raw === 'pending' || raw === 'pending_review') return 'pending_review';
+  if (raw === 'approved') return 'approved';
+  if (raw === 'rejected') return 'rejected';
+  return null;
+}
+
 export function ApprovalWorkspace() {
   const { toast } = useToast();
-  const [queueStatus, setQueueStatus] = useState<QueueStatus>('all');
+  const searchParams = useSearchParams();
+  const initialStatus = parseQueueStatusFromUrl(searchParams.get('status'));
+  const [queueStatus, setQueueStatus] = useState<QueueStatus>(initialStatus ?? 'all');
   const [filterTab, setFilterTab] = useState<FilterTab>('all');
-  const [searchInput, setSearchInput] = useState('');
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('search') ?? '');
   const debouncedSearch = useDebouncedValue(searchInput, 400);
   const [sort, setSort] = useState<SortOption>('newest');
   const [page, setPage] = useState(1);
@@ -93,8 +113,28 @@ export function ApprovalWorkspace() {
   const [detailBook, setDetailBook] = useState<PendingBook | null>(null);
   const [acting, setActing] = useState(false);
   const [approveTarget, setApproveTarget] = useState<PendingBook | null>(null);
+  const [authorProfileUserId, setAuthorProfileUserId] = useState<string | null>(null);
   const [rejectTarget, setRejectTarget] = useState<PendingBook | null>(null);
   const [notifyTarget, setNotifyTarget] = useState<PendingBook | null>(null);
+
+  useEffect(() => {
+    const fromUrl = parseQueueStatusFromUrl(searchParams.get('status'));
+    if (fromUrl) setQueueStatus(fromUrl);
+  }, [searchParams]);
+
+  const setQueueStatusWithUrl = useCallback((status: QueueStatus) => {
+    setQueueStatus(status);
+    setPage(1);
+    const params = new URLSearchParams(window.location.search);
+    if (status === 'all') {
+      params.delete('status');
+    } else {
+      params.set('status', status);
+    }
+    const qs = params.toString();
+    const next = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+    window.history.replaceState(null, '', next);
+  }, []);
 
   const handleNewPending = useCallback(
     (count: number, title?: string) => {
@@ -132,12 +172,24 @@ export function ApprovalWorkspace() {
     onNewPending: handleNewPending,
   });
 
+  useEffect(() => {
+    if (page > totalPages && totalPages > 0) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
   const selected = books.find((b) => b.id === selectedId) ?? books[0] ?? null;
   const isPending = queueStatus === 'pending_review';
   const canApproveBook = (book: PendingBook) =>
-    book.status === 'pending_review' || book.status === 'rejected';
+    book.status === 'pending_review' ||
+    book.status === 'rejected' ||
+    book.status === 'changes_requested';
+  const isMetadataUpdate = (book: PendingBook) =>
+    book.type === 'UPDATE' || book.submissionType === 'metadata_update';
   const canRejectBook = (book: PendingBook) =>
     book.status === 'pending_review' || book.status === 'approved';
+  const canRequestChangesBook = (book: PendingBook) =>
+    book.status === 'pending_review' || book.status === 'changes_requested';
   const canNotifyBook = (book: PendingBook) => book.status === 'rejected';
 
   const openRejectModal = (book: PendingBook) => setRejectTarget(book);
@@ -147,7 +199,12 @@ export function ApprovalWorkspace() {
     setSelectedId(null);
     setDetailBook(null);
     setPage(1);
-  }, [queueStatus, filterTab, debouncedSearch, sort]);
+  }, [queueStatus, filterTab, sort]);
+
+  useEffect(() => {
+    setSelectedId(null);
+    setDetailBook(null);
+  }, [debouncedSearch]);
 
   useEffect(() => {
     if (!selected?.id) {
@@ -172,10 +229,19 @@ export function ApprovalWorkspace() {
   const handleApprove = async (book: PendingBook) => {
     setActing(true);
     try {
-      await approveBook(book.id);
+      const payload = await approveBook(book.id, {
+        approveChanges: isMetadataUpdate(book),
+        skipValidation: true,
+        skipContent: true,
+      });
       setApproveTarget(null);
       setSelectedId(null);
-      toast(`"${book.title}" approved and published.`, 'success');
+      const { message, variant } = authorNotificationToast(
+        book.title,
+        'approved',
+        payload?.data?.authorNotification,
+      );
+      toast(message, variant);
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Approve failed', 'error');
     } finally {
@@ -238,7 +304,7 @@ export function ApprovalWorkspace() {
       <header className="sticky top-0 z-10 border-b border-[var(--border)] bg-[var(--card)]/95 px-4 py-4 backdrop-blur-md sm:px-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
           <div className="flex-1">
-            <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight text-slate-900">
               Book moderation
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -254,7 +320,7 @@ export function ApprovalWorkspace() {
                 setPage(1);
               }}
               placeholder="Search title, author, ISBN…"
-              className="w-full rounded-full border border-slate-200 bg-slate-50 py-2.5 pl-4 pr-4 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+              className="w-full rounded-full border border-slate-200 bg-slate-50 py-2.5 pl-4 pr-4 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-600 dark:bg-slate-800"
               aria-label="Search books"
             />
           </div>
@@ -264,7 +330,7 @@ export function ApprovalWorkspace() {
               setSort(e.target.value as SortOption);
               setPage(1);
             }}
-            className="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+            className="rounded-full border border-slate-200 bg-card px-4 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-800"
             aria-label="Sort books"
           >
             <option value="newest">Newest first</option>
@@ -287,18 +353,17 @@ export function ApprovalWorkspace() {
         <div className="mb-6 flex flex-wrap gap-2">
           <StatPill
             label="All"
-            count={stats.totalBooks}
+            count={stats.totalBooks ?? 0}
             active={queueStatus === 'all'}
-            onClick={() => setQueueStatus('all')}
+            onClick={() => setQueueStatusWithUrl('all')}
           />
           <StatPill
             label="Pending"
             count={stats.pending}
             active={queueStatus === 'pending_review'}
             onClick={() => {
-              setQueueStatus('pending_review');
+              setQueueStatusWithUrl('pending_review');
               setFilterTab('all');
-              setPage(1);
               refetch();
             }}
           />
@@ -306,13 +371,13 @@ export function ApprovalWorkspace() {
             label="Approved"
             count={stats.approved}
             active={queueStatus === 'approved'}
-            onClick={() => setQueueStatus('approved')}
+            onClick={() => setQueueStatusWithUrl('approved')}
           />
           <StatPill
             label="Rejected"
             count={stats.rejected}
             active={queueStatus === 'rejected'}
-            onClick={() => setQueueStatus('rejected')}
+            onClick={() => setQueueStatusWithUrl('rejected')}
           />
           {stats.resubmitted != null && stats.resubmitted > 0 && (
             <span className="ml-auto self-center rounded-lg bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
@@ -340,8 +405,8 @@ export function ApprovalWorkspace() {
                 }}
                 className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                   filterTab === id
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-white text-slate-600 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-600'
+                    ? 'bg-primary text-white'
+                    : 'bg-card text-slate-600 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-600'
                 }`}
               >
                 {label}
@@ -389,7 +454,7 @@ export function ApprovalWorkspace() {
                   onKeyDown={(e) => e.key === 'Enter' && setSelectedId(book.id)}
                   role="button"
                   tabIndex={0}
-                  className={`group cursor-pointer rounded-2xl border bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg dark:bg-slate-900 ${
+                  className={`group cursor-pointer rounded-2xl border bg-card p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg dark:bg-slate-900 ${
                     selected?.id === book.id
                       ? 'border-indigo-400 ring-2 ring-indigo-500/20'
                       : 'border-slate-200/80 dark:border-slate-700'
@@ -399,7 +464,7 @@ export function ApprovalWorkspace() {
                     <BookCover url={book.coverImageUrl} title={book.title} />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-start justify-between gap-2">
-                        <h3 className="font-semibold text-slate-900 dark:text-white">
+                        <h3 className="font-semibold text-slate-900">
                           {book.title}
                         </h3>
                         <StatusBadge book={book} queueStatus={queueStatus} />
@@ -431,9 +496,9 @@ export function ApprovalWorkspace() {
                             type="button"
                             disabled={acting}
                             onClick={() => setApproveTarget(book)}
-                            className="rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm"
+                            className="rounded-lg bg-emerald-400 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-500"
                           >
-                            Approve
+                            {isMetadataUpdate(book) ? 'Approve changes' : 'Approve'}
                           </button>
                         )}
                         {canRejectBook(book) && (
@@ -451,7 +516,7 @@ export function ApprovalWorkspace() {
                             type="button"
                             disabled={acting}
                             onClick={() => openNotifyModal(book)}
-                            className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white"
+                            className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white"
                           >
                             Notify
                           </button>
@@ -466,23 +531,27 @@ export function ApprovalWorkspace() {
                             Remove approval
                           </button>
                         )}
-                        <Link
-                          href={`/dashboard/books/${book.id}#changes`}
-                          className="rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100 dark:bg-indigo-950/50 dark:text-indigo-300"
-                        >
+                        <Link href={bookChangesPath(book.id)} className={reviewNavBtnSm}>
                           Change details
                         </Link>
-                        <Link
-                          href={`/dashboard/books/${book.id}`}
-                          className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200"
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAuthorProfileUserId(book.author.id);
+                          }}
+                          className={reviewNavBtnSm}
                         >
+                          Author profile
+                        </button>
+                        <Link href={`/dashboard/books/${book.id}`} className={reviewNavBtnSm}>
                           Full review
                         </Link>
                         <Link
-                          href={`/dashboard/books/${book.id}?reader=1`}
-                          className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200"
+                          href={`/dashboard/books/${book.id}/reader?returnTo=${encodeURIComponent('/dashboard/books')}`}
+                          className={reviewNavBtnSm}
                         >
-                          Read content
+                          Get content
                         </Link>
                       </div>
                     </div>
@@ -491,7 +560,7 @@ export function ApprovalWorkspace() {
               ))}
 
             {!loading && totalPages > 1 && (
-              <div className="flex items-center justify-between rounded-xl bg-white px-4 py-3 text-sm dark:bg-slate-900">
+              <div className="flex items-center justify-between rounded-xl bg-card px-4 py-3 text-sm dark:bg-slate-900">
                 <span className="text-slate-600 dark:text-slate-400">
                   Page {page} of {totalPages} · {total} total
                 </span>
@@ -526,18 +595,44 @@ export function ApprovalWorkspace() {
               />
             ) : (
               <div className="sticky top-24 space-y-4">
-                <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                <div className="rounded-2xl border border-slate-200/80 bg-card p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                   <div className="flex items-start justify-between">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                      Quick preview
+                      Quick review
                     </h3>
                     <StatusBadge book={displayBook} queueStatus={queueStatus} />
                   </div>
-                  <h4 className="mt-2 text-lg font-semibold dark:text-white">{displayBook.title}</h4>
-                  <p className="text-sm text-slate-500">{displayBook.author.publicName}</p>
+                  <Link
+                    href={`/dashboard/books/${displayBook.id}`}
+                    className="mt-2 block text-lg font-semibold text-foreground hover:text-primary hover:underline"
+                  >
+                    {displayBook.title}
+                  </Link>
+                  <p className="text-sm text-slate-500">
+                    <AuthorProfileAccess
+                      book={displayBook}
+                      onOpenProfile={setAuthorProfileUserId}
+                      className="text-slate-700 dark:text-slate-300"
+                    />
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setAuthorProfileUserId(displayBook.author.id)}
+                    className="mt-2 text-xs font-semibold text-primary hover:underline"
+                  >
+                    Open author profile →
+                  </button>
 
-                  <div className="mt-4">
-                    <ChangeDetailPanel book={displayBook} compact />
+                  <div className="mt-4 flex flex-col gap-2">
+                    <Link
+                      href={`/dashboard/books/${displayBook.id}`}
+                      className={reviewNavBtnLg}
+                    >
+                      Open full review →
+                    </Link>
+                    <Link href={bookChangesPath(displayBook.id)} className={reviewNavBtnLg}>
+                      Change details →
+                    </Link>
                   </div>
 
                   {(displayBook.reviewNote || displayBook.reviewMetadata) && (
@@ -549,51 +644,27 @@ export function ApprovalWorkspace() {
                     </div>
                   )}
 
-                  {(canApproveBook(displayBook) ||
-                    canRejectBook(displayBook) ||
-                    canNotifyBook(displayBook)) && (
+                  {canNotifyBook(displayBook) && (
                     <div className="mt-4 flex flex-col gap-2">
-                      {canApproveBook(displayBook) && (
-                        <button
-                          type="button"
-                          disabled={acting}
-                          onClick={() => setApproveTarget(displayBook)}
-                          className="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 py-2.5 text-sm font-semibold text-white"
-                        >
-                          Approve
-                        </button>
-                      )}
-                      {canRejectBook(displayBook) && (
-                        <button
-                          type="button"
-                          disabled={acting}
-                          onClick={() => openRejectModal(displayBook)}
-                          className="w-full rounded-xl border border-red-200 py-2.5 text-sm font-semibold text-red-600 dark:border-red-800"
-                        >
-                          Reject
-                        </button>
-                      )}
-                      {canNotifyBook(displayBook) && (
-                        <button
-                          type="button"
-                          disabled={acting}
-                          onClick={() => openNotifyModal(displayBook)}
-                          className="w-full rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white"
-                        >
-                          Notify
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        disabled={acting}
+                        onClick={() => openNotifyModal(displayBook)}
+                        className={reviewNavBtnLg}
+                      >
+                        Notify
+                      </button>
                     </div>
                   )}
                 </div>
 
                 {displayBook.activity && displayBook.activity.length > 0 && (
-                  <div className="rounded-2xl border bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
-                    <h3 className="text-sm font-semibold dark:text-white">Activity</h3>
+                  <div className="rounded-2xl border bg-card p-5 dark:border-slate-700 dark:bg-slate-900">
+                    <h3 className="text-sm font-semibold">Activity</h3>
                     <ul className="mt-3 space-y-3 border-l-2 border-indigo-200 pl-4 dark:border-indigo-800">
                       {displayBook.activity.slice(0, 5).map((a) => (
                         <li key={a.id} className="relative text-sm">
-                          <span className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full bg-indigo-500" />
+                          <span className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full bg-surface0" />
                           <p className="capitalize dark:text-slate-200">{a.message}</p>
                           <p className="text-xs text-slate-400">{formatDate(a.at)}</p>
                         </li>
@@ -607,11 +678,29 @@ export function ApprovalWorkspace() {
         </div>
       </div>
 
+      {authorProfileUserId && (
+        <UserDetailPanel
+          userId={authorProfileUserId}
+          onClose={() => setAuthorProfileUserId(null)}
+          onUpdated={() => void refetch()}
+        />
+      )}
+
       <ConfirmModal
         open={!!approveTarget}
-        title="Approve this book?"
-        description={`"${approveTarget?.title}" will be published in the catalog. The author will be notified.`}
-        confirmLabel="Approve & publish"
+        title={
+          approveTarget && isMetadataUpdate(approveTarget)
+            ? 'Approve these changes?'
+            : 'Approve this book?'
+        }
+        description={
+          approveTarget && isMetadataUpdate(approveTarget)
+            ? `"${approveTarget.title}" — the author's proposed updates will be applied and published. The author will be notified.`
+            : `"${approveTarget?.title}" will be published in the catalog. The author will be notified.`
+        }
+        confirmLabel={
+          approveTarget && isMetadataUpdate(approveTarget) ? 'Approve changes' : 'Approve & publish'
+        }
         loading={acting}
         onClose={() => setApproveTarget(null)}
         onConfirm={() => {

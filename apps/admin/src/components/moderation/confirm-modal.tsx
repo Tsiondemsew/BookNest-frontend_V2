@@ -16,7 +16,7 @@ export function ConfirmModal({
   description: string;
   confirmLabel: string;
   cancelLabel?: string;
-  variant?: 'primary' | 'danger';
+  variant?: 'primary' | 'danger' | 'approve';
   loading?: boolean;
   onClose: () => void;
   onConfirm: () => void;
@@ -26,7 +26,9 @@ export function ConfirmModal({
   const confirmClass =
     variant === 'danger'
       ? 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500'
-      : 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500';
+      : variant === 'approve'
+        ? 'bg-emerald-400 hover:bg-emerald-500'
+        : 'bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90';
 
   return (
     <div
@@ -34,15 +36,15 @@ export function ConfirmModal({
       role="dialog"
       aria-modal="true"
     >
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{title}</h3>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{description}</p>
+      <div className="w-full max-w-md rounded-2xl bg-card p-6 shadow-2xl">
+        <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+        <p className="mt-2 text-sm text-muted">{description}</p>
         <div className="mt-6 flex gap-3">
           <button
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-medium transition hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-800"
+            className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium text-foreground transition hover:bg-surface"
           >
             {cancelLabel}
           </button>

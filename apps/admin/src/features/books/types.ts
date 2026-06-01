@@ -64,6 +64,10 @@ export interface BookSnapshot {
   genre_name?: string | null;
   cover_image_url?: string | null;
   publication_date?: string | null;
+  pdf_price?: number | string | null;
+  audio_price?: number | string | null;
+  bundle_price?: number | string | null;
+  currency?: string | null;
 }
 
 
@@ -164,9 +168,111 @@ export interface PendingBook {
 
   };
 
-  formats?: { id: string; format_type: string; price: number; currency: string }[];
+  formats?: BookFormatDetail[];
+  formatSlots?: FormatSlots;
 
+  reviewState?: ReviewState;
+  revenueAgreement?: RevenueAgreement;
+  pricing?: PricingInfo;
+  visibility?: { isPublic: boolean; marketplaceVisible: boolean };
+  drm?: { enabled: boolean; label: string };
+  tags?: string[];
+  versionNumber?: string;
+  updateRequest?: { id: string; status: string; updateNote: string | null; submittedAt: string } | null;
+  contentComparison?: ContentComparison;
+  versionHistory?: VersionHistoryEntry[];
+  auditTrail?: AuditEntry[];
+  publicationDate?: string | null;
 }
+
+export interface BookFormatDetail {
+  id: string | null;
+  formatType: string;
+  price: number | null;
+  currency: string;
+  fileUrl: string | null;
+  fileName: string | null;
+  storagePath?: string | null;
+  mimeType?: string | null;
+  fileSizeBytes: number | null;
+  pageCount: number | null;
+  durationSec: number | null;
+  uploadedAt: string | null;
+  hasContent?: boolean;
+  missing?: boolean;
+  playbackUrl?: string | null;
+  isDemoContent?: boolean;
+  demoLabel?: string | null;
+}
+
+export interface FormatSlots {
+  pdf: BookFormatDetail;
+  audio: BookFormatDetail;
+}
+
+export type ChangeDecisionStatus = 'pending' | 'approved' | 'rejected';
+
+export interface ReviewState {
+  checklist: Record<string, boolean>;
+  pdfReview: ContentReviewStatus;
+  audioReview: ContentReviewStatus;
+  changeDecisions?: Record<string, ChangeDecisionStatus>;
+}
+
+export interface ContentReviewStatus {
+  status: 'pending' | 'approved' | 'changes_requested' | 'rejected';
+  comment: string | null;
+  reviewedAt: string | null;
+  reviewedBy: string | null;
+}
+
+export interface RevenueAgreement {
+  signed: boolean;
+  version: string;
+  acceptedAt: string | null;
+  acceptedTime: string | null;
+  authorName: string | null;
+  authorEmail: string | null;
+  ipAddress: string | null;
+  signature: unknown;
+}
+
+export interface PricingInfo {
+  pdfPrice: number | null;
+  audioPrice: number | null;
+  bundlePrice: number | null;
+  currency: string;
+  discountPercent: number | null;
+  discountLabel: string | null;
+  authorRevenueSharePercent: number;
+  platformSharePercent: number;
+  estimatedAuthorEarnings: number;
+  platformEarnings: number;
+}
+
+export interface ContentComparison {
+  pdf: { current: BookFormatDetail | null; proposed: BookFormatDetail | null };
+  audio: { current: BookFormatDetail | null; proposed: BookFormatDetail | null };
+}
+
+export interface VersionHistoryEntry {
+  id: string;
+  version: string;
+  status: string;
+  at: string;
+  reason: string | null;
+}
+
+export interface AuditEntry {
+  id: string;
+  adminId: string | null;
+  action: string;
+  oldValue: unknown;
+  newValue: unknown;
+  comments: string | null;
+  at: string;
+}
+
 
 
 

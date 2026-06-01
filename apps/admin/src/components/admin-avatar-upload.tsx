@@ -47,7 +47,7 @@ function AvatarVisual({
 
   return (
     <div
-      className={`flex ${dimension} items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 font-bold text-white shadow-md ${textSize}`}
+      className={`flex ${dimension} items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent font-bold text-white shadow-md ${textSize}`}
     >
       {initials}
     </div>
@@ -60,7 +60,7 @@ export function AdminAvatarUpload({
   editable = true,
 }: AdminAvatarUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const { avatarUrl, initials, refresh } = useAdminSession();
+  const { avatarUrl, initials, refresh, patchAvatarUrl } = useAdminSession();
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -96,7 +96,12 @@ export function AdminAvatarUpload({
         body: formData,
       });
 
-      let payload: { success?: boolean; message?: string; error?: { message?: string } } = {};
+      let payload: {
+        success?: boolean;
+        message?: string;
+        error?: { message?: string };
+        data?: { user?: { avatarUrl?: string | null }; avatar_url?: string };
+      } = {};
       try {
         payload = await res.json();
       } catch {
@@ -107,7 +112,17 @@ export function AdminAvatarUpload({
         throw new Error(getApiErrorMessage(payload, 'Failed to upload photo'));
       }
 
-      await refresh();
+      const nextUrl =
+        payload.data?.user?.avatarUrl ??
+        payload.data?.avatar_url ??
+        null;
+
+      if (nextUrl) {
+        patchAvatarUrl(nextUrl);
+      } else {
+        await refresh();
+      }
+
       setPreviewUrl(null);
       toast('Profile photo updated', 'success');
     } catch (err) {

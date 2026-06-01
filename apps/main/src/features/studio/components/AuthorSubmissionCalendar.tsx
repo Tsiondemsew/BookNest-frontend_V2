@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { booksApi } from '@/lib/api/client';
@@ -156,7 +157,12 @@ export function AuthorSubmissionCalendar() {
                   <Icon size={16} />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-[#1A2A3A]">{event.bookTitle}</p>
+                  <Link
+                    href={`/studio/books/${event.bookId}`}
+                    className="font-medium text-[#B85C38] hover:underline"
+                  >
+                    {event.bookTitle}
+                  </Link>
                   <p className="text-xs text-[#4A5568] capitalize">
                     {event.type.replace(/_/g, ' ')}
                     {event.genre ? ` · ${event.genre}` : ''}
@@ -168,10 +174,13 @@ export function AuthorSubmissionCalendar() {
                       <p className="text-sm text-amber-900 mt-0.5">{event.updateNote}</p>
                     </div>
                   )}
-                  {event.type === 'metadata_update' && (
-                    <p className="mt-2 text-xs text-blue-700 bg-blue-50 rounded px-2 py-1 inline-block">
-                      Metadata or content was updated — awaiting admin review
-                    </p>
+                  {(event.type === 'metadata_update' || event.status === 'pending_review') && (
+                    <Link
+                      href={`/studio/books/${event.bookId}`}
+                      className="mt-2 inline-block text-xs font-semibold text-[#B85C38] hover:underline"
+                    >
+                      View full description & audio →
+                    </Link>
                   )}
                 </div>
               </div>

@@ -26,9 +26,9 @@ function ChartTooltip({
   const point = payload[0]?.payload;
   const amount = payload[0]?.value ?? 0;
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white px-3 py-2 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
-      <p className="text-xs font-semibold text-zinc-900 dark:text-white">{point?.label ?? point?.date}</p>
-      <p className="mt-0.5 text-sm font-bold text-indigo-600">{formatEtb(amount)}</p>
+    <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-lg dark:border-border dark:bg-primary">
+      <p className="text-xs font-semibold text-foreground">{point?.label ?? point?.date}</p>
+      <p className="mt-0.5 text-sm font-bold text-accent">{formatEtb(amount)}</p>
     </div>
   );
 }
@@ -40,12 +40,12 @@ type RevenueTrendChartProps = {
 
 export function RevenueTrendChart({ data, loading }: RevenueTrendChartProps) {
   if (loading) {
-    return <div className="h-44 animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-800" />;
+    return <div className="h-44 animate-pulse rounded-xl bg-surface dark:bg-surface" />;
   }
 
   if (!data.length) {
     return (
-      <p className="flex h-44 items-center justify-center text-xs text-zinc-500">
+      <p className="flex h-44 items-center justify-center text-xs text-muted">
         No revenue data in this period.
       </p>
     );

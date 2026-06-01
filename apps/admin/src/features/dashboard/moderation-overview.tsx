@@ -5,12 +5,32 @@ import { AnimatedCounter } from '@/components/moderation/animated-counter';
 import { useModerationStats } from '@/hooks/useModerationStats';
 
 const cards = [
-  { key: 'totalBooks', label: 'Total books', color: 'from-slate-600 to-slate-800' },
-  { key: 'pending', label: 'Pending review', color: 'from-amber-500 to-orange-600', href: '/dashboard/books' },
-  { key: 'approved', label: 'Approved', color: 'from-emerald-500 to-teal-600' },
-  { key: 'rejected', label: 'Rejected', color: 'from-red-500 to-rose-600' },
+  {
+    key: 'totalBooks',
+    label: 'Total books',
+    color: 'from-slate-600 to-slate-800',
+    href: '/dashboard/overview/books',
+  },
+  {
+    key: 'pending',
+    label: 'Pending review',
+    color: 'from-amber-500 to-orange-600',
+    href: '/dashboard/overview/books?status=pending_review',
+  },
+  {
+    key: 'approved',
+    label: 'Approved',
+    color: 'from-emerald-500 to-teal-600',
+    href: '/dashboard/overview/books?status=approved',
+  },
+  {
+    key: 'rejected',
+    label: 'Rejected',
+    color: 'from-red-500 to-rose-600',
+    href: '/dashboard/overview/books?status=rejected',
+  },
   { key: 'resubmitted', label: 'Submitted again', color: 'from-violet-500 to-purple-600' },
-  { key: 'totalAuthors', label: 'Authors', color: 'from-indigo-500 to-blue-600' },
+  { key: 'totalAuthors', label: 'Authors', color: 'from-indigo-500 to-blue-600', href: '/dashboard/overview/authors' },
 ] as const;
 
 export function ModerationOverview() {
@@ -28,17 +48,17 @@ export function ModerationOverview() {
     <section className="mb-8">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-zinc-900 dark:text-white">
+          <h2 className="text-xl font-semibold text-foreground">
             Catalog moderation
           </h2>
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-muted">
             Live counts from the approval queue · reviewed today:{' '}
             {loading ? '…' : <AnimatedCounter value={stats?.reviewedToday ?? 0} />}
           </p>
         </div>
         <Link
           href="/dashboard/books"
-          className="rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:shadow-lg"
+          className="rounded-xl bg-gradient-to-r from-primary to-accent px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:shadow-lg"
         >
           Open approval queue
         </Link>

@@ -5,7 +5,8 @@ import { useSalesAnalytics } from '@/features/analytics/hooks/useAnalytics';
 import { MyBooksList } from '@/features/studio/components/MyBooksList';
 import { AuthorReviewInbox } from '@/features/studio/components/AuthorReviewInbox';
 import Link from 'next/link';
-import { Plus, BookOpen, DollarSign, TrendingUp, Clock, AlertCircle } from 'lucide-react';
+import { Plus, BookOpen, DollarSign, TrendingUp, Clock, AlertCircle, User } from 'lucide-react';
+import { AuthorRevenueAgreementCard } from '@/features/studio/components/AuthorRevenueAgreementCard';
 
 export default function StudioDashboard() {
   const { user, isAuthenticated } = useAuthStore();
@@ -67,14 +68,27 @@ export default function StudioDashboard() {
             Welcome back, {user?.publicName}
           </p>
         </div>
-        <Link
-          href="/studio/upload"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-[#B85C38] text-white rounded-lg font-medium hover:bg-[#8E735B] transition-colors shadow-sm"
-        >
-          <Plus size={18} />
-          Upload New Book
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/studio/profile"
+            className="inline-flex items-center gap-2 px-4 py-2 border border-[#E8E2D9] bg-white rounded-lg font-medium text-[#1A2A3A] hover:bg-[#F5F1EB] transition-colors"
+          >
+            <User size={18} />
+            Author profile
+          </Link>
+          <Link
+            href="/studio/upload"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[#B85C38] text-white rounded-lg font-medium hover:bg-[#8E735B] transition-colors shadow-sm"
+          >
+            <Plus size={18} />
+            Upload New Book
+          </Link>
+        </div>
       </div>
+
+      {user?.role === 'author' && (
+        <AuthorRevenueAgreementCard compact onSigned={() => {}} />
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">

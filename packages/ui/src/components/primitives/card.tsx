@@ -9,7 +9,7 @@ export function Card({ className, as: Comp = 'div', ...props }: CardProps) {
   return (
     <Comp
       className={cn(
-        'rounded-2xl border border-zinc-200 bg-white shadow-sm',
+        'rounded-2xl border border-border bg-card shadow-sm',
         'transition-shadow hover:shadow-md',
         className,
       )}

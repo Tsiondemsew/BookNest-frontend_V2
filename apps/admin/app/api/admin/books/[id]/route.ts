@@ -1,6 +1,6 @@
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { backendUrl } from '@/lib/api';
+import { getAdminAccessToken } from '@/lib/admin-session';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,10 +24,9 @@ export async function GET(
       { status: 400 },
     );
   }
-  const cookieStore = await cookies();
-  const token = cookieStore.get('token')?.value;
+  const accessToken = await getAdminAccessToken();
 
-  if (!token) {
+  if (!accessToken) {
     return NextResponse.json(
       { success: false, error: { message: 'Not authenticated', code: 'UNAUTHORIZED' } },
       { status: 401 },
@@ -36,8 +35,8 @@ export async function GET(
 
   const backendRes = await fetch(backendUrl(`/api/admin/books/${id}`), {
     headers: {
-      Authorization: `Bearer ${token}`,
-      Cookie: `token=${token}`,
+      Authorization: `Bearer ${accessToken}`,
+      Cookie: `token=${accessToken}`,
     },
     cache: 'no-store',
   });

@@ -1,6 +1,5 @@
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { backendUrl } from '@/lib/api';
+import { fetchAdminBackend } from '@/lib/admin-backend-fetch';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,27 +7,10 @@ export const dynamic = 'force-dynamic';
  * Legacy path — prefer /api/admin/books/by-status (Next may route "list" to [id]).
  */
 export async function GET(request: Request) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('token')?.value;
-
-  if (!token) {
-    return NextResponse.json(
-      { success: false, error: { message: 'Not authenticated', code: 'UNAUTHORIZED' } },
-      { status: 401 },
-    );
-  }
-
   const { searchParams } = new URL(request.url);
   const query = searchParams.toString();
-  const url = backendUrl(`/api/admin/books/list${query ? `?${query}` : ''}`);
-
-  const backendRes = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Cookie: `token=${token}`,
-    },
-    cache: 'no-store',
-  });
+  const path = `/api/admin/books/list${query ? `?${query}` : ''}`;
+  const backendRes = await fetchAdminBackend(path);
 
   const payload = await backendRes.json();
   return NextResponse.json(payload, { status: backendRes.status });

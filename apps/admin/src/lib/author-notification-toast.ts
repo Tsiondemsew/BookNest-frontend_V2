@@ -9,7 +9,7 @@ export type AuthorNotificationResult = {
 
 export function authorNotificationToast(
   bookTitle: string,
-  action: 'rejected' | 'approved',
+  action: 'rejected' | 'approved' | 'changes requested',
   notification?: AuthorNotificationResult | null,
 ): { message: string; variant: 'success' | 'info' } {
   if (notification?.notified) {

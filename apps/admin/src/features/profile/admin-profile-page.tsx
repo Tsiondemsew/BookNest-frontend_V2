@@ -3,65 +3,76 @@
 import Link from 'next/link';
 import { Loader2, Mail, Shield, User } from 'lucide-react';
 import { AdminAvatarUpload } from '@/components/admin-avatar-upload';
-import { AdminDisplayNameEditor } from '@/components/admin-display-name-editor';
+import { AdminProfileEditor } from '@/components/admin-profile-editor';
 import { AdminTopHeader } from '@/components/admin-top-header';
 import { useAdminSession } from '@/hooks/useAdminSession';
 
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex justify-between gap-4 border-b border-zinc-100 py-4 text-sm dark:border-zinc-800">
-      <span className="text-zinc-500">{label}</span>
-      <span className="text-right font-medium text-zinc-900 dark:text-white">{value}</span>
+    <div className="flex justify-between gap-4 border-b border-border py-4 text-sm dark:border-border">
+      <span className="shrink-0 text-muted">{label}</span>
+      <span className="min-w-0 text-right font-medium text-foreground">{value}</span>
     </div>
   );
 }
 
 export function AdminProfilePage() {
-  const { session, loading, email, role, accountStatus } = useAdminSession();
+  const { session, loading, displayName, bio, email, role, accountStatus } = useAdminSession();
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA] dark:bg-zinc-950">
+    <div className="min-h-screen bg-background">
       <AdminTopHeader adminSubtitle="My profile" />
 
       <div className="px-8 py-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">My Profile</h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            Update your photo and display name here.
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">My Profile</h1>
+          <p className="mt-1 text-sm text-muted">
+            Update your photo, name, and bio here.
           </p>
         </div>
 
         {loading && (
-          <div className="mt-12 flex justify-center text-zinc-500">
+          <div className="mt-12 flex justify-center text-muted">
             <Loader2 className="animate-spin" size={28} />
           </div>
         )}
 
         {!loading && (
-          <div className="mt-8 grid gap-6 lg:grid-cols-[320px_1fr]">
-            <div className="rounded-2xl border border-zinc-200/80 bg-white p-6 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="mt-8 grid gap-6 lg:grid-cols-[360px_1fr]">
+            <div className="rounded-2xl border border-border bg-card p-6 text-center shadow-sm dark:border-border dark:bg-primary">
               <AdminAvatarUpload size="lg" editable />
-              <AdminDisplayNameEditor variant="card" />
-              <p className="mt-1 text-sm text-zinc-500">{email}</p>
-              <span className="mt-4 inline-flex rounded-full bg-indigo-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
+              <p className="mt-4 text-xl font-bold text-foreground">{displayName}</p>
+              <p className="mt-1 text-sm text-muted">{email}</p>
+              <span className="mt-3 inline-flex rounded-full bg-indigo-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-primary dark:bg-surface dark:text-accent">
                 {role}
               </span>
+              <AdminProfileEditor />
             </div>
 
-            <div className="rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-border dark:bg-primary">
               <div className="mb-4 flex items-center gap-2">
-                <User size={18} className="text-indigo-600" />
-                <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-500">
+                <User size={18} className="text-accent" />
+                <h2 className="text-sm font-bold uppercase tracking-wider text-muted">
                   Account information
                 </h2>
               </div>
 
-              <DetailRow label="Display name" value={<AdminDisplayNameEditor variant="row" />} />
+              <DetailRow label="Display name" value={displayName} />
+              <DetailRow
+                label="Bio"
+                value={
+                  bio ? (
+                    <span className="block max-w-md whitespace-pre-wrap">{bio}</span>
+                  ) : (
+                    <span className="text-muted">—</span>
+                  )
+                }
+              />
               <DetailRow
                 label="Email"
                 value={
                   <span className="inline-flex items-center gap-1.5">
-                    <Mail size={14} className="text-zinc-400" />
+                    <Mail size={14} className="text-muted" />
                     {email || '—'}
                   </span>
                 }
@@ -99,14 +110,14 @@ export function AdminProfilePage() {
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
                   href="/dashboard/settings"
-                  className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700"
+                  className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-muted hover:bg-surface"
                 >
                   <Shield size={16} />
-                  Account settings
+                  Platform settings
                 </Link>
                 <Link
                   href="/dashboard"
-                  className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200"
+                  className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-muted hover:bg-surface dark:border-border dark:text-zinc-200"
                 >
                   Back to dashboard
                 </Link>

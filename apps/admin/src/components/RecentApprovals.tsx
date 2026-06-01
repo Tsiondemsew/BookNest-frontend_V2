@@ -7,21 +7,21 @@ export function RecentApprovals() {
 
   if (loading) {
     return (
-      <div className="rounded-3xl bg-white p-6 shadow-sm">
+      <div className="rounded-3xl bg-card p-6 shadow-sm">
         Loading approvals...
       </div>
     );
   }
 
   return (
-    <div className="rounded-3xl border border-zinc-200 bg-white shadow-sm">
+    <div className="rounded-3xl border border-border bg-card shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-5">
-        <h2 className="text-2xl font-semibold text-zinc-900">
+      <div className="flex items-center justify-between border-b border-border px-6 py-5">
+        <h2 className="text-2xl font-semibold text-foreground">
           Recent Approvals Queue
         </h2>
 
-        <button className="text-sm font-medium text-indigo-700 hover:text-indigo-800">
+        <button className="text-sm font-medium text-primary hover:text-indigo-800">
           View All
         </button>
       </div>
@@ -29,21 +29,21 @@ export function RecentApprovals() {
       {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-zinc-50">
+          <thead className="bg-surface">
             <tr>
-              <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-muted">
                 Book
               </th>
 
-              <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-muted">
                 Author
               </th>
 
-              <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-muted">
                 Date
               </th>
 
-              <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-muted">
                 Status
               </th>
             </tr>
@@ -53,19 +53,19 @@ export function RecentApprovals() {
             {data.map((item) => (
               <tr
                 key={item.id}
-                className="border-t border-zinc-100"
+                className="border-t border-border"
               >
                 <td className="px-6 py-5">
-                  <p className="font-medium text-zinc-900">
+                  <p className="font-medium text-foreground">
                     {item.title}
                   </p>
                 </td>
 
-                <td className="px-6 py-5 text-zinc-600">
+                <td className="px-6 py-5 text-muted">
                   {item.author}
                 </td>
 
-                <td className="px-6 py-5 text-zinc-600">
+                <td className="px-6 py-5 text-muted">
                   {new Date(
                     item.createdAt
                   ).toLocaleDateString()}

@@ -10,17 +10,17 @@ import type { AdminUserDetail, AdminUserRow, UserBookSummary, UserProfileDetail 
 
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex justify-between gap-4 border-b border-zinc-100 py-3 text-sm dark:border-zinc-800">
-      <span className="text-zinc-500">{label}</span>
-      <span className="text-right font-medium text-zinc-900 dark:text-white">{value}</span>
+    <div className="flex justify-between gap-4 border-b border-border py-3 text-sm dark:border-border">
+      <span className="text-muted">{label}</span>
+      <span className="text-right font-medium text-foreground">{value}</span>
     </div>
   );
 }
 
 function ProfileSection({ profile }: { profile: UserProfileDetail }) {
   return (
-    <div className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50/80 p-4 dark:border-zinc-700 dark:bg-zinc-800/40">
-      <p className="text-xs font-bold uppercase tracking-wider text-zinc-500">
+    <div className="mt-6 rounded-xl border border-border bg-surface/80 p-4 dark:border-border dark:bg-surface/40">
+      <p className="text-xs font-bold uppercase tracking-wider text-muted">
         {profile.type} profile
       </p>
       <div className="mt-3 space-y-0">
@@ -42,7 +42,7 @@ function ProfileSection({ profile }: { profile: UserProfileDetail }) {
                     href={profile.websiteUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-indigo-600 hover:underline"
+                    className="text-accent hover:underline"
                   >
                     {profile.websiteUrl}
                   </a>
@@ -64,7 +64,7 @@ function ProfileSection({ profile }: { profile: UserProfileDetail }) {
                     href={profile.websiteUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-indigo-600 hover:underline"
+                    className="text-accent hover:underline"
                   >
                     {profile.websiteUrl}
                   </a>
@@ -89,15 +89,15 @@ const BOOK_STATUS_STYLES: Record<string, string> = {
   pending_review: 'bg-amber-100 text-amber-800',
   approved: 'bg-emerald-100 text-emerald-700',
   rejected: 'bg-red-100 text-red-700',
-  draft: 'bg-zinc-100 text-zinc-600',
-  archived: 'bg-zinc-100 text-zinc-500',
+  draft: 'bg-surface text-muted',
+  archived: 'bg-surface text-muted',
 };
 
 function BookStatusBadge({ status }: { status: string }) {
   const label = status.replace(/_/g, ' ');
   return (
     <span
-      className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${BOOK_STATUS_STYLES[status] ?? 'bg-zinc-100 text-zinc-600'}`}
+      className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${BOOK_STATUS_STYLES[status] ?? 'bg-surface text-muted'}`}
     >
       {label}
     </span>
@@ -109,24 +109,24 @@ function UserBookRow({ book, onNavigate }: { book: UserBookSummary; onNavigate: 
     <Link
       href={`/dashboard/books/${book.id}?returnTo=/dashboard/users`}
       onClick={onNavigate}
-      className="flex items-center gap-3 rounded-xl border border-zinc-100 p-3 transition hover:border-indigo-200 hover:bg-indigo-50/50 dark:border-zinc-800 dark:hover:border-indigo-900 dark:hover:bg-indigo-950/20"
+      className="flex items-center gap-3 rounded-xl border border-border p-3 transition hover:border-accent/30 hover:bg-surface/50"
     >
       {book.coverImageUrl ? (
         <img src={book.coverImageUrl} alt="" className="h-14 w-10 shrink-0 rounded-lg object-cover" />
       ) : (
-        <div className="flex h-14 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-sm font-bold text-white">
+        <div className="flex h-14 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent text-sm font-bold text-white">
           {book.title.charAt(0).toUpperCase()}
         </div>
       )}
       <div className="min-w-0 flex-1">
-        <p className="truncate font-semibold text-zinc-900 dark:text-white">{book.title}</p>
+        <p className="truncate font-semibold text-foreground">{book.title}</p>
         <div className="mt-1 flex flex-wrap items-center gap-2">
           <BookStatusBadge status={book.status} />
-          {book.genre && <span className="text-xs text-zinc-500">{book.genre}</span>}
+          {book.genre && <span className="text-xs text-muted">{book.genre}</span>}
         </div>
-        <p className="mt-0.5 text-xs text-zinc-400">Updated {book.updatedLabel}</p>
+        <p className="mt-0.5 text-xs text-muted">Updated {book.updatedLabel}</p>
       </div>
-      <ChevronRight size={18} className="shrink-0 text-zinc-400" />
+      <ChevronRight size={18} className="shrink-0 text-muted" />
     </Link>
   );
 }
@@ -271,13 +271,13 @@ export function UserDetailPanel({
     <>
       <div className="fixed inset-0 z-40 flex justify-end">
         <button type="button" className="absolute inset-0 bg-black/30" aria-label="Close panel" onClick={onClose} />
-        <aside className="relative flex h-full w-full max-w-md flex-col bg-white shadow-2xl dark:bg-zinc-900">
-          <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
-            <h2 className="text-lg font-bold text-zinc-900 dark:text-white">User Details</h2>
+        <aside className="relative flex h-full w-full max-w-md flex-col bg-card shadow-2xl dark:bg-primary">
+          <div className="flex items-center justify-between border-b border-border px-6 py-4 dark:border-border">
+            <h2 className="text-lg font-bold text-foreground">User Details</h2>
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              className="rounded-lg p-2 text-muted hover:bg-surface dark:hover:bg-primary/90"
             >
               <X size={20} />
             </button>
@@ -285,7 +285,7 @@ export function UserDetailPanel({
 
           <div className="flex-1 overflow-y-auto px-6 py-5">
             {loading && (
-              <div className="flex items-center justify-center py-16 text-zinc-500">
+              <div className="flex items-center justify-center py-16 text-muted">
                 <Loader2 className="animate-spin" size={24} />
               </div>
             )}
@@ -302,14 +302,14 @@ export function UserDetailPanel({
                   {detail.avatarUrl ? (
                     <img src={detail.avatarUrl} alt="" className="h-16 w-16 rounded-full object-cover" />
                   ) : (
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-lg font-bold text-white">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-lg font-bold text-white">
                       {detail.initials}
                     </div>
                   )}
                   <div>
-                    <p className="text-xl font-bold text-zinc-900 dark:text-white">{detail.name}</p>
-                    <p className="text-sm text-zinc-500">{detail.email}</p>
-                    <p className="mt-1 capitalize text-xs font-semibold text-indigo-600">{detail.role}</p>
+                    <p className="text-xl font-bold text-foreground">{detail.name}</p>
+                    <p className="text-sm text-muted">{detail.email}</p>
+                    <p className="mt-1 capitalize text-xs font-semibold text-accent">{detail.role}</p>
                   </div>
                 </div>
 
@@ -336,7 +336,7 @@ export function UserDetailPanel({
                 {detail.profile ? (
                   <ProfileSection profile={detail.profile} />
                 ) : (
-                  <div className="mt-6 rounded-xl border border-dashed border-zinc-200 px-4 py-6 text-center text-sm text-zinc-500 dark:border-zinc-700">
+                  <div className="mt-6 rounded-xl border border-dashed border-border px-4 py-6 text-center text-sm text-muted dark:border-border">
                     No profile submitted yet for this {detail.role}.
                   </div>
                 )}
@@ -354,12 +354,12 @@ export function UserDetailPanel({
                 )}
 
                 {!isAdmin && (
-                  <div className="mt-6 rounded-xl border border-zinc-200 p-4 dark:border-zinc-700">
-                    <p className="text-xs font-bold uppercase tracking-wider text-zinc-500">Change account status</p>
+                  <div className="mt-6 rounded-xl border border-border p-4 dark:border-border">
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted">Change account status</p>
                     <select
                       value={statusDraft}
                       onChange={(e) => setStatusDraft(e.target.value)}
-                      className="mt-3 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+                      className="mt-3 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm dark:border-border dark:bg-surface"
                     >
                       <option value="active">Active</option>
                       <option value="suspended">Suspended (banned)</option>
@@ -375,14 +375,14 @@ export function UserDetailPanel({
                             : 'Reason for status change (optional)'
                         }
                         rows={3}
-                        className="mt-3 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+                        className="mt-3 w-full rounded-lg border border-border px-3 py-2 text-sm dark:border-border dark:bg-surface"
                       />
                     )}
                     <button
                       type="button"
                       disabled={actionLoading || !statusChanged}
                       onClick={handleStatusUpdate}
-                      className="mt-3 w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+                      className="mt-3 w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-50"
                     >
                       {actionLoading ? 'Saving…' : 'Apply status change'}
                     </button>
@@ -392,13 +392,13 @@ export function UserDetailPanel({
                 {showBooks && (
                   <div className="mt-8">
                     <div className="mb-3 flex items-center gap-2">
-                      <BookOpen size={16} className="text-indigo-600" />
-                      <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-500">
+                      <BookOpen size={16} className="text-accent" />
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-muted">
                         Submitted books ({books.length})
                       </h3>
                     </div>
                     {books.length === 0 ? (
-                      <p className="rounded-xl border border-dashed border-zinc-200 px-4 py-8 text-center text-sm text-zinc-500 dark:border-zinc-700">
+                      <p className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted dark:border-border">
                         No books linked to this user.
                       </p>
                     ) : (
@@ -409,7 +409,7 @@ export function UserDetailPanel({
                       </div>
                     )}
                     {books.length > 0 && (
-                      <p className="mt-3 text-xs text-zinc-500">
+                      <p className="mt-3 text-xs text-muted">
                         Open a book to review, approve, reject, or notify the author.
                       </p>
                     )}
@@ -420,8 +420,8 @@ export function UserDetailPanel({
           </div>
 
           {!loading && detail && isReader && !isBanned && (
-            <div className="border-t border-zinc-200 p-6 dark:border-zinc-800">
-              <p className="mb-3 text-xs font-bold uppercase tracking-wider text-zinc-500">Quick actions</p>
+            <div className="border-t border-border p-6 dark:border-border">
+              <p className="mb-3 text-xs font-bold uppercase tracking-wider text-muted">Quick actions</p>
               <button
                 type="button"
                 disabled={actionLoading}
@@ -435,8 +435,8 @@ export function UserDetailPanel({
           )}
 
           {!loading && detail && isAuthorOrPublisher && (showBanForCreator || showApproveForCreator) && (
-            <div className="border-t border-zinc-200 p-6 dark:border-zinc-800">
-              <p className="mb-3 text-xs font-bold uppercase tracking-wider text-zinc-500">Quick actions</p>
+            <div className="border-t border-border p-6 dark:border-border">
+              <p className="mb-3 text-xs font-bold uppercase tracking-wider text-muted">Quick actions</p>
               <div className="flex gap-3">
                 {showBanForCreator && (
                   <button
@@ -470,16 +470,16 @@ export function UserDetailPanel({
                 )}
               </div>
               {isApprovedAccount && (
-                <p className="mt-2 text-xs text-zinc-500">Verified account — ban only if access should be revoked.</p>
+                <p className="mt-2 text-xs text-muted">Verified account — ban only if access should be revoked.</p>
               )}
               {isPendingVerification && !isBanned && (
-                <p className="mt-2 text-xs text-zinc-500">Pending verification — approve or ban this account.</p>
+                <p className="mt-2 text-xs text-muted">Pending verification — approve or ban this account.</p>
               )}
             </div>
           )}
 
           {!loading && detail && isAdmin && (
-            <div className="border-t border-zinc-200 p-6 text-sm text-zinc-500 dark:border-zinc-800">
+            <div className="border-t border-border p-6 text-sm text-muted dark:border-border">
               Admin accounts cannot be banned from this panel.
             </div>
           )}
