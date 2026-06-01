@@ -56,8 +56,11 @@ const pages: RuntimeCaching = {
 
 /** Core app routes — warm cache for offline shell (installed PWA). */
 const coreAppRoutes: RuntimeCaching = {
-  urlPattern: ({ url }: { url: URL }) =>
-    /^\/(library|login|offline\.html)(\/|$)/.test(url.pathname),
+  urlPattern: ({ request, url }) => {
+    if (request.destination !== 'document') return false;
+    const pathname = url?.pathname ?? new URL(request.url).pathname;
+    return /^\/(library|login|offline\.html)(\/|$)/.test(pathname);
+  },
   handler: 'NetworkFirst',
   options: {
     cacheName: 'booknest-core-routes',
