@@ -12,6 +12,7 @@ export interface RealtimeMessage {
   chat_id: string;
   is_read: boolean;
   post_id?: string | null;
+  reply_to_message_id?: string | null;
   deleted_for_everyone_at?: string | null;
   created_at: string;
   users?: {

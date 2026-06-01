@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { authApi } from '@/lib/api/client';
-import { getSession, saveSession, clearSession, isSessionValid } from '@/lib/db/authSession';
+import {
+  getSession,
+  saveSession,
+  clearSession,
+  isSessionValid,
+  isSessionValidForOfflineReading,
+} from '@/lib/db/authSession';
 import { getAuthFieldErrors, getFriendlyAuthMessage } from '@/lib/auth/mapAuthError';
 import { canUseOfflineSession } from '@/lib/offline/offlineAccess';
 import type { SessionUser } from '@repo/types';
@@ -280,7 +286,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return false;
     }
 
-    const valid = await isSessionValid();
+    const valid =
+      typeof navigator !== 'undefined' && !navigator.onLine
+        ? await isSessionValidForOfflineReading()
+        : await isSessionValid();
+
     if (!valid) {
       set({ isInitializing: false });
       return false;

@@ -6,11 +6,10 @@ import Link from 'next/link';
 import { MapPin, Link as LinkIcon, Calendar, Settings, MessageCircle, Lock } from 'lucide-react';
 import { FollowButton } from './FollowButton';
 import { FollowListModal } from './FollowListModal';
-import { ProfilePhotoGrid } from './ProfilePhotoGrid';
 import { formatJoinDate } from '@/lib/utils/formatJoinDate';
 import { useTranslation } from '@/hooks/useTranslation';
 import { CommunityCard, cn, ui } from '../../ui';
-import type { ProfilePhoto } from '@repo/types';
+import { ImageLightbox } from '@/components/ui/ImageLightbox';
 
 type FollowListKind = 'followers' | 'following';
 
@@ -21,7 +20,6 @@ interface ProfileHeaderProps {
     username: string;
     bio?: string | null;
     avatarUrl?: string | null;
-    photos?: ProfilePhoto[];
     coverUrl?: string | null;
     location?: string | null;
     website?: string | null;
@@ -48,6 +46,7 @@ interface ProfileHeaderProps {
 export function ProfileHeader({ profile, onEdit, onSettings }: ProfileHeaderProps) {
   const { t, locale } = useTranslation();
   const [coverImageError, setCoverImageError] = useState(false);
+  const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
   const [followList, setFollowList] = useState<FollowListKind | null>(null);
   const isReader = !profile.role || profile.role === 'reader';
   const joinLabel = useMemo(
@@ -80,11 +79,19 @@ export function ProfileHeader({ profile, onEdit, onSettings }: ProfileHeaderProp
       <div className="relative px-4 sm:px-6 pb-5 sm:pb-6">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 -mt-12 sm:-mt-14">
           <div className="-mt-1">
-            <ProfilePhotoGrid
-              avatarUrl={profile.avatarUrl}
-              photos={profile.photos}
-              avatarSize="lg"
-            />
+            <button
+              type="button"
+              onClick={() => profile.avatarUrl && setAvatarPreviewOpen(true)}
+              className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-white shadow-md overflow-hidden bg-gradient-to-br from-bn-primary to-bn-accent flex items-center justify-center text-white text-2xl font-bold flex-shrink-0"
+              aria-label={profile.name}
+            >
+              {profile.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={profile.avatarUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                profile.name.charAt(0).toUpperCase()
+              )}
+            </button>
           </div>
 
           <div className="flex flex-wrap gap-2 sm:pb-1 sm:ml-auto">
@@ -236,6 +243,15 @@ export function ProfileHeader({ profile, onEdit, onSettings }: ProfileHeaderProp
         isOpen={followList !== null}
         onClose={() => setFollowList(null)}
       />
+
+      {profile.avatarUrl && (
+        <ImageLightbox
+          images={[{ id: 'avatar', url: profile.avatarUrl, alt: profile.name }]}
+          initialIndex={0}
+          isOpen={avatarPreviewOpen}
+          onClose={() => setAvatarPreviewOpen(false)}
+        />
+      )}
     </CommunityCard>
   );
 }

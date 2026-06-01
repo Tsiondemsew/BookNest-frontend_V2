@@ -30,6 +30,14 @@ export interface OfflineBook {
   fileSize: number;
   downloadedAt: string;
   lastAccessed: string;
+  bookId?: string;
+  coverUrl?: string | null;
+}
+
+export interface OfflineCover {
+  bookFormatId: string;
+  coverBlob: Blob;
+  cachedAt: string;
 }
 
 interface BookNestDB extends DBSchema {
@@ -55,6 +63,10 @@ interface BookNestDB extends DBSchema {
       'bookFormatId': string;
     };
   };
+  'offline_covers': {
+    key: string;
+    value: OfflineCover;
+  };
 }
 
 let dbInstance: IDBPDatabase<BookNestDB> | null = null;
@@ -62,8 +74,8 @@ let dbInstance: IDBPDatabase<BookNestDB> | null = null;
 export async function getDB(): Promise<IDBPDatabase<BookNestDB>> {
   if (dbInstance) return dbInstance;
   
-  dbInstance = await openDB<BookNestDB>('BookNestDB', 2, {
-    async upgrade(db, oldVersion, newVersion, transaction) {
+  dbInstance = await openDB<BookNestDB>('BookNestDB', 3, {
+    async upgrade(db, oldVersion) {
       // Version 1 stores
       if (!db.objectStoreNames.contains('reading_progress')) {
         const progressStore = db.createObjectStore('reading_progress', { keyPath: 'id' });
@@ -76,12 +88,15 @@ export async function getDB(): Promise<IDBPDatabase<BookNestDB>> {
         queueStore.createIndex('createdAt', 'createdAt');
       }
       
-      // Version 2: Add offline_books store (new in version 2)
       if (oldVersion < 2) {
         if (!db.objectStoreNames.contains('offline_books')) {
           const booksStore = db.createObjectStore('offline_books', { keyPath: 'id' });
           booksStore.createIndex('bookFormatId', 'bookFormatId');
         }
+      }
+
+      if (oldVersion < 3 && !db.objectStoreNames.contains('offline_covers')) {
+        db.createObjectStore('offline_covers', { keyPath: 'bookFormatId' });
       }
     },
   });
@@ -145,4 +160,56 @@ export async function getAllOfflineBooks(): Promise<OfflineBook[]> {
 export async function deleteOfflineBook(bookFormatId: string): Promise<void> {
   const db = await getDB();
   await db.delete('offline_books', bookFormatId);
+  try {
+    await db.delete('offline_covers', bookFormatId);
+  } catch {
+    /* store may not exist on old DB */
+  }
+}
+
+export async function enqueueOfflineQueueItem(
+  item: Pick<OfflineQueueItem, 'action' | 'payload'>
+): Promise<void> {
+  const db = await getDB();
+  const id = `q-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  await db.put('offline_queue', {
+    id,
+    action: item.action,
+    payload: item.payload,
+    createdAt: new Date().toISOString(),
+    retries: 0,
+  });
+}
+
+export async function getAllOfflineQueueItems(): Promise<OfflineQueueItem[]> {
+  const db = await getDB();
+  return db.getAll('offline_queue');
+}
+
+export async function deleteOfflineQueueItem(id: string): Promise<void> {
+  const db = await getDB();
+  await db.delete('offline_queue', id);
+}
+
+export async function updateOfflineQueueRetries(id: string, retries: number): Promise<void> {
+  const db = await getDB();
+  const item = await db.get('offline_queue', id);
+  if (item) {
+    await db.put('offline_queue', { ...item, retries });
+  }
+}
+
+export async function saveOfflineCover(bookFormatId: string, coverBlob: Blob): Promise<void> {
+  const db = await getDB();
+  await db.put('offline_covers', {
+    bookFormatId,
+    coverBlob,
+    cachedAt: new Date().toISOString(),
+  });
+}
+
+export async function getOfflineCover(bookFormatId: string): Promise<Blob | null> {
+  const db = await getDB();
+  const row = await db.get('offline_covers', bookFormatId);
+  return row?.coverBlob ?? null;
 }

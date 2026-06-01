@@ -33,6 +33,7 @@ interface LibraryBookCardProps {
   progress: number;
   isDownloaded: boolean;
   isDownloading: boolean;
+  downloadPercent?: number;
   isOffline: boolean;
   onDownload: () => void;
   onRemoveOffline: () => void;
@@ -44,6 +45,7 @@ export function LibraryBookCard({
   progress,
   isDownloaded,
   isDownloading,
+  downloadPercent,
   isOffline,
   onDownload,
   onRemoveOffline,
@@ -123,6 +125,21 @@ export function LibraryBookCard({
             <CheckCircle size={12} />
             {t('common.finished')}
           </p>
+        )}
+
+        {isDownloading && downloadPercent != null && (
+          <div className="mt-3">
+            <div className="flex justify-between text-[11px] text-[#4A5568] mb-1">
+              <span>{t('library.downloading')}</span>
+              <span className="tabular-nums font-medium">{downloadPercent}%</span>
+            </div>
+            <div className="w-full bg-[#E8E2D9] rounded-full h-1.5">
+              <div
+                className="bg-[#B85C38] h-1.5 rounded-full transition-all"
+                style={{ width: `${downloadPercent}%` }}
+              />
+            </div>
+          </div>
         )}
 
         <div className="mt-auto pt-4 flex items-center gap-2">

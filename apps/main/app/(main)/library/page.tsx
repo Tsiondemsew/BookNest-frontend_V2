@@ -17,6 +17,8 @@ import { BookReviewModal } from '@/features/reviews/components/BookReviewModal';
 import { LibraryBookCard } from '@/features/library/components/LibraryBookCard';
 import { reviewsApi } from '@/lib/api/client';
 import { saveLibraryCache, getLibraryCache } from '@/lib/offline/libraryCache';
+import { mergeLibraryWithOffline } from '@/lib/offline/libraryMerge';
+import { getAllOfflineBooks } from '@/lib/db/schema';
 import { OfflinePageNotice } from '@/components/OfflinePageNotice';
 import { useTranslation } from '@/hooks/useTranslation';
 
@@ -32,27 +34,36 @@ interface DownloadStatus {
   [key: string]: {
     isDownloading: boolean;
     isDownloaded: boolean;
+    downloadPercent?: number;
     error?: string;
   };
 }
 
 const fetchLibrary = async (): Promise<LibraryItem[]> => {
+  const offlineBooks = await getAllOfflineBooks();
+
+  if (!navigator.onLine) {
+    const cached = getLibraryCache();
+    const merged = mergeLibraryWithOffline(cached, offlineBooks);
+    if (merged.length > 0) return merged;
+    throw new Error('OFFLINE_NO_LIBRARY');
+  }
+
   try {
     const response = await libraryApi.getLibrary();
     saveLibraryCache(response.data);
     return response.data;
-  } catch (error) {
-    if (!navigator.onLine) {
-      const cached = getLibraryCache();
-      if (cached) return cached;
-    }
-    throw error;
+  } catch {
+    const cached = getLibraryCache();
+    const merged = mergeLibraryWithOffline(cached, offlineBooks);
+    if (merged.length > 0) return merged;
+    throw new Error('LIBRARY_FETCH_FAILED');
   }
 };
 
 export default function LibraryPage() {
   const { t } = useTranslation();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, isOfflineMode } = useAuthStore();
   const queryClient = useQueryClient();
   const [libraryWithProgress, setLibraryWithProgress] = useState<LibraryWithProgress[]>([]);
   const [downloadStatus, setDownloadStatus] = useState<DownloadStatus>({});
@@ -92,6 +103,10 @@ export default function LibraryPage() {
     enabled: isAuthenticated,
     networkMode: 'offlineFirst',
     staleTime: 5 * 60 * 1000,
+    placeholderData: () => {
+      const cached = getLibraryCache();
+      return cached ?? undefined;
+    },
     retry: (count) => navigator.onLine && count < 1,
   });
 
@@ -185,16 +200,33 @@ export default function LibraryPage() {
   
   setDownloadStatus(prev => ({
     ...prev,
-    [bookFormatId]: { ...prev[bookFormatId], isDownloading: true, error: undefined }
+    [bookFormatId]: {
+      ...prev[bookFormatId],
+      isDownloading: true,
+      downloadPercent: 0,
+      error: undefined,
+    },
   }));
-  
-  const result = await downloadBookForOffline(bookFormatId, bookTitle, formatType, fileSizeMB);
-  
+
+  const libraryItem = library?.find((i) => i.format.id === bookFormatId);
+
+  const result = await downloadBookForOffline(bookFormatId, bookTitle, formatType, fileSizeMB, {
+    onProgress: (percent) => {
+      setDownloadStatus((prev) => ({
+        ...prev,
+        [bookFormatId]: { ...prev[bookFormatId], downloadPercent: percent },
+      }));
+    },
+    coverUrl: libraryItem?.book.cover_image_url,
+    bookId: libraryItem?.book.id,
+  });
+
   setDownloadStatus(prev => ({
     ...prev,
     [bookFormatId]: { 
       ...prev[bookFormatId], 
-      isDownloading: false, 
+      isDownloading: false,
+      downloadPercent: undefined,
       isDownloaded: result.success,
       error: result.error
     }
@@ -441,7 +473,11 @@ export default function LibraryPage() {
                 progress={progress}
                 isDownloaded={isDownloaded}
                 isDownloading={isDownloading}
-                isOffline={typeof navigator !== 'undefined' && !navigator.onLine}
+                downloadPercent={status?.downloadPercent}
+                isOffline={
+                  isOfflineMode ||
+                  (typeof navigator !== 'undefined' && !navigator.onLine)
+                }
                 onDownload={() => handleDownload(item.format.id, item.book.title, item.format.type, fileSizeMB)}
                 onRemoveOffline={() => handleRemoveOffline(item.format.id)}
                 onReviewClick={(bookId, bookTitle) => setReviewTarget({ bookId, bookTitle })}

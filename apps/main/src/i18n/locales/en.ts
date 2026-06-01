@@ -140,6 +140,7 @@ export const en = {
     startReading: 'Start reading',
     removeOffline: 'Remove offline copy',
     downloadOffline: 'Download for offline',
+    downloading: 'Downloading…',
     addedOn: 'Added {{date}}',
     downloadReady: '"{{title}}" is ready for offline reading.',
     downloadFailed: 'Download failed: {{error}}',
@@ -324,6 +325,7 @@ export const en = {
     tabProfile: 'Profile',
     tabPrivacy: 'Privacy',
     tabNotifications: 'Notifications',
+    tabOffline: 'Offline',
     emailAddress: 'Email address',
     emailReadonly: 'Your email cannot be changed',
     displayName: 'Display name',
@@ -520,6 +522,41 @@ export const en = {
   offline: {
     libraryNotice: 'library list is from your last online visit',
     statsNotice: 'stats may be from your last online session',
+    pageNotice: "You're offline — {{label}}. Connect to refresh.",
+    pageNoticeDefault: 'showing saved data',
+    checklistTitle: 'Offline reading',
+    checklistDesc:
+      'Install the app, sign in with Remember me, download books, then read without internet.',
+    readyToRead: 'You can read downloaded books offline.',
+    notReadyYet: 'Complete the steps below to read offline.',
+    storageUsed: 'Storage on this device: {{used}} MB of {{total}} MB used.',
+    devNote:
+      'Offline mode requires a production build (pnpm build && pnpm start). It does not work in npm run dev.',
+    bannerGuest: 'Connect to sign in and sync your library.',
+    bannerBrowserTab:
+      'Install the BookNest app for offline reading. Browser tabs need the internet for most features.',
+    bannerInstalledNoBooks:
+      'Open Library while online and tap Download on books you want offline.',
+    bannerWithBooks:
+      '{{count}} downloaded book(s) available. Marketplace and chat need internet.',
+    check: {
+      install: 'App installed',
+      installOk: 'Running as installed BookNest',
+      installFail: 'Use your browser menu → Install BookNest (or Add to Home Screen)',
+      shell: 'Offline shell cached',
+      shellOk: 'App pages can open without network',
+      shellFail: 'Visit Library once while online (production build, not dev)',
+      session: 'Signed in (saved session)',
+      sessionOk: 'Session saved on this device',
+      sessionRememberOk: 'Remember me enabled — extended offline reading',
+      sessionFail: 'Sign in online and enable Remember me for longer offline access',
+      downloads: 'Books downloaded',
+      downloadsOk: '{{count}} book(s) ready to read offline',
+      downloadsFail: 'In Library, tap Download on each book while online',
+      libraryCache: 'Library list cached',
+      libraryCacheOk: 'Your last library sync is stored here',
+      libraryCacheFail: 'Open Library once while online to cache your list',
+    },
   },
 };
 

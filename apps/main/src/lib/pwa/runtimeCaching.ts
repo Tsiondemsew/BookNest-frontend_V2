@@ -54,9 +54,25 @@ const pages: RuntimeCaching = {
   },
 };
 
+/** Core app routes — warm cache for offline shell (installed PWA). */
+const coreAppRoutes: RuntimeCaching = {
+  urlPattern: ({ url }: { url: URL }) =>
+    /^\/(library|login|offline\.html)(\/|$)/.test(url.pathname),
+  handler: 'NetworkFirst',
+  options: {
+    cacheName: 'booknest-core-routes',
+    expiration: {
+      maxEntries: 16,
+      maxAgeSeconds: 14 * 24 * 60 * 60,
+    },
+    networkTimeoutSeconds: 6,
+  },
+};
+
 export const pwaRuntimeCaching: RuntimeCaching[] = [
   networkOnlyApi,
   networkOnlySupabase,
+  coreAppRoutes,
   pages,
   staticAssets,
 ];

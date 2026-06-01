@@ -23,6 +23,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { feedApi } from '@/lib/api/client';
 import { useTranslation } from '@/hooks/useTranslation';
 import { ImageLightbox } from '@/components/ui/ImageLightbox';
+import { useDismissPostNotificationWhenSeen } from '@/lib/notifications/dismissOnView';
 import type { Post, PostTag } from '@repo/types';
 
 interface FeedPostProps {
@@ -78,6 +79,8 @@ export function FeedPost({
 }: FeedPostProps) {
   const { user } = useAuthStore();
   const { t } = useTranslation();
+  const postRef = useRef<HTMLElement>(null);
+  useDismissPostNotificationWhenSeen(post.id, postRef);
   const [imageLightboxOpen, setImageLightboxOpen] = useState(false);
   const formatRelativeTime = useFormatRelativeTime();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -173,7 +176,8 @@ export function FeedPost({
 
   return (
     <article
-      id={highlighted ? `post-${post.id}` : undefined}
+      ref={postRef}
+      id={`post-${post.id}`}
       className={`bg-white rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow scroll-mt-24 ${
         highlighted
           ? 'border-[#B85C38] ring-2 ring-[#B85C38]/30 shadow-md'

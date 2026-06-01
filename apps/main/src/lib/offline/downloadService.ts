@@ -7,6 +7,9 @@ import {
 } from '@/lib/db/schema';
 import { downloadApi } from '@/lib/api/client';
 import { isInstalledPwa } from '@/lib/pwa/isInstalledPwa';
+import { cacheCoverForBook } from '@/lib/offline/coverCache';
+
+export type DownloadProgressCallback = (percent: number) => void;
 
 export async function checkStorageSpace(fileSizeMB: number): Promise<{
   available: number;
@@ -51,20 +54,69 @@ export async function getStorageInfo(): Promise<{
 }
 
 export function canDownloadOffline(): { allowed: boolean; reason?: string } {
+  if (!navigator.onLine) {
+    return {
+      allowed: false,
+      reason: 'Connect to the internet to download books.',
+    };
+  }
   if (!isInstalledPwa()) {
     return {
       allowed: false,
-      reason: 'Install the app to download for offline use.',
+      reason: 'Install the BookNest app to download for offline use.',
     };
   }
   return { allowed: true };
+}
+
+async function readResponseWithProgress(
+  response: Response,
+  onProgress?: DownloadProgressCallback
+): Promise<ArrayBuffer> {
+  const total = Number(response.headers.get('content-length')) || 0;
+  const reader = response.body?.getReader();
+
+  if (!reader) {
+    const buf = await response.arrayBuffer();
+    onProgress?.(100);
+    return buf;
+  }
+
+  const chunks: Uint8Array[] = [];
+  let loaded = 0;
+
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (value) {
+      chunks.push(value);
+      loaded += value.length;
+      if (total > 0 && onProgress) {
+        onProgress(Math.min(99, Math.round((loaded / total) * 100)));
+      }
+    }
+  }
+
+  const merged = new Uint8Array(loaded);
+  let offset = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.length;
+  }
+  onProgress?.(100);
+  return merged.buffer;
 }
 
 export async function downloadBookForOffline(
   bookFormatId: string,
   title: string,
   formatType: 'PDF' | 'Audio',
-  fileSizeMB: number
+  fileSizeMB: number,
+  options?: {
+    onProgress?: DownloadProgressCallback;
+    coverUrl?: string | null;
+    bookId?: string;
+  }
 ): Promise<{ success: boolean; error?: string; fileSize?: number }> {
   const pwaCheck = canDownloadOffline();
   if (!pwaCheck.allowed) {
@@ -75,7 +127,7 @@ export async function downloadBookForOffline(
   if (!isSufficient) {
     return {
       success: false,
-      error: `Not enough space. Need ${fileSizeMB}MB, only ${available}MB available.`,
+      error: `Not enough space. Need ~${fileSizeMB}MB, only ${available}MB available.`,
     };
   }
 
@@ -91,11 +143,11 @@ export async function downloadBookForOffline(
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
         (errorData as { error?: { message?: string } }).error?.message ||
-          `Download failed: ${response.status}`
+          `Download failed (${response.status}). Stay online and try again.`
       );
     }
 
-    const fileData = await response.arrayBuffer();
+    const fileData = await readResponseWithProgress(response, options?.onProgress);
     const fileSize = fileData.byteLength;
 
     const offlineBook: OfflineBook = {
@@ -107,9 +159,12 @@ export async function downloadBookForOffline(
       fileSize,
       downloadedAt: new Date().toISOString(),
       lastAccessed: new Date().toISOString(),
+      bookId: options?.bookId,
+      coverUrl: options?.coverUrl ?? null,
     };
 
     await saveOfflineBook(offlineBook);
+    void cacheCoverForBook(bookFormatId, options?.coverUrl);
 
     return { success: true, fileSize };
   } catch (error: unknown) {

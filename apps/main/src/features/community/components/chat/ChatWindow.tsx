@@ -20,7 +20,7 @@ import {
   X,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useRealtimeChat } from '@/hooks/useRealtimeChat';
+import { useRealtimeChat, type RealtimeMessage } from '@/hooks/useRealtimeChat';
 import { chatApi } from '@/lib/api/client';
 import { getFriendlyNetworkMessage } from '@/lib/api/networkErrorMessage';
 import { dismissMessageNotifications } from '@/lib/notifications/dismissOnView';
@@ -30,6 +30,11 @@ import { SharedPostCard } from './SharedPostCard';
 import { EmojiQuickPicker } from './EmojiQuickPicker';
 import { GroupManageModal } from './GroupManageModal';
 import { ForwardMessageModal } from './ForwardMessageModal';
+import {
+  parseAnyForwarded,
+  replyPreviewFromMessage,
+  toReplyPreview,
+} from './messageFormat';
 import { ui } from '@/features/community/ui';
 import type { ChatMessage } from '@repo/types';
 
@@ -157,25 +162,35 @@ export function ChatWindow({
         return;
       }
 
-      const formatted: ChatMessage[] = newMessages.map((msg) => ({
-        id: msg.id,
-        content: msg.deleted_for_everyone_at ? null : msg.content,
-        postId: msg.post_id || null,
-        senderId: msg.sender_id,
-        senderName: msg.users?.email?.split('@')[0] || 'User',
-        senderAvatar: msg.users?.avatar_url || undefined,
-        isRead: msg.is_read,
-        isDeleted: Boolean(msg.deleted_for_everyone_at),
-        deletedForEveryone: Boolean(msg.deleted_for_everyone_at),
-        createdAt: msg.created_at,
-      }));
-
       setMessages((prev) => {
+        const formatRealtime = (msg: RealtimeMessage): ChatMessage => {
+          const base: ChatMessage = {
+            id: msg.id,
+            content: msg.deleted_for_everyone_at ? null : msg.content,
+            postId: msg.post_id || null,
+            senderId: msg.sender_id,
+            senderName: msg.users?.email?.split('@')[0] || 'User',
+            senderAvatar: msg.users?.avatar_url || undefined,
+            isRead: msg.is_read,
+            isDeleted: Boolean(msg.deleted_for_everyone_at),
+            deletedForEveryone: Boolean(msg.deleted_for_everyone_at),
+            createdAt: msg.created_at,
+            replyTo: null,
+          };
+          if (msg.reply_to_message_id) {
+            const parent = prev.find((p) => p.id === msg.reply_to_message_id);
+            if (parent) base.replyTo = toReplyPreview(parent);
+          }
+          return base;
+        };
+
+        const formatted = newMessages.map(formatRealtime);
         const existingIds = new Set(prev.map((m) => m.id));
         const toAdd = formatted.filter((m) => !existingIds.has(m.id));
         const updated = prev.map((m) => {
-          const update = formatted.find((f) => f.id === m.id);
-          return update || m;
+          const incoming = formatted.find((f) => f.id === m.id);
+          if (!incoming) return m;
+          return m.replyTo ? m : { ...m, ...incoming, replyTo: incoming.replyTo ?? m.replyTo };
         });
         return [...updated, ...toAdd];
       });
@@ -223,15 +238,7 @@ export function ChatWindow({
       senderId: currentUserId,
       senderName: 'You',
       isRead: false,
-      replyTo: replyingTo
-        ? {
-            id: replyingTo.id,
-            senderId: replyingTo.senderId,
-            senderName: replyingTo.senderName,
-            content: replyingTo.content?.slice(0, 200) || null,
-            isDeleted: replyingTo.isDeleted,
-          }
-        : null,
+      replyTo: replyingTo ? toReplyPreview(replyingTo) : null,
       createdAt: new Date().toISOString(),
     };
 
@@ -252,6 +259,7 @@ export function ChatWindow({
             ? {
                 ...realMessage,
                 senderName: 'You',
+                replyTo: replyPreviewFromMessage(realMessage, replyingTo),
               }
             : msg
         )
@@ -609,6 +617,7 @@ export function ChatWindow({
             return (
               <div
                 key={msg.id}
+                id={`msg-${msg.id}`}
                 className={`flex group ${isOwn ? 'justify-end' : 'justify-start'}`}
               >
                 <div className={`relative max-w-[min(75%,20rem)] ${isOwn ? 'items-end' : 'items-start'} flex flex-col`}>
@@ -626,9 +635,18 @@ export function ChatWindow({
                           <SharedPostCard post={msg.sharedPost} compact />
                         </div>
                       )}
-                      {!isDeleted && msg.content && msg.content !== 'Shared a post' && (
-                        <MessageBody content={msg.content} isOwn={isOwn} />
-                      )}
+                      {!isDeleted &&
+                        msg.content &&
+                        msg.content !== 'Shared a post' &&
+                        (() => {
+                          const forwarded = parseAnyForwarded(msg.content);
+                          if (forwarded) {
+                            return (
+                              <ForwardQuote from={forwarded.from} text={forwarded.text} isOwn={isOwn} />
+                            );
+                          }
+                          return <MessageBody content={msg.content} isOwn={isOwn} />;
+                        })()}
                       {!isDeleted && msg.editedAt && (
                         <p className={`text-[10px] mt-1 ${isOwn ? 'text-white/70' : 'text-bn-muted'}`}>
                           edited
@@ -812,8 +830,7 @@ export function ChatWindow({
       </div>
 
       <ForwardMessageModal
-        messageContent={forwardMessage?.content || ''}
-        senderName={forwardMessage?.senderName || 'User'}
+        message={forwardMessage}
         excludeChatId={chatId}
         isOpen={Boolean(forwardMessage)}
         onClose={() => setForwardMessage(null)}
@@ -864,18 +881,54 @@ function ReplyQuote({
   isOwn: boolean;
 }) {
   return (
+    <button
+      type="button"
+      className={cn(
+        'mb-2 w-full text-left rounded-lg border-l-[3px] px-2.5 py-1.5 text-xs transition-opacity hover:opacity-90',
+        isOwn ? 'border-white/90 bg-black/10' : 'border-[#B85C38] bg-[#F5F1EB]/90'
+      )}
+      onClick={() => {
+        const el = document.getElementById(`msg-${reply.id}`);
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }}
+    >
+      <p className={cn('font-semibold truncate text-[11px]', isOwn ? 'text-white' : 'text-[#B85C38]')}>
+        {reply.senderName}
+      </p>
+      <p className={cn('line-clamp-2 mt-0.5', isOwn ? 'text-white/85' : 'text-[#4A5568]')}>
+        {reply.isDeleted ? 'Message deleted' : reply.content || '…'}
+      </p>
+    </button>
+  );
+}
+
+function ForwardQuote({
+  from,
+  text,
+  isOwn,
+}: {
+  from: string;
+  text: string;
+  isOwn: boolean;
+}) {
+  return (
     <div
       className={cn(
         'mb-2 rounded-lg border-l-[3px] px-2.5 py-1.5 text-xs',
-        isOwn ? 'border-white/80 bg-white/15' : 'border-bn-primary bg-[#F5F1EB]'
+        isOwn ? 'border-white/70 bg-black/10' : 'border-[#2C3E50]/40 bg-[#F5F1EB]'
       )}
     >
-      <p className={cn('font-semibold truncate', isOwn ? 'text-white/95' : 'text-bn-primary')}>
-        {reply.senderName}
+      <p className={cn('text-[10px] uppercase tracking-wide font-medium', isOwn ? 'text-white/75' : 'text-bn-muted')}>
+        Forwarded
       </p>
-      <p className={cn('line-clamp-2 mt-0.5', isOwn ? 'text-white/80' : 'text-bn-muted')}>
-        {reply.isDeleted ? 'Message deleted' : reply.content || '…'}
+      <p className={cn('font-semibold truncate mt-0.5', isOwn ? 'text-white' : 'text-[#2C3E50]')}>
+        {from}
       </p>
+      {text.trim() ? (
+        <p className={cn('line-clamp-3 mt-0.5', isOwn ? 'text-white/85' : 'text-[#4A5568]')}>
+          {text}
+        </p>
+      ) : null}
     </div>
   );
 }

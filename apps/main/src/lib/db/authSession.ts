@@ -1,5 +1,6 @@
 import { openDB } from 'idb';
 import type { SessionUser } from '@repo/types';
+import { isInstalledPwa } from '@/lib/pwa/isInstalledPwa';
 
 interface StoredSession {
   id: string;
@@ -47,4 +48,22 @@ export async function isSessionValid(): Promise<boolean> {
 
   const expiresAt = new Date(session.expiresAt).getTime();
   return Date.now() < expiresAt + CLOCK_SKEW_MS;
+}
+
+/** Installed PWA + remember-me: allow reading downloaded books after cookie expiry (offline only). */
+const OFFLINE_READING_GRACE_MS = 30 * 24 * 60 * 60 * 1000;
+
+export async function isSessionValidForOfflineReading(): Promise<boolean> {
+  if (await isSessionValid()) return true;
+  if (!isInstalledPwa()) return false;
+
+  const session = await getSession();
+  if (!session?.user) return false;
+
+  if (session.rememberMe) {
+    const issued = new Date(session.issuedAt).getTime();
+    if (Date.now() < issued + OFFLINE_READING_GRACE_MS) return true;
+  }
+
+  return false;
 }

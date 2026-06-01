@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { bootstrapAuth, refreshAuthWhenOnline } from '@/lib/auth/bootstrapAuth';
-import { initOfflineSync } from '@/lib/progress/progressService';
+import { initOffline } from '@/lib/offline/initOffline';
 import { flushReadingActivity } from '@/lib/reading/recordActivity';
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { NotificationNavListener } from '@/components/NotificationNavListener';
@@ -16,7 +16,7 @@ import './globals.css';
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     bootstrapAuth();
-    initOfflineSync();
+    initOffline();
     void flushReadingActivity();
 
     const handleOnline = () => {

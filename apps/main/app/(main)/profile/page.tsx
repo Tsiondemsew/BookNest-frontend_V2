@@ -7,20 +7,17 @@ import { profileApi } from '@/lib/api/client';
 import { authApi } from '@/lib/api/client';
 import { subscribeToStreakPush, unsubscribeFromStreakPush } from '@/lib/notifications/subscribePush';
 import type { Profile } from '@repo/types';
-import { Camera, Save, Loader2, TrendingUp, Globe, Bell, Shield, User, Mail, MapPin, Link as LinkIcon, ExternalLink, Trash2 } from 'lucide-react';
+import { Camera, Save, Loader2, TrendingUp, Globe, Bell, Shield, User, Mail, MapPin, Link as LinkIcon, ExternalLink, Trash2, WifiOff } from 'lucide-react';
+import { OfflineChecklist } from '@/components/OfflineChecklist';
 import Link from 'next/link';
 import { BackLink } from '@/features/community/ui';
-import { ProfilePhotoGrid } from '@/features/community/components/profile/ProfilePhotoGrid';
 import { bnInputClass, bnTextareaClass } from '@/components/ui/inputStyles';
 import { formatJoinDate } from '@/lib/utils/formatJoinDate';
 import { useTranslation } from '@/hooks/useTranslation';
 import { ImageLightbox } from '@/components/ui/ImageLightbox';
-import type { ProfilePhoto } from '@repo/types';
 
 export default function ProfilePage() {
   const { t, locale } = useTranslation();
-  const [profilePhotos, setProfilePhotos] = useState<ProfilePhoto[]>([]);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
   const router = useRouter();
@@ -31,7 +28,7 @@ export default function ProfilePage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'profile' | 'privacy' | 'notifications'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'privacy' | 'notifications' | 'offline'>('profile');
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -64,13 +61,6 @@ export default function ProfilePage() {
       const response = await profileApi.getProfile();
       const data = response.data;
       setProfile(data);
-
-      try {
-        const photosRes = await profileApi.getProfilePhotos();
-        setProfilePhotos(photosRes.data || []);
-      } catch {
-        setProfilePhotos([]);
-      }
 
       const roleData = data.profile_data as Record<string, string> | null;
       setFormData({
@@ -160,33 +150,6 @@ export default function ProfilePage() {
     }
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
-  };
-
-  const handleAddProfilePhoto = async (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      alert(t('profile.avatarHint'));
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      alert(t('profile.avatarHint'));
-      return;
-    }
-    setUploadingPhoto(true);
-    try {
-      const res = await profileApi.uploadProfilePhoto(file);
-      setProfilePhotos((prev) => [...prev, res.data]);
-      setSuccessMessage(t('profile.saved'));
-      setTimeout(() => setSuccessMessage(null), 3000);
-    } catch {
-      alert(t('profile.saveFailed'));
-    } finally {
-      setUploadingPhoto(false);
-    }
-  };
-
-  const handleDeleteProfilePhoto = async (photoId: string) => {
-    await profileApi.deleteProfilePhoto(photoId);
-    setProfilePhotos((prev) => prev.filter((p) => p.id !== photoId));
   };
 
   const handleSave = async () => {
@@ -357,18 +320,6 @@ export default function ProfilePage() {
             {memberSince && (
               <p className="text-sm text-[#4A5568]">{t('profile.joinedOn', { date: memberSince })}</p>
             )}
-            <div>
-              <p className="text-sm font-medium text-[#1A2A3A] mb-1">{t('profile.photoGallery')}</p>
-              <p className="text-xs text-[#4A5568] mb-2">{t('profile.photoGalleryHint')}</p>
-              <ProfilePhotoGrid
-                avatarUrl={profile?.avatar_url}
-                photos={profilePhotos}
-                canEdit
-                isUploading={uploadingPhoto}
-                onAddPhoto={handleAddProfilePhoto}
-                onDeletePhoto={handleDeleteProfilePhoto}
-              />
-            </div>
           </div>
         </div>
       </div>
@@ -407,6 +358,17 @@ export default function ProfilePage() {
         >
           <Bell size={16} className="inline mr-2" />
           {t('profile.tabNotifications')}
+        </button>
+        <button
+          onClick={() => setActiveTab('offline')}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'offline'
+              ? 'text-[#B85C38] border-b-2 border-[#B85C38]'
+              : 'text-[#4A5568] hover:text-[#1A2A3A]'
+          }`}
+        >
+          <WifiOff size={16} className="inline mr-2" />
+          {t('profile.tabOffline')}
         </button>
       </div>
 
@@ -644,6 +606,12 @@ export default function ProfilePage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {activeTab === 'offline' && (
+        <div className="bg-white rounded-xl border border-[#E8E2D9] p-6">
+          <OfflineChecklist />
         </div>
       )}
 

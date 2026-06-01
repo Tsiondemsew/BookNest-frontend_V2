@@ -107,8 +107,6 @@ export const endpoints = {
   profile: {
     me: '/api/profile',
     avatar: '/api/profile/avatar',
-    photos: '/api/profile/photos',
-    photo: (photoId: string) => `/api/profile/photos/${photoId}`,
     settings: '/api/profile/settings',
     deleteAccount: '/api/profile/account',
     public: (username: string) => `/api/public/profile/${encodeURIComponent(username)}`,
