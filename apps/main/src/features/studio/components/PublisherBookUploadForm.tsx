@@ -10,6 +10,7 @@ import { useBookUpload } from '../hooks/useBookUpload';
 import { useBookForEdit } from '../hooks/useBookForEdit';
 import { useAuthorSearch } from '../hooks/useAuthorSearch';
 import { AddFormatPanel } from './AddFormatPanel';
+import { StudioFilePreview } from './StudioFilePreview';
 import { useToast, AlertDialog } from '@/components/feedback';
 import { ConflictError } from '@repo/api-client';
 import type { Genre } from '@repo/types';
@@ -663,6 +664,14 @@ export function PublisherBookUploadForm({ bookId }: { bookId?: string } = {}) {
                   </div>
                 </div>
               </div>
+
+              {(pdfFile || (existingPdf?.storage_path && existingPdf.id)) && (
+                <StudioFilePreview
+                  formatType="PDF"
+                  file={pdfFile}
+                  formatId={!pdfFile && existingPdf?.storage_path ? existingPdf.id : undefined}
+                />
+              )}
             </div>
           )}
         </div>
@@ -731,6 +740,14 @@ export function PublisherBookUploadForm({ bookId }: { bookId?: string } = {}) {
                   </div>
                 </div>
               </div>
+
+              {(audioFile || (existingAudio?.storage_path && existingAudio.id)) && (
+                <StudioFilePreview
+                  formatType="Audio"
+                  file={audioFile}
+                  formatId={!audioFile && existingAudio?.storage_path ? existingAudio.id : undefined}
+                />
+              )}
             </div>
           )}
         </div>

@@ -42,10 +42,10 @@ export interface WithdrawalRequest {
 export interface RequestWithdrawalPayload {
   amount: number;
   payout_details: {
+    payment_method: 'cbe' | 'abyssinia' | 'telebirr';
     account_name: string;
-    bank_name?: string;
     account_number?: string;
-    mobile_money?: string;
+    telebirr_phone?: string;
   };
 }
 

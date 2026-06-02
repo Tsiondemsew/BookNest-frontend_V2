@@ -24,10 +24,10 @@ export function mergeLibraryWithOffline(
         file_size_bytes: b.fileSize,
       },
       book: {
-        id: b.bookFormatId,
+        id: b.bookId ?? b.bookFormatId,
         title: b.title,
         author_name: '—',
-        cover_image_url: '/icons/icon-192x192.png',
+        cover_image_url: b.coverUrl ?? '/icons/icon-192x192.png',
         language: 'en',
         status: 'published',
         created_at: b.downloadedAt,

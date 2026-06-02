@@ -7,8 +7,7 @@ import { profileApi } from '@/lib/api/client';
 import { authApi } from '@/lib/api/client';
 import { subscribeToStreakPush, unsubscribeFromStreakPush } from '@/lib/notifications/subscribePush';
 import type { Profile } from '@repo/types';
-import { Camera, Save, Loader2, TrendingUp, Globe, Bell, Shield, User, Mail, MapPin, Link as LinkIcon, ExternalLink, Trash2, WifiOff } from 'lucide-react';
-import { OfflineChecklist } from '@/components/OfflineChecklist';
+import { Camera, Save, Loader2, TrendingUp, Globe, Bell, Shield, User, Mail, MapPin, Link as LinkIcon, ExternalLink, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { BackLink } from '@/features/community/ui';
 import { bnInputClass, bnTextareaClass } from '@/components/ui/inputStyles';
@@ -28,7 +27,7 @@ export default function ProfilePage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'profile' | 'privacy' | 'notifications' | 'offline'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'privacy' | 'notifications'>('profile');
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -359,17 +358,6 @@ export default function ProfilePage() {
           <Bell size={16} className="inline mr-2" />
           {t('profile.tabNotifications')}
         </button>
-        <button
-          onClick={() => setActiveTab('offline')}
-          className={`px-4 py-2 text-sm font-medium transition-colors ${
-            activeTab === 'offline'
-              ? 'text-[#B85C38] border-b-2 border-[#B85C38]'
-              : 'text-[#4A5568] hover:text-[#1A2A3A]'
-          }`}
-        >
-          <WifiOff size={16} className="inline mr-2" />
-          {t('profile.tabOffline')}
-        </button>
       </div>
 
       {/* Profile Tab */}
@@ -606,12 +594,6 @@ export default function ProfilePage() {
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-      {activeTab === 'offline' && (
-        <div className="bg-white rounded-xl border border-[#E8E2D9] p-6">
-          <OfflineChecklist />
         </div>
       )}
 

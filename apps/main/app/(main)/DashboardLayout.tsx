@@ -25,6 +25,7 @@ import { getDefaultHomeForRole } from '@/lib/routes/defaultRoutes';
 import { isNavHrefActive } from '@/lib/navigation/navActive';
 import { useReaderGenrePreferences } from '@/features/auth/hooks/useReaderGenrePreferences';
 import { GenrePreferencesPrompt } from '@/features/auth/components/GenrePreferencesPrompt';
+import { OfflineRouteGuard } from '@/components/OfflineRouteGuard';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -220,7 +221,7 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
               : `p-4 sm:p-6 ${mobileBottomNavPaddingClass(pathname)}`
           }`}
         >
-          {children}
+          <OfflineRouteGuard>{children}</OfflineRouteGuard>
         </main>
         <MobileBottomNav />
       </div>

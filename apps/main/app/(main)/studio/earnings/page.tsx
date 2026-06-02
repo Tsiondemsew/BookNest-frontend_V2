@@ -20,9 +20,11 @@ import { useAuthStore } from '@/stores/authStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import {
   validateWithdrawalForm,
+  buildPayoutDetailsPayload,
   type WithdrawalFormErrors,
   type WithdrawalFormValues,
 } from '@/features/studio/validateWithdrawal';
+import { PAYOUT_METHODS } from '@repo/validation';
 
 const inputClass = (hasError: boolean) =>
   `w-full px-3.5 py-2.5 rounded-xl border bg-white text-[#1A2A3A] placeholder:text-[#4A5568]/60 focus:outline-none focus:ring-2 focus:ring-[#B85C38]/20 transition-colors ${
@@ -32,9 +34,9 @@ const inputClass = (hasError: boolean) =>
 const EMPTY_FORM: WithdrawalFormValues = {
   amount: '',
   accountName: '',
-  bankName: '',
+  paymentMethod: '',
   accountNumber: '',
-  mobileMoney: '',
+  telebirrPhone: '',
 };
 
 export default function StudioEarningsPage() {
@@ -73,12 +75,7 @@ export default function StudioEarningsPage() {
     mutationFn: () =>
       sellerFinanceApi.requestWithdrawal({
         amount: parseFloat(form.amount.trim()),
-        payout_details: {
-          account_name: form.accountName.trim(),
-          bank_name: form.bankName.trim() || undefined,
-          account_number: form.accountNumber.trim() || undefined,
-          mobile_money: form.mobileMoney.trim() || undefined,
-        },
+        payout_details: buildPayoutDetailsPayload(form),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['seller'] });
@@ -90,13 +87,24 @@ export default function StudioEarningsPage() {
     onError: (e: Error) => setSubmitError(e.message || t('studioPayouts.withdrawFailed')),
   });
 
-  const updateField = (field: keyof WithdrawalFormValues, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+  const updateField = <K extends keyof WithdrawalFormValues>(
+    field: K,
+    value: WithdrawalFormValues[K]
+  ) => {
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === 'paymentMethod') {
+        next.accountNumber = '';
+        next.telebirrPhone = '';
+      }
+      return next;
+    });
     setErrors((prev) => {
       const next = { ...prev };
       delete next[field];
-      if (field === 'bankName' || field === 'accountNumber' || field === 'mobileMoney') {
-        delete next.payoutMethod;
+      if (field === 'paymentMethod') {
+        delete next.accountNumber;
+        delete next.telebirrPhone;
       }
       delete next.form;
       return next;
@@ -252,48 +260,84 @@ export default function StudioEarningsPage() {
 
             <div className="rounded-xl border border-[#E8E2D9] bg-[#FDFBF7]/60 p-4 space-y-4">
               <p className="text-sm font-medium text-[#1A2A3A]">{t('studioPayouts.payoutDetails')}</p>
-              {errors.payoutMethod && (
-                <p className="text-xs text-red-600">{errors.payoutMethod}</p>
+              <Field
+                id="withdraw-payment-method"
+                label={t('studioPayouts.paymentMethodLabel')}
+                error={errors.paymentMethod}
+              >
+                <div className="space-y-2" role="radiogroup" aria-labelledby="withdraw-payment-method">
+                  {PAYOUT_METHODS.map((method) => (
+                    <label
+                      key={method.id}
+                      className={`flex items-start gap-3 rounded-xl border px-3 py-2.5 cursor-pointer transition-colors ${
+                        form.paymentMethod === method.id
+                          ? 'border-[#B85C38] bg-white'
+                          : 'border-[#E8E2D9] bg-white/80 hover:border-[#B85C38]/40'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value={method.id}
+                        checked={form.paymentMethod === method.id}
+                        onChange={() => updateField('paymentMethod', method.id)}
+                        className="mt-1 accent-[#B85C38]"
+                      />
+                      <span>
+                        <span className="block text-sm font-medium text-[#1A2A3A]">
+                          {t(`studioPayouts.method_${method.id}`)}
+                        </span>
+                        <span className="block text-xs text-[#4A5568] mt-0.5">
+                          {t(`studioPayouts.methodHint_${method.id}`)}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </Field>
+
+              {(form.paymentMethod === 'cbe' || form.paymentMethod === 'abyssinia') && (
+                <Field
+                  id="withdraw-account-number"
+                  label={t('studioPayouts.accountNumberLabel')}
+                  hint={t(`studioPayouts.accountHint_${form.paymentMethod}`)}
+                  error={errors.accountNumber}
+                >
+                  <input
+                    id="withdraw-account-number"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    placeholder={t(`studioPayouts.accountPlaceholder_${form.paymentMethod}`)}
+                    value={form.accountNumber}
+                    onChange={(e) =>
+                      updateField('accountNumber', e.target.value.replace(/\D/g, ''))
+                    }
+                    className={inputClass(Boolean(errors.accountNumber))}
+                    aria-invalid={Boolean(errors.accountNumber)}
+                  />
+                </Field>
               )}
 
-              <Field
-                id="withdraw-bank"
-                label={t('studioPayouts.bankNameLabel')}
-                error={errors.bankName}
-              >
-                <input
-                  id="withdraw-bank"
-                  value={form.bankName}
-                  onChange={(e) => updateField('bankName', e.target.value)}
-                  className={inputClass(Boolean(errors.bankName))}
-                />
-              </Field>
-
-              <Field
-                id="withdraw-account-number"
-                label={t('studioPayouts.accountNumberLabel')}
-                error={errors.accountNumber}
-              >
-                <input
-                  id="withdraw-account-number"
-                  value={form.accountNumber}
-                  onChange={(e) => updateField('accountNumber', e.target.value)}
-                  className={inputClass(Boolean(errors.accountNumber))}
-                />
-              </Field>
-
-              <Field
-                id="withdraw-mobile"
-                label={t('studioPayouts.mobileMoneyLabel')}
-                error={errors.mobileMoney}
-              >
-                <input
-                  id="withdraw-mobile"
-                  value={form.mobileMoney}
-                  onChange={(e) => updateField('mobileMoney', e.target.value)}
-                  className={inputClass(Boolean(errors.mobileMoney))}
-                />
-              </Field>
+              {form.paymentMethod === 'telebirr' && (
+                <Field
+                  id="withdraw-telebirr"
+                  label={t('studioPayouts.telebirrPhoneLabel')}
+                  hint={t('studioPayouts.telebirrPhoneHint')}
+                  error={errors.telebirrPhone}
+                >
+                  <input
+                    id="withdraw-telebirr"
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    placeholder={t('studioPayouts.telebirrPhonePlaceholder')}
+                    value={form.telebirrPhone}
+                    onChange={(e) => updateField('telebirrPhone', e.target.value)}
+                    className={inputClass(Boolean(errors.telebirrPhone))}
+                    aria-invalid={Boolean(errors.telebirrPhone)}
+                  />
+                </Field>
+              )}
             </div>
 
             <button

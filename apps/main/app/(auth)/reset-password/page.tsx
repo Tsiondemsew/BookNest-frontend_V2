@@ -41,6 +41,12 @@ function ResetPasswordContent() {
 
     const loadTokens = async () => {
       try {
+        const intent = new URLSearchParams(window.location.search).get('intent');
+        if (intent === 'verify') {
+          router.replace(`/verify${window.location.search}${window.location.hash}`);
+          return;
+        }
+
         const parsed = await parseAuthTokensFromUrl(async (code) => {
           const supabase = getSupabaseClient();
           const { data, error } = await supabase.auth.exchangeCodeForSession(code);
@@ -56,7 +62,8 @@ function ResetPasswordContent() {
         } else if (
           parsed.type === 'signup' ||
           parsed.type === 'email' ||
-          parsed.type === 'verify'
+          parsed.type === 'verify' ||
+          intent === 'verify'
         ) {
           setLinkError('This is an email verification link, not a password reset link.');
           setTokens(null);
@@ -84,7 +91,7 @@ function ResetPasswordContent() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [router]);
 
   const onSubmit = async (data: ResetFormValues) => {
     if (!tokens) {

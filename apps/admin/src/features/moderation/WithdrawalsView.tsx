@@ -10,9 +10,18 @@ import { AdminBadge, AdminButton, AdminCard, AdminSelect } from '@/components/ui
 function payoutSummary(details: unknown): string {
   if (!details || typeof details !== 'object') return '—';
   const d = details as Record<string, unknown>;
-  const method = d.method ?? d.payout_method ?? d.type;
-  const account = d.account_number ?? d.phone ?? d.account ?? d.email;
-  const parts = [method, account].filter(Boolean).map(String);
+  const methodRaw = d.payment_method ?? d.method ?? d.payout_method ?? d.type;
+  const methodLabels: Record<string, string> = {
+    cbe: 'CBE',
+    abyssinia: 'Bank of Abyssinia',
+    telebirr: 'Telebirr',
+  };
+  const method =
+    typeof methodRaw === 'string' ? methodLabels[methodRaw] ?? methodRaw : undefined;
+  const account =
+    d.account_number ?? d.telebirr_phone ?? d.phone ?? d.account ?? d.mobile_money;
+  const name = d.account_name;
+  const parts = [method, name, account].filter(Boolean).map(String);
   return parts.length ? parts.join(' · ') : JSON.stringify(details).slice(0, 60);
 }
 

@@ -60,8 +60,8 @@ export function ReadingJourneyView() {
   });
 
   const cachedProfile = getGamificationCache();
-  const showStale = Boolean(isError && cachedProfile);
-  const profileData = data?.data ?? (showStale ? cachedProfile : null);
+  const profileData = data?.data ?? cachedProfile ?? null;
+  const showStale = Boolean(isError && cachedProfile && navigator.onLine);
 
   useEffect(() => {
     const unsubscribe = onReadingActivityRecorded(() => {
@@ -71,7 +71,9 @@ export function ReadingJourneyView() {
   }, [queryClient]);
 
   useEffect(() => {
-    const onFocus = () => void refetch();
+    const onFocus = () => {
+      if (navigator.onLine) void refetch();
+    };
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   }, [refetch]);

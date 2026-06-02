@@ -19,6 +19,9 @@ function VerifyEmailContent() {
 
     const run = async () => {
       try {
+        const search = window.location.search;
+        const intent = new URLSearchParams(search).get('intent');
+
         const parsed = await parseAuthTokensFromUrl(async (code) => {
           const supabase = getSupabaseClient();
           const { data, error } = await supabase.auth.exchangeCodeForSession(code);
@@ -30,7 +33,11 @@ function VerifyEmailContent() {
           throw new Error('Invalid or expired verification link.');
         }
 
-        if (parsed.type === 'recovery') {
+        const isRecovery =
+          intent === 'recovery' ||
+          parsed.type === 'recovery';
+
+        if (isRecovery) {
           const suffix = window.location.hash || window.location.search;
           router.replace(`/reset-password${suffix}`);
           return;

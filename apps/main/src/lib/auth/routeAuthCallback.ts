@@ -47,9 +47,9 @@ export function resolveAuthCallbackTarget(search: string, hash: string): string 
     return `/verify${search}${hash}`;
   }
 
-  // PKCE links that fell back to Site URL (/) often arrive with ?code= only
+  // PKCE (?code=) without intent — verify page detects recovery vs signup after token exchange
   if (params.get('code')) {
-    return `/reset-password${search}`;
+    return `/verify${search}${hash}`;
   }
 
   if (hash.includes('access_token')) {

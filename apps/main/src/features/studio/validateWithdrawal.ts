@@ -1,13 +1,22 @@
+import type { PayoutMethod } from '@repo/validation';
+import {
+  isValidAbyssiniaAccount,
+  isValidCbeAccount,
+  isValidTelebirrPhone,
+  normalizeDigits,
+  normalizeEthiopianMobile,
+} from '@repo/validation';
+
 export type WithdrawalFormValues = {
   amount: string;
   accountName: string;
-  bankName: string;
+  paymentMethod: PayoutMethod | '';
   accountNumber: string;
-  mobileMoney: string;
+  telebirrPhone: string;
 };
 
 export type WithdrawalFormErrors = Partial<
-  Record<keyof WithdrawalFormValues | 'payoutMethod' | 'form', string>
+  Record<keyof WithdrawalFormValues | 'form', string>
 >;
 
 type TranslateFn = (key: string, params?: Record<string, string | number>) => string;
@@ -39,27 +48,44 @@ export function validateWithdrawalForm(
     errors.accountName = t('studioPayouts.errorAccountName');
   }
 
-  const bankName = values.bankName.trim();
-  const accountNumber = values.accountNumber.trim();
-  const mobileMoney = values.mobileMoney.trim();
-  const hasBank = Boolean(bankName || accountNumber);
-  const hasMobile = mobileMoney.length >= 9;
-
-  if (!hasBank && !hasMobile) {
-    errors.payoutMethod = t('studioPayouts.errorPayoutMethod');
-  }
-
-  if (accountNumber && accountNumber.length < 4) {
-    errors.accountNumber = t('studioPayouts.errorAccountNumber');
-  }
-
-  if (accountNumber && !bankName) {
-    errors.bankName = t('studioPayouts.errorBankName');
-  }
-
-  if (mobileMoney && mobileMoney.length > 0 && mobileMoney.length < 9) {
-    errors.mobileMoney = t('studioPayouts.errorPayoutMethod');
+  if (!values.paymentMethod) {
+    errors.paymentMethod = t('studioPayouts.errorPaymentMethodRequired');
+  } else if (values.paymentMethod === 'cbe') {
+    if (!isValidCbeAccount(values.accountNumber)) {
+      errors.accountNumber = t('studioPayouts.errorCbeAccount');
+    }
+  } else if (values.paymentMethod === 'abyssinia') {
+    if (!isValidAbyssiniaAccount(values.accountNumber)) {
+      errors.accountNumber = t('studioPayouts.errorAbyssiniaAccount');
+    }
+  } else if (values.paymentMethod === 'telebirr') {
+    if (!isValidTelebirrPhone(values.telebirrPhone)) {
+      errors.telebirrPhone = t('studioPayouts.errorTelebirrPhone');
+    }
   }
 
   return errors;
+}
+
+export function buildPayoutDetailsPayload(values: WithdrawalFormValues) {
+  const accountName = values.accountName.trim();
+
+  if (values.paymentMethod === 'telebirr') {
+    const phone = normalizeEthiopianMobile(values.telebirrPhone) ?? values.telebirrPhone.trim();
+    return {
+      payment_method: 'telebirr' as const,
+      account_name: accountName,
+      telebirr_phone: phone,
+    };
+  }
+
+  if (values.paymentMethod === 'cbe' || values.paymentMethod === 'abyssinia') {
+    return {
+      payment_method: values.paymentMethod,
+      account_name: accountName,
+      account_number: normalizeDigits(values.accountNumber),
+    };
+  }
+
+  throw new Error('Payment method required');
 }

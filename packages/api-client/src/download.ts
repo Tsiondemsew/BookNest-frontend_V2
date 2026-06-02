@@ -7,5 +7,7 @@ export function createDownloadApi(config: ApiConfig) {
   return {
     getDownloadUrl: (bookFormatId: string) =>
       `${base}${endpoints.download.book(bookFormatId)}`,
+    getFormatPreviewUrl: (bookFormatId: string) =>
+      `${base}${endpoints.books.formatPreview(bookFormatId)}`,
   };
 }

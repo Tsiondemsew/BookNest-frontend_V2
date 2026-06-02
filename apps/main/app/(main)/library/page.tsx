@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { BookOpen, Headphones, ArrowRight, Clock, CheckCircle, Loader2, TrendingUp } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
-import { libraryApi } from '@/lib/api/client';
 import { mergeProgressFromServer } from '@/lib/progress/progressService';
 import { canDownloadOffline } from '@/lib/offline/downloadService';
 import type { LibraryItem } from '@repo/types';
@@ -16,9 +15,8 @@ import { ExitReviewPrompt } from '@/features/reviews/components/ExitReviewPrompt
 import { BookReviewModal } from '@/features/reviews/components/BookReviewModal';
 import { LibraryBookCard } from '@/features/library/components/LibraryBookCard';
 import { reviewsApi } from '@/lib/api/client';
-import { saveLibraryCache, getLibraryCache, getLibraryCacheAsync } from '@/lib/offline/libraryCache';
-import { mergeLibraryWithOffline } from '@/lib/offline/libraryMerge';
-import { getAllOfflineBooks } from '@/lib/db/schema';
+import { getLibraryCache } from '@/lib/offline/libraryCache';
+import { fetchLibraryForQuery } from '@/lib/offline/fetchLibrary';
 import { OfflinePageNotice } from '@/components/OfflinePageNotice';
 import { useTranslation } from '@/hooks/useTranslation';
 
@@ -39,27 +37,7 @@ interface DownloadStatus {
   };
 }
 
-const fetchLibrary = async (): Promise<LibraryItem[]> => {
-  const offlineBooks = await getAllOfflineBooks();
-
-  if (!navigator.onLine) {
-    const cached = await getLibraryCacheAsync();
-    const merged = mergeLibraryWithOffline(cached, offlineBooks);
-    if (merged.length > 0) return merged;
-    throw new Error('OFFLINE_NO_LIBRARY');
-  }
-
-  try {
-    const response = await libraryApi.getLibrary();
-    saveLibraryCache(response.data);
-    return response.data;
-  } catch {
-    const cached = await getLibraryCacheAsync();
-    const merged = mergeLibraryWithOffline(cached, offlineBooks);
-    if (merged.length > 0) return merged;
-    throw new Error('LIBRARY_FETCH_FAILED');
-  }
-};
+const fetchLibrary = fetchLibraryForQuery;
 
 export default function LibraryPage() {
   const { t } = useTranslation();

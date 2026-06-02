@@ -8,8 +8,6 @@ export const OFFLINE_ALLOWED_PREFIXES = [
   '/library',
   '/reader',
   '/dashboard/reading',
-  '/community',
-  '/profile',
 ];
 
 export function canUseOfflineSession(): boolean {

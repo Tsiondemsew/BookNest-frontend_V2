@@ -149,6 +149,7 @@ export const endpoints = {
     addFormat: (id: string) => `/api/books/${id}/formats`,
     submit: (id: string) => `/api/books/${id}/submit`,
     formatById: (formatId: string) => `/api/books/formats/${formatId}`,
+    formatPreview: (formatId: string) => `/api/books/formats/${formatId}/preview`,
   },
   users: {
     search: '/api/users/search',

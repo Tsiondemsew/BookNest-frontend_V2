@@ -7,8 +7,6 @@ import {
   MessageCircle,
   Bookmark,
   MoreHorizontal,
-  BookOpen,
-  User,
   Pencil,
   Trash2,
   Loader2,
@@ -18,14 +16,14 @@ import {
 import { CommentsFloatPanel } from '../comments/CommentsFloatPanel';
 import { ShareButton } from '../interactions/ShareButton';
 import { ReportButton } from '../interactions/ReportButton';
+import { PostTags } from './PostTags';
 import { useFormatRelativeTime } from '../../utils/timeFormat';
 import { useAuthStore } from '@/stores/authStore';
 import { feedApi } from '@/lib/api/client';
 import { useTranslation } from '@/hooks/useTranslation';
 import { ImageLightbox } from '@/components/ui/ImageLightbox';
 import { useDismissPostNotificationWhenSeen } from '@/lib/notifications/dismissOnView';
-import { getBookDetailPath } from '@/lib/books/bookPaths';
-import type { Post, PostTag } from '@repo/types';
+import type { Post } from '@repo/types';
 
 interface FeedPostProps {
   post: Post;
@@ -34,48 +32,6 @@ interface FeedPostProps {
   onPostUpdated?: (post: Post) => void;
   onPostDeleted?: (postId: string) => void;
   showComments?: boolean;
-}
-
-function PostTags({ tags }: { tags: PostTag[] }) {
-  if (!tags.length) return null;
-
-  return (
-    <div className="flex flex-wrap gap-2 mt-3">
-      {tags.map((tag) => {
-        if (tag.type === 'user') {
-          return (
-            <Link
-              key={`user-${tag.id}`}
-              href={`/@${encodeURIComponent(tag.username)}`}
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F5F1EB] text-xs text-[#1A2A3A] hover:bg-[#E8E2D9] transition-colors"
-            >
-              <User size={12} className="text-[#B85C38]" />@{tag.username}
-            </Link>
-          );
-        }
-        if (tag.type === 'book' && tag.id) {
-          return (
-            <Link
-              key={`book-${tag.id}`}
-              href={getBookDetailPath(tag.id)}
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#E8F4FD] text-xs text-[#2C3E50] hover:bg-[#D6EBFA] transition-colors font-medium"
-            >
-              {tag.coverUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={tag.coverUrl} alt="" className="w-4 h-5 object-cover rounded-sm" />
-              ) : (
-                <BookOpen size={12} className="text-[#B85C38]" />
-              )}
-              {tag.title}
-            </Link>
-          );
-        }
-        return null;
-      })}
-    </div>
-  );
 }
 
 export function FeedPost({
