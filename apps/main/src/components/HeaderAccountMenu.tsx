@@ -7,9 +7,10 @@ import { User, Settings, LogOut } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { isNavHrefActive } from '@/lib/navigation/navActive';
+import type { SessionUser } from '@repo/types';
 
 interface HeaderAccountMenuProps {
-  user: { name?: string; email?: string; role?: string } | null;
+  user: SessionUser | null;
 }
 
 export function HeaderAccountMenu({ user }: HeaderAccountMenuProps) {
@@ -20,7 +21,17 @@ export function HeaderAccountMenu({ user }: HeaderAccountMenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  const initial = user?.name?.[0] || user?.email?.[0] || 'U';
+  const displayName =
+    user?.publicName ||
+    (user?.role === 'author'
+      ? t('account.author')
+      : user?.role === 'publisher'
+        ? t('account.publisher')
+        : user?.role === 'admin'
+          ? 'Admin'
+          : t('account.reader'));
+  const initial = displayName[0] || user?.email?.[0] || 'U';
+  const avatarUrl = user?.avatarUrl?.trim() || null;
 
   useEffect(() => {
     setOpen(false);
@@ -75,7 +86,7 @@ export function HeaderAccountMenu({ user }: HeaderAccountMenuProps) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`flex items-center justify-center w-9 h-9 rounded-full text-sm font-semibold transition-all ring-2 ring-offset-1 ${
+        className={`flex items-center justify-center w-9 h-9 rounded-full text-sm font-semibold transition-all ring-2 ring-offset-1 overflow-hidden ${
           isProfileActive || open
             ? 'bg-[#2C3E50] text-white ring-[#B85C38]/40'
             : 'bg-[#2C3E50] text-white ring-transparent hover:ring-[#E8E2D9]'
@@ -84,7 +95,17 @@ export function HeaderAccountMenu({ user }: HeaderAccountMenuProps) {
         aria-expanded={open}
         aria-haspopup="menu"
       >
-        {initial.toUpperCase()}
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={avatarUrl}
+            alt={t('account.myProfile')}
+            className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          initial.toUpperCase()
+        )}
       </button>
 
       {open && (
@@ -92,11 +113,24 @@ export function HeaderAccountMenu({ user }: HeaderAccountMenuProps) {
           role="menu"
           className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl border border-[#E8E2D9] shadow-xl shadow-[#1A2A3A]/10 py-1.5 z-50 animate-[menuIn_0.18s_ease-out_both] origin-top-right"
         >
-          <div className="px-3 py-2 border-b border-[#E8E2D9] mb-1">
-            <p className="text-sm font-semibold text-[#1A2A3A] truncate">
-              {user?.name || user?.email?.split('@')[0]}
-            </p>
+          <div className="px-3 py-2 border-b border-[#E8E2D9] mb-1 flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-full overflow-hidden bg-[#2C3E50] text-white flex items-center justify-center flex-shrink-0">
+              {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <span className="text-sm font-semibold">{initial.toUpperCase()}</span>
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-[#1A2A3A] truncate">{displayName}</p>
             <p className="text-xs text-[#4A5568] capitalize">{roleLabel}</p>
+            </div>
           </div>
 
           {menuItems.map(({ label, href, icon: Icon }) => {

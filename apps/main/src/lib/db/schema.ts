@@ -32,6 +32,7 @@ export interface OfflineBook {
   lastAccessed: string;
   bookId?: string;
   coverUrl?: string | null;
+  mimeType?: string | null;
 }
 
 export interface OfflineCover {
@@ -149,10 +150,31 @@ export async function markProgressSynced(id: string, clearPending = true): Promi
 }
 
 // Helper functions for offline_books
+async function normalizeOfflineFileData(
+  fileData: ArrayBuffer | Uint8Array | Blob | null | undefined
+): Promise<ArrayBuffer | null> {
+  if (!fileData) return null;
+  if (fileData instanceof ArrayBuffer) return fileData;
+  if (fileData instanceof Uint8Array) {
+    const buffer = new ArrayBuffer(fileData.byteLength);
+    new Uint8Array(buffer).set(fileData);
+    return buffer;
+  }
+  if (fileData instanceof Blob) {
+    return await fileData.arrayBuffer();
+  }
+  return null;
+}
+
 export async function saveOfflineBook(book: OfflineBook): Promise<void> {
   const db = await getDB();
+  const normalizedFileData = await normalizeOfflineFileData(book.fileData);
+  if (!normalizedFileData) {
+    throw new Error('Offline book data is missing or invalid.');
+  }
+
   try {
-    await db.put('offline_books', book);
+    await db.put('offline_books', { ...book, fileData: normalizedFileData });
   } catch (err: unknown) {
     const name = err instanceof DOMException ? err.name : (err as { name?: string } | null)?.name;
     if (name === 'QuotaExceededError') {

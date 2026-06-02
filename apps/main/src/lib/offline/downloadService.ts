@@ -137,6 +137,7 @@ export async function downloadBookForOffline(
     const response = await fetch(url, {
       method: 'GET',
       credentials: 'include',
+      cache: 'no-store',
     });
 
     if (!response.ok) {
@@ -147,8 +148,17 @@ export async function downloadBookForOffline(
       );
     }
 
+    const contentType = response.headers.get('content-type') ?? '';
+    if (contentType.includes('application/json') || contentType.includes('text/html')) {
+      const textBody = await response.text().catch(() => '');
+      throw new Error(
+        `Download failed: unexpected response type ${contentType}. ${textBody ? `Server message: ${textBody}` : ''}`
+      );
+    }
+
     const fileData = await readResponseWithProgress(response, options?.onProgress);
     const fileSize = fileData.byteLength;
+    const mimeType = response.headers.get('content-type') ?? null;
 
     const offlineBook: OfflineBook = {
       id: bookFormatId,
@@ -161,6 +171,7 @@ export async function downloadBookForOffline(
       lastAccessed: new Date().toISOString(),
       bookId: options?.bookId,
       coverUrl: options?.coverUrl ?? null,
+      mimeType,
     };
 
     await saveOfflineBook(offlineBook);

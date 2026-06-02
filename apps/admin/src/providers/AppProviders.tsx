@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { bootstrapAuth } from '@/lib/auth/bootstrapAuth';
 import { registerSessionExpiredHandler } from '@/lib/auth/sessionExpired';
 import { useAdminAuthStore } from '@/stores/authStore';
+import { DialogProvider } from '@/components/feedback/DialogProvider';
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   const [client] = useState(() => new QueryClient());
@@ -22,5 +23,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     void bootstrapAuth();
   }, []);
 
-  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={client}>
+      <DialogProvider>{children}</DialogProvider>
+    </QueryClientProvider>
+  );
 }

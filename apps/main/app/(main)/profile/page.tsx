@@ -14,9 +14,11 @@ import { bnInputClass, bnTextareaClass } from '@/components/ui/inputStyles';
 import { formatJoinDate } from '@/lib/utils/formatJoinDate';
 import { useTranslation } from '@/hooks/useTranslation';
 import { ImageLightbox } from '@/components/ui/ImageLightbox';
+import { useDialog } from '@/components/feedback';
 
 export default function ProfilePage() {
   const { t, locale } = useTranslation();
+  const { alert, confirm } = useDialog();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
   const router = useRouter();
@@ -88,12 +90,12 @@ export default function ProfilePage() {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      void alert('Please select an image file');
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('Image must be less than 5MB');
+      void alert('Image must be less than 5MB');
       return;
     }
 
@@ -110,7 +112,7 @@ export default function ProfilePage() {
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error('Failed to upload avatar:', error);
-      alert('Failed to upload avatar');
+      void alert('Failed to upload avatar');
     } finally {
       setUploadingAvatar(false);
     }
@@ -188,6 +190,18 @@ export default function ProfilePage() {
               bio: formData.bio,
               location: formData.location,
               website_url: isAuthor || isPublisher ? formData.website_url : prev.website_url,
+              publicName: (
+                isAuthor
+                  ? formData.pen_name
+                  : isPublisher
+                    ? formData.company_name
+                    : formData.display_name
+              ).trim() || prev.publicName,
+              profile_data: isAuthor
+                ? { ...(prev.profile_data || {}), pen_name: formData.pen_name.trim() }
+                : isPublisher
+                  ? { ...(prev.profile_data || {}), company_name: formData.company_name.trim() }
+                  : { ...(prev.profile_data || {}), display_name: formData.display_name.trim() },
               settings: {
                 is_public: formData.is_public,
                 show_email: formData.show_email,
@@ -200,6 +214,19 @@ export default function ProfilePage() {
           : prev
       );
 
+      // Keep header/chat display name in sync without requiring logout.
+      const nextPublicName = (isAuthor
+        ? formData.pen_name
+        : isPublisher
+          ? formData.company_name
+          : formData.display_name
+      ).trim();
+      if (nextPublicName) {
+        useAuthStore.setState((state) =>
+          state.user ? { user: { ...state.user, publicName: nextPublicName } } : {}
+        );
+      }
+
       if (formData.push_notifications) {
         void subscribeToStreakPush();
       } else {
@@ -210,16 +237,21 @@ export default function ProfilePage() {
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error('Failed to save profile:', error);
-      alert(t('profile.saveFailed'));
+      void alert(t('profile.saveFailed'));
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleDeleteAccount = async () => {
-    const confirmed = window.confirm(
-      'Delete your account permanently? This cannot be undone. Your profile and login will be removed.'
-    );
+    const confirmed = await confirm({
+      title: 'Delete account?',
+      description:
+        'Delete your account permanently? This cannot be undone. Your profile and login will be removed.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      destructive: true,
+    });
     if (!confirmed) return;
 
     setIsDeleting(true);
@@ -229,7 +261,9 @@ export default function ProfilePage() {
       router.push('/login');
     } catch (error) {
       console.error('Failed to delete account:', error);
-      alert('Could not delete account. Try again or contact support.');
+      await alert('Could not delete account. Try again or contact support.', {
+        title: 'Delete failed',
+      });
     } finally {
       setIsDeleting(false);
     }

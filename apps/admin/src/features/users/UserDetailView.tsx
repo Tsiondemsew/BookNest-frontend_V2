@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Flag, BookOpen, MessageSquare } from 'lucide-react';
 import { adminApi } from '@/lib/api/client';
 import { AdminBadge, AdminButton, AdminCard } from '@/components/ui/AdminUi';
+import { useDialog } from '@/components/feedback/DialogProvider';
 
 function statusTone(status: string): 'neutral' | 'success' | 'warning' | 'danger' {
   if (status === 'active' || status === 'published' || status === 'approved') return 'success';
@@ -18,6 +19,7 @@ export function UserDetailView() {
   const params = useParams();
   const queryClient = useQueryClient();
   const userId = params.id as string;
+  const { confirm } = useDialog();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'users', userId],
@@ -116,10 +118,16 @@ export function UserDetailView() {
                 <AdminButton
                   variant="danger"
                   disabled={statusMutation.isPending}
-                  onClick={() => {
-                    if (window.confirm('Suspend this user? Their profile, posts, and books will be hidden on the main site.')) {
-                      statusMutation.mutate('suspended');
-                    }
+                  onClick={async () => {
+                    const ok = await confirm({
+                      title: 'Suspend user?',
+                      description:
+                        'Suspend this user? Their profile, posts, and books will be hidden on the main site.',
+                      confirmLabel: 'Suspend',
+                      cancelLabel: 'Cancel',
+                      destructive: true,
+                    });
+                    if (ok) statusMutation.mutate('suspended');
                   }}
                 >
                   Suspend user

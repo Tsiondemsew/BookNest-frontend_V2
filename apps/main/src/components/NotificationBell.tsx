@@ -195,8 +195,8 @@ export function NotificationBell() {
           aria-labelledby="notifications-panel-title"
           className="
             z-[100] bg-white border border-[#E8E2D9] shadow-xl overflow-hidden flex flex-col
-            fixed inset-x-0 bottom-0 max-h-[min(88dvh,640px)] rounded-t-2xl
-            pb-[env(safe-area-inset-bottom)]
+            fixed inset-0 rounded-none
+            pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]
             sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:top-full sm:mt-2
             sm:w-[min(calc(100vw-1rem),360px)] sm:max-h-[min(60vh,420px)] sm:rounded-2xl sm:pb-0
             animate-in fade-in slide-in-from-bottom-4 sm:slide-in-from-top-2 duration-200
@@ -206,7 +206,7 @@ export function NotificationBell() {
             <span className="w-10 h-1 rounded-full bg-[#E8E2D9]" />
           </div>
 
-          <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-[#E8E2D9] shrink-0">
+          <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-[#E8E2D9] shrink-0 bg-white/95 backdrop-blur-sm">
             <h2 id="notifications-panel-title" className="font-semibold text-[#1A2A3A] text-base">
               Notifications
               {unreadCount > 0 ? (

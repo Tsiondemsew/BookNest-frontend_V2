@@ -23,6 +23,7 @@ import { feedApi } from '@/lib/api/client';
 import { useTranslation } from '@/hooks/useTranslation';
 import { ImageLightbox } from '@/components/ui/ImageLightbox';
 import { useDismissPostNotificationWhenSeen } from '@/lib/notifications/dismissOnView';
+import { useDialog } from '@/components/feedback';
 import type { Post } from '@repo/types';
 
 interface FeedPostProps {
@@ -44,6 +45,7 @@ export function FeedPost({
 }: FeedPostProps) {
   const { user } = useAuthStore();
   const { t } = useTranslation();
+  const { alert, confirm } = useDialog();
   const postRef = useRef<HTMLElement>(null);
   useDismissPostNotificationWhenSeen(post.id, postRef);
   const [imageLightboxOpen, setImageLightboxOpen] = useState(false);
@@ -98,14 +100,21 @@ export function FeedPost({
       onPostUpdated?.({ ...post, content: updated.content });
     } catch (error) {
       console.error('Failed to update post:', error);
-      alert(t('community.updateFailed'));
+      await alert(t('community.updateFailed'), { title: 'Update failed' });
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!window.confirm(t('community.deleteConfirm'))) return;
+    const ok = await confirm({
+      title: 'Delete post?',
+      description: t('community.deleteConfirm'),
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      destructive: true,
+    });
+    if (!ok) return;
 
     setIsDeleting(true);
     try {
@@ -114,7 +123,7 @@ export function FeedPost({
       onPostDeleted?.(post.id);
     } catch (error) {
       console.error('Failed to delete post:', error);
-      alert(t('community.deleteFailed'));
+      await alert(t('community.deleteFailed'), { title: 'Delete failed' });
     } finally {
       setIsDeleting(false);
     }

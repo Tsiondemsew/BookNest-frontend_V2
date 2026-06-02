@@ -5,6 +5,7 @@ import { X, Search, Loader2, UserMinus, UserPlus, Crown, Link2, Copy, Check } fr
 import { chatApi, usersApi } from '@/lib/api/client';
 import { CommunityAvatar, cn, ui } from '@/features/community/ui';
 import type { ChatMember } from '@repo/types';
+import { useDialog } from '@/components/feedback';
 
 interface SearchUser {
   id: string;
@@ -35,6 +36,7 @@ export function GroupManageModal({
   const [members, setMembers] = useState<ChatMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { confirm } = useDialog();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -295,7 +297,14 @@ export function GroupManageModal({
             <button
               type="button"
               onClick={async () => {
-                if (!window.confirm('Leave this group?')) return;
+                const ok = await confirm({
+                  title: 'Leave group?',
+                  description: 'Leave this group?',
+                  confirmLabel: 'Leave',
+                  cancelLabel: 'Cancel',
+                  destructive: true,
+                });
+                if (!ok) return;
                 try {
                   await chatApi.leaveGroup(chatId);
                   onLeftOrDeleted();
@@ -313,13 +322,14 @@ export function GroupManageModal({
             <button
               type="button"
               onClick={async () => {
-                if (
-                  !window.confirm(
-                    'Delete this group for everyone? This cannot be undone.'
-                  )
-                ) {
-                  return;
-                }
+                const ok = await confirm({
+                  title: 'Delete group?',
+                  description: 'Delete this group for everyone? This cannot be undone.',
+                  confirmLabel: 'Delete',
+                  cancelLabel: 'Cancel',
+                  destructive: true,
+                });
+                if (!ok) return;
                 try {
                   await chatApi.deleteGroup(chatId);
                   onLeftOrDeleted();

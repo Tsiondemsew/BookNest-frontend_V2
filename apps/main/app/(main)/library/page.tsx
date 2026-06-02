@@ -19,6 +19,7 @@ import { getLibraryCache } from '@/lib/offline/libraryCache';
 import { fetchLibraryForQuery } from '@/lib/offline/fetchLibrary';
 import { OfflinePageNotice } from '@/components/OfflinePageNotice';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useDialog } from '@/components/feedback';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -41,6 +42,7 @@ const fetchLibrary = fetchLibraryForQuery;
 
 export default function LibraryPage() {
   const { t } = useTranslation();
+  const { alert, confirm } = useDialog();
   const { isAuthenticated, user, isOfflineMode } = useAuthStore();
   const queryClient = useQueryClient();
   const [libraryWithProgress, setLibraryWithProgress] = useState<LibraryWithProgress[]>([]);
@@ -160,20 +162,26 @@ export default function LibraryPage() {
   const handleDownload = async (bookFormatId: string, bookTitle: string, formatType: 'PDF' | 'Audio', fileSizeMB: number) => {
   const pwa = canDownloadOffline();
   if (!pwa.allowed) {
-    alert(pwa.reason);
+    await alert(pwa.reason || t('common.loading'), { title: 'Offline download' });
     return;
   }
 
   if (!storageInfo.isSufficient) {
-    alert(`⚠️ Not enough storage space.\n\nAvailable: ${storageInfo.available}MB\nNeeded: ${fileSizeMB}MB\n\nPlease free up space and try again.`);
+    await alert(
+      `Not enough storage space.\n\nAvailable: ${storageInfo.available}MB\nNeeded: ${fileSizeMB}MB\n\nFree up space and try again.`,
+      { title: 'Storage full' }
+    );
     return;
   }
   
   if (storageInfo.available < fileSizeMB + 20) {
-    const confirm = window.confirm(
-      `⚠️ Low storage space.\n\nAvailable: ${storageInfo.available}MB\nNeeded: ${fileSizeMB}MB\n\nDownload anyway? It may fail if space is insufficient.`
-    );
-    if (!confirm) return;
+    const proceed = await confirm({
+      title: 'Low storage space',
+      description: `Available: ${storageInfo.available}MB\nNeeded: ${fileSizeMB}MB\n\nDownload anyway? It may fail if space is insufficient.`,
+      confirmLabel: 'Download anyway',
+      cancelLabel: 'Cancel',
+    });
+    if (!proceed) return;
   }
   
   setDownloadStatus(prev => ({
@@ -211,20 +219,28 @@ export default function LibraryPage() {
   }));
   
   if (!result.success) {
-    alert(
+    await alert(
       t('library.downloadFailed', {
         error: result.error || t('common.loading'),
-      })
+      }),
+      { title: 'Download failed' }
     );
   } else {
-    alert(t('library.downloadReady', { title: bookTitle }));
+    await alert(t('library.downloadReady', { title: bookTitle }), { title: 'Downloaded' });
     const info = await checkStorageSpace(0);
     setStorageInfo(info);
   }
 };
 
   const handleRemoveOffline = async (bookFormatId: string) => {
-    if (confirm('Remove this book from offline storage? You can download it again later.')) {
+    const ok = await confirm({
+      title: 'Remove offline copy?',
+      description: 'Remove this book from offline storage? You can download it again later.',
+      confirmLabel: 'Remove',
+      cancelLabel: 'Cancel',
+      destructive: true,
+    });
+    if (ok) {
       await removeOfflineBook(bookFormatId);
       setDownloadStatus(prev => ({
         ...prev,

@@ -30,6 +30,7 @@ import { SharedPostCard } from './SharedPostCard';
 import { EmojiQuickPicker } from './EmojiQuickPicker';
 import { GroupManageModal } from './GroupManageModal';
 import { ForwardMessageModal } from './ForwardMessageModal';
+import { useDialog } from '@/components/feedback';
 import {
   parseAnyForwarded,
   replyPreviewFromMessage,
@@ -77,6 +78,7 @@ export function ChatWindow({
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [copiedInvite, setCopiedInvite] = useState(false);
   const [headerError, setHeaderError] = useState<string | null>(null);
+  const { confirm } = useDialog();
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(otherUserOnline);
   const [showEmoji, setShowEmoji] = useState(false);
@@ -87,6 +89,7 @@ export function ChatWindow({
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [forwardMessage, setForwardMessage] = useState<ChatMessage | null>(null);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const refreshNamesTimeoutRef = useRef<number | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -164,12 +167,19 @@ export function ChatWindow({
 
       setMessages((prev) => {
         const formatRealtime = (msg: RealtimeMessage): ChatMessage => {
+          const isSelf = msg.sender_id === currentUserId;
+          const fallbackName =
+            isSelf
+              ? user?.publicName || 'You'
+              : chatType === 'direct'
+                ? chatName || otherUsername || 'User'
+                : 'User';
           const base: ChatMessage = {
             id: msg.id,
             content: msg.deleted_for_everyone_at ? null : msg.content,
             postId: msg.post_id || null,
             senderId: msg.sender_id,
-            senderName: msg.users?.email?.split('@')[0] || 'User',
+            senderName: fallbackName,
             senderAvatar: msg.users?.avatar_url || undefined,
             isRead: msg.is_read,
             isDeleted: Boolean(msg.deleted_for_everyone_at),
@@ -195,6 +205,14 @@ export function ChatWindow({
         return [...updated, ...toAdd];
       });
       clearNewMessages();
+
+      // Ensure names/avatars are refreshed from API (role-based display names).
+      if (refreshNamesTimeoutRef.current) {
+        window.clearTimeout(refreshNamesTimeoutRef.current);
+      }
+      refreshNamesTimeoutRef.current = window.setTimeout(() => {
+        void loadMessages();
+      }, 800);
     }
   }, [newMessages, clearNewMessages, loadMessages]);
 
@@ -352,7 +370,14 @@ export function ChatWindow({
   };
 
   const deleteDirectConversation = async () => {
-    if (!window.confirm('Delete this conversation from your inbox?')) return;
+    const ok = await confirm({
+      title: 'Delete conversation?',
+      description: 'Delete this conversation from your inbox?',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      destructive: true,
+    });
+    if (!ok) return;
     setIsDeletingChat(true);
     setHeaderError(null);
     try {
@@ -369,7 +394,14 @@ export function ChatWindow({
   };
 
   const leaveGroup = async () => {
-    if (!window.confirm('Leave this group?')) return;
+    const ok = await confirm({
+      title: 'Leave group?',
+      description: 'Leave this group?',
+      confirmLabel: 'Leave',
+      cancelLabel: 'Cancel',
+      destructive: true,
+    });
+    if (!ok) return;
     setIsDeletingChat(true);
     setHeaderError(null);
     try {
@@ -384,7 +416,14 @@ export function ChatWindow({
   };
 
   const deleteGroup = async () => {
-    if (!window.confirm('Delete this group for everyone? This cannot be undone.')) return;
+    const ok = await confirm({
+      title: 'Delete group?',
+      description: 'Delete this group for everyone? This cannot be undone.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      destructive: true,
+    });
+    if (!ok) return;
     setIsDeletingChat(true);
     setHeaderError(null);
     try {

@@ -71,6 +71,19 @@
         return Date.now() < new Date(session.expiresAt).getTime() + CLOCK_SKEW_MS;
       }
 
+      const OFFLINE_READING_GRACE_MS = 30 * 24 * 60 * 60 * 1000;
+      function sessionIsValidForOfflineReading(session) {
+        if (sessionIsValid(session)) return true;
+        if (!session?.user || !session.rememberMe || !session.issuedAt) return false;
+        return Date.now() < new Date(session.issuedAt).getTime() + OFFLINE_READING_GRACE_MS;
+      }
+
+      function canUseOfflineSession() {
+        if (isStandalonePwa()) return true;
+        if (!('serviceWorker' in navigator)) return false;
+        return Boolean(navigator.serviceWorker.controller);
+      }
+
       function tryCachedRoutes() {
         if (!('caches' in window)) {
           status.textContent = 'You are offline. Open BookNest once while online, then try again.';
@@ -109,17 +122,18 @@
         });
       }
 
-      if (!isStandalonePwa()) {
-        status.textContent = 'Offline mode works in the installed BookNest app. Install the app while online first.';
-        tryCachedRoutes();
-        return;
-      }
-
       getCachedSession().then(function (session) {
-        if (sessionIsValid(session)) {
+        if (sessionIsValidForOfflineReading(session) && canUseOfflineSession()) {
           window.location.replace('/library');
           return;
         }
+
+        if (!isStandalonePwa()) {
+          status.textContent = 'Offline mode works in the installed BookNest app. Install the app while online first.';
+          tryCachedRoutes();
+          return;
+        }
+
         if (!navigator.onLine) {
           window.location.replace('/login?offline=1&session=expired');
           return;

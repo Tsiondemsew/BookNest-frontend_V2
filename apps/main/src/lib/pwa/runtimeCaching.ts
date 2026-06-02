@@ -59,7 +59,7 @@ const coreAppRoutes: RuntimeCaching = {
   urlPattern: ({ request, url }) => {
     if (request.destination !== 'document') return false;
     const pathname = url?.pathname ?? new URL(request.url).pathname;
-    return /^\/($|library|community|login|offline\.html)(\/|$)/.test(pathname);
+    return /^\/(?:$|library|community|login|offline\.html|reader|dashboard\/reading)(\/|$)/.test(pathname);
   },
   handler: 'NetworkFirst',
   options: {

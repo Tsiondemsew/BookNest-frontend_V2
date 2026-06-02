@@ -7,6 +7,22 @@ export type LoadBookFileResult = {
   fromCache: boolean;
 };
 
+async function normalizeOfflineBookBytes(
+  value: ArrayBuffer | Uint8Array | Blob | null
+): Promise<ArrayBuffer | null> {
+  if (!value) return null;
+  if (value instanceof ArrayBuffer) return value;
+  if (value instanceof Uint8Array) {
+    const buffer = new ArrayBuffer(value.byteLength);
+    new Uint8Array(buffer).set(value);
+    return buffer;
+  }
+  if (value instanceof Blob) {
+    return await value.arrayBuffer();
+  }
+  return null;
+}
+
 export type AudioLoadProgress = {
   loadedBytes: number;
   totalBytes: number | null;
@@ -56,12 +72,13 @@ export async function loadAudioForPlayback(
   }
 
   const cached = await getOfflineBookData(bookFormatId);
-  if (cached) {
-    const blobUrl = URL.createObjectURL(new Blob([cached], { type: 'audio/mpeg' }));
+  const offlineData = await normalizeOfflineBookBytes(cached);
+  if (offlineData) {
+    const blobUrl = URL.createObjectURL(new Blob([offlineData]));
     cacheSessionAudio(bookFormatId, blobUrl);
     onProgress?.({
-      loadedBytes: cached.byteLength,
-      totalBytes: cached.byteLength,
+      loadedBytes: offlineData.byteLength,
+      totalBytes: offlineData.byteLength,
       percent: 100,
     });
     return {
@@ -76,10 +93,15 @@ export async function loadAudioForPlayback(
   }
 
   const url = downloadApi.getDownloadUrl(bookFormatId);
-  const response = await fetch(url, { method: 'GET', credentials: 'include' });
+  const response = await fetch(url, { method: 'GET', credentials: 'include', cache: 'no-store' });
 
   if (!response.ok) {
     throw new Error(`Failed to load audio (${response.status})`);
+  }
+
+  const contentType = response.headers.get('content-type') ?? '';
+  if (contentType.includes('application/json') || contentType.includes('text/html')) {
+    throw new Error('Failed to load audio: unexpected response from server.');
   }
 
   const totalBytes = Number(response.headers.get('content-length')) || null;
@@ -87,7 +109,7 @@ export async function loadAudioForPlayback(
 
   if (!reader) {
     const data = await response.arrayBuffer();
-    const blobUrl = URL.createObjectURL(new Blob([data], { type: 'audio/mpeg' }));
+    const blobUrl = URL.createObjectURL(new Blob([data]));
     cacheSessionAudio(bookFormatId, blobUrl);
     onProgress?.({
       loadedBytes: data.byteLength,
@@ -125,7 +147,7 @@ export async function loadAudioForPlayback(
     offset += chunk.byteLength;
   }
 
-  const blobUrl = URL.createObjectURL(new Blob([fullBuffer], { type: 'audio/mpeg' }));
+  const blobUrl = URL.createObjectURL(new Blob([fullBuffer]));
   cacheSessionAudio(bookFormatId, blobUrl);
 
   onProgress?.({
@@ -172,6 +194,7 @@ export async function loadBookFileBytes(bookFormatId: string): Promise<LoadBookF
     response = await fetch(url, {
       method: 'GET',
       credentials: 'include',
+      cache: 'no-store',
     });
   } catch (err) {
     const hint =
@@ -198,6 +221,11 @@ export async function loadBookFileBytes(bookFormatId: string): Promise<LoadBookF
       message = 'You do not have access to this book. Open it from your library after purchase.';
     }
     throw new Error(message);
+  }
+
+  const contentType = response.headers.get('content-type') ?? '';
+  if (contentType.includes('text/html') || contentType.includes('application/json')) {
+    throw new Error('Downloaded book returned an invalid response. Please try again.');
   }
 
   const data = await response.arrayBuffer();

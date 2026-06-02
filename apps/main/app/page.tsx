@@ -4,6 +4,7 @@ import Link from 'next/link';
 import GuestLayout from './(main)/GuestLayout';
 import { useState, useEffect } from 'react';
 import { isAppInstalled, markAppInstalled } from '@/lib/pwa/isInstalledPwa';
+import { useDialog } from '@/components/feedback';
 import {
   BookOpen,
   Download,
@@ -49,6 +50,7 @@ const steps = [
 ];
 
 export default function PublicLandingPage() {
+  const { alert } = useDialog();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(false);
 
@@ -74,7 +76,10 @@ export default function PublicLandingPage() {
 
   const handleInstall = async () => {
     if (!deferredPrompt) {
-      alert('Install is not available right now. Use your browser menu to add BookNest to your home screen.');
+      await alert(
+        'Install is not available right now. Use your browser menu to add BookNest to your home screen.',
+        { title: 'Install BookNest' }
+      );
       return;
     }
     await deferredPrompt.prompt();

@@ -26,10 +26,11 @@ import { isNavHrefActive } from '@/lib/navigation/navActive';
 import { useReaderGenrePreferences } from '@/features/auth/hooks/useReaderGenrePreferences';
 import { GenrePreferencesPrompt } from '@/features/auth/components/GenrePreferencesPrompt';
 import { OfflineRouteGuard } from '@/components/OfflineRouteGuard';
+import type { SessionUser } from '@repo/types';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
-  user: { name?: string; email?: string; role?: string } | null;
+  user: SessionUser | null;
 }
 
 export default function DashboardLayout({ children, user }: DashboardLayoutProps) {
