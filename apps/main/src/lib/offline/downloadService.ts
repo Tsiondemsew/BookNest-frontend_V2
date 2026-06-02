@@ -6,7 +6,7 @@ import {
   OfflineBook,
 } from '@/lib/db/schema';
 import { downloadApi } from '@/lib/api/client';
-import { canUseOfflineSession } from '@/lib/offline/offlineAccess';
+import { isInstalledPwa } from '@/lib/pwa/isInstalledPwa';
 import { cacheCoverForBook } from '@/lib/offline/coverCache';
 
 export type DownloadProgressCallback = (percent: number) => void;
@@ -60,10 +60,10 @@ export function canDownloadOffline(): { allowed: boolean; reason?: string } {
       reason: 'Connect to the internet to download books.',
     };
   }
-  if (!canUseOfflineSession()) {
+  if (!isInstalledPwa()) {
     return {
       allowed: false,
-      reason: 'Install the BookNest app or open the app in an offline-capable browser session to download for offline use.',
+      reason: 'Install the BookNest app to download for offline use.',
     };
   }
   return { allowed: true };
@@ -137,7 +137,6 @@ export async function downloadBookForOffline(
     const response = await fetch(url, {
       method: 'GET',
       credentials: 'include',
-      cache: 'no-store',
     });
 
     if (!response.ok) {
@@ -148,17 +147,8 @@ export async function downloadBookForOffline(
       );
     }
 
-    const contentType = response.headers.get('content-type') ?? '';
-    if (contentType.includes('application/json') || contentType.includes('text/html')) {
-      const textBody = await response.text().catch(() => '');
-      throw new Error(
-        `Download failed: unexpected response type ${contentType}. ${textBody ? `Server message: ${textBody}` : ''}`
-      );
-    }
-
     const fileData = await readResponseWithProgress(response, options?.onProgress);
     const fileSize = fileData.byteLength;
-    const mimeType = response.headers.get('content-type') ?? null;
 
     const offlineBook: OfflineBook = {
       id: bookFormatId,
@@ -171,7 +161,6 @@ export async function downloadBookForOffline(
       lastAccessed: new Date().toISOString(),
       bookId: options?.bookId,
       coverUrl: options?.coverUrl ?? null,
-      mimeType,
     };
 
     await saveOfflineBook(offlineBook);

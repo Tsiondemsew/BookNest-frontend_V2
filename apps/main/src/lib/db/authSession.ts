@@ -1,7 +1,6 @@
 import { openDB } from 'idb';
 import type { SessionUser } from '@repo/types';
 import { isInstalledPwa } from '@/lib/pwa/isInstalledPwa';
-import { isServiceWorkerActive } from '@/lib/pwa/serviceWorkerStatus';
 
 interface StoredSession {
   id: string;
@@ -56,9 +55,7 @@ const OFFLINE_READING_GRACE_MS = 30 * 24 * 60 * 60 * 1000;
 
 export async function isSessionValidForOfflineReading(): Promise<boolean> {
   if (await isSessionValid()) return true;
-
-  const offlineShellAvailable = isInstalledPwa() || (await isServiceWorkerActive());
-  if (!offlineShellAvailable) return false;
+  if (!isInstalledPwa()) return false;
 
   const session = await getSession();
   if (!session?.user) return false;
