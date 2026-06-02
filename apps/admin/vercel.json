@@ -1,11 +1,6 @@
 {
-  "rewrites": [
-    {
-      "source": "/admin/(.*)",
-      "destination": "/admin/$1"
-    }
-  ],
-  "buildCommand": "pnpm build",
-  "installCommand": "pnpm install",
-  "framework": "nextjs"
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "cd ../.. && pnpm install",
+  "buildCommand": "cd ../.. && pnpm turbo run build --filter=admin --force",
+  "outputDirectory": ".next"
 }

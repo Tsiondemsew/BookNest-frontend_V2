@@ -24,6 +24,8 @@ export function createAuthApi(client: ApiClient) {
   return {
     login: (payload: LoginRequest) =>
       client.post<LoginResponse, LoginRequest>(endpoints.auth.login, payload),
+    adminLogin: (payload: LoginRequest) =>
+      client.post<LoginResponse, LoginRequest>(endpoints.auth.adminLogin, payload),
     register: (payload: RegisterRequest) =>
       client.post<RegisterResponse, RegisterRequest>(endpoints.auth.register, payload),
     resendVerification: (payload: ResendVerificationRequest) =>

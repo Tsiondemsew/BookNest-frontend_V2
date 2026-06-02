@@ -21,6 +21,8 @@ export * from './sellerFinance';
 export * from './gamification';
 export * from './notifications';
 export * from './users';
+export * from './admin';
+export { createAdminApi } from './admin';
 
 export { createLibraryApi } from './library';
 export { createDownloadApi } from './download';
