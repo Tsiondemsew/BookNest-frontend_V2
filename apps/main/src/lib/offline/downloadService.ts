@@ -6,7 +6,7 @@ import {
   OfflineBook,
 } from '@/lib/db/schema';
 import { downloadApi } from '@/lib/api/client';
-import { isInstalledPwa } from '@/lib/pwa/isInstalledPwa';
+import { canUseOfflineSession } from '@/lib/offline/offlineAccess';
 import { cacheCoverForBook } from '@/lib/offline/coverCache';
 
 export type DownloadProgressCallback = (percent: number) => void;
@@ -60,10 +60,10 @@ export function canDownloadOffline(): { allowed: boolean; reason?: string } {
       reason: 'Connect to the internet to download books.',
     };
   }
-  if (!isInstalledPwa()) {
+  if (!canUseOfflineSession()) {
     return {
       allowed: false,
-      reason: 'Install the BookNest app to download for offline use.',
+      reason: 'Install the BookNest app or open the app in an offline-capable browser session to download for offline use.',
     };
   }
   return { allowed: true };

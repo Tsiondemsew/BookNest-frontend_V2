@@ -11,7 +11,9 @@ export const OFFLINE_ALLOWED_PREFIXES = [
 ];
 
 export function canUseOfflineSession(): boolean {
-  return isInstalledPwa();
+  if (isInstalledPwa()) return true;
+  if (typeof navigator === 'undefined') return false;
+  return 'serviceWorker' in navigator && Boolean(navigator.serviceWorker.controller);
 }
 
 export function isOfflineAllowedPath(pathname: string | null | undefined): boolean {

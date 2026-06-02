@@ -18,6 +18,7 @@ export async function getOfflineReadiness(): Promise<{
 }> {
   const installed = isInstalledPwa();
   const swActive = await isServiceWorkerActive();
+  const offlineShellAvailable = installed || swActive;
   const session = await getSession();
   const sessionOk = navigator.onLine
     ? await isSessionValid()
@@ -31,8 +32,8 @@ export async function getOfflineReadiness(): Promise<{
     {
       id: 'install',
       labelKey: 'offline.check.install',
-      hintKey: installed ? 'offline.check.installOk' : 'offline.check.installFail',
-      ok: installed,
+      hintKey: offlineShellAvailable ? 'offline.check.installOk' : 'offline.check.installFail',
+      ok: offlineShellAvailable,
     },
     {
       id: 'sw',
@@ -65,7 +66,7 @@ export async function getOfflineReadiness(): Promise<{
     },
   ];
 
-  const readyForReading = installed && sessionOk && hasDownloads;
+  const readyForReading = offlineShellAvailable && sessionOk && hasDownloads;
 
   return { items, readyForReading };
 }
