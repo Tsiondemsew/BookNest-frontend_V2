@@ -9,6 +9,10 @@ export interface SellerEarningsSummary {
   gross_sales: number;
   platform_fees: number;
   net_earnings: number;
+  /** Net earnings remaining after approved/paid withdrawals. */
+  net_remaining?: number;
+  /** Total amount approved/paid out. */
+  paid_out?: number;
   platform_fee_percent: number;
   available_balance: number;
   pending_withdrawal: number;

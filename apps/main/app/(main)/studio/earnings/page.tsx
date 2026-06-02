@@ -9,6 +9,7 @@ import {
   TrendingDown,
   Wallet,
   Receipt,
+  HandCoins,
   ArrowLeft,
   AlertCircle,
   CheckCircle2,
@@ -164,7 +165,7 @@ export default function StudioEarningsPage() {
         {isPublisher ? t('studioPayouts.compareNote') : t('studioPayouts.compareNoteAuthor')}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <SummaryCard
           icon={Receipt}
           label={t('studioPayouts.grossSales')}
@@ -183,6 +184,16 @@ export default function StudioEarningsPage() {
           label={t('studioPayouts.netEarnings')}
           sub={t('studioPayouts.salesRecorded', { count: summary?.sale_count ?? 0 })}
           value={`${Number(summary?.net_earnings || 0).toFixed(2)} ${currency}`}
+          accent="#2D6A4F"
+        />
+        <SummaryCard
+          icon={HandCoins}
+          label={t('studioPayouts.paidOut')}
+          sub={t('studioPayouts.netRemaining', {
+            amount: Number(summary?.net_remaining || 0).toFixed(2),
+            currency,
+          })}
+          value={`${Number(summary?.paid_out || 0).toFixed(2)} ${currency}`}
           accent="#2D6A4F"
         />
         <SummaryCard

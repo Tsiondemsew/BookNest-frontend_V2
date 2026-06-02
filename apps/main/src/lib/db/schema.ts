@@ -151,7 +151,15 @@ export async function markProgressSynced(id: string, clearPending = true): Promi
 // Helper functions for offline_books
 export async function saveOfflineBook(book: OfflineBook): Promise<void> {
   const db = await getDB();
-  await db.put('offline_books', book);
+  try {
+    await db.put('offline_books', book);
+  } catch (err: unknown) {
+    const name = err instanceof DOMException ? err.name : (err as { name?: string } | null)?.name;
+    if (name === 'QuotaExceededError') {
+      throw new Error('Storage is full. Free up space and try downloading again.');
+    }
+    throw err instanceof Error ? err : new Error('Failed to save offline book');
+  }
 }
 
 export async function getOfflineBook(bookFormatId: string): Promise<OfflineBook | null> {

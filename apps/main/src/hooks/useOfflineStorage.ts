@@ -38,7 +38,7 @@ export function useOfflineStorage() {
     title: string,
     formatType: 'PDF' | 'Audio', 
     fileSizeMB: number
-  ): Promise<boolean> => {
+  ): Promise<{ success: boolean; error?: string }> => {
     setIsDownloading(prev => ({ ...prev, [bookFormatId]: true }));
     
     const result = await downloadBookForOffline(bookFormatId, title, formatType, fileSizeMB);
@@ -50,7 +50,7 @@ export function useOfflineStorage() {
       await loadStorageInfo();
     }
     
-    return result.success;
+    return result;
   };
 
   const removeBook = async (bookFormatId: string): Promise<void> => {

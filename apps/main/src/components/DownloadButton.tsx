@@ -35,8 +35,17 @@ export function DownloadButton({
       return;
     }
     
-    const success = await downloadBook(bookFormatId, title, formatType, fileSizeMB);
-    if (!success) {
+    const result = await downloadBook(bookFormatId, title, formatType, fileSizeMB);
+    if (result && typeof result === 'object' && 'success' in result) {
+      if (!result.success) {
+        setError(result.error || 'Download failed. Please try again.');
+        setTimeout(() => setError(null), 4000);
+      }
+      return;
+    }
+
+    // Backward compatibility: downloadBook may return boolean
+    if (result === false) {
       setError('Download failed. Please try again.');
       setTimeout(() => setError(null), 3000);
     }

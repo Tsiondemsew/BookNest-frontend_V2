@@ -8,6 +8,7 @@ export type AdminDashboardStats = {
   pending_reports: number;
   pending_withdrawals: number;
   total_revenue: number;
+  platform_income?: number;
 };
 
 export type AdminSystemAnalytics = {

@@ -27,6 +27,7 @@ export function DashboardView() {
       href: '/dashboard/withdrawals',
     },
     { label: 'Total revenue (ETB)', value: stats?.total_revenue ?? 0, href: null },
+    { label: 'Platform income (ETB)', value: stats?.platform_income ?? 0, href: null },
   ];
 
   return (

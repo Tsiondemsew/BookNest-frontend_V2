@@ -499,6 +499,8 @@ export const am: Messages = {
     platformFee: 'የመድረክ ክፍያ ({{fee}}%)',
     platformFeeSub: 'BookNest የአገልግሎት ክፍያ',
     netEarnings: 'የተጣራ ገቢዎ',
+    paidOut: 'የተከፈለ',
+    netRemaining: '{{amount}} {{currency}} የቀረ የተጣራ ገቢ',
     salesRecorded: '{{count}} sale(s) ተመዝግቧል',
     availableWithdraw: 'ለማውጣት ዝግጁ',
     pendingAmount: '{{amount}} በመጠባበቅ',

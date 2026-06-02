@@ -501,6 +501,8 @@ export const en = {
     platformFee: 'Platform fee ({{fee}}%)',
     platformFeeSub: 'BookNest service charge',
     netEarnings: 'Your net earnings',
+    paidOut: 'Paid out',
+    netRemaining: '{{amount}} {{currency}} net remaining',
     salesRecorded: '{{count}} sale(s) recorded',
     availableWithdraw: 'Available to withdraw',
     pendingAmount: '{{amount}} pending',

@@ -77,7 +77,10 @@
           return;
         }
         var routes = ['/library', '/community', '/login', '/'];
-        caches.open('booknest-pages').then(function (cache) {
+        Promise.all([
+          caches.open('booknest-core-routes').catch(function () { return null; }),
+          caches.open('booknest-pages').catch(function () { return null; })
+        ]).then(function (cachesList) {
           var i = 0;
           function tryNext() {
             if (i >= routes.length) {
@@ -85,13 +88,20 @@
               return;
             }
             var route = routes[i++];
-            cache.match(route, { ignoreSearch: true }).then(function (res) {
-              if (res) {
-                window.location.replace(route);
-              } else {
-                tryNext();
-              }
-            }).catch(tryNext);
+            var idx = 0;
+            function tryCache() {
+              if (idx >= cachesList.length) return tryNext();
+              var cache = cachesList[idx++];
+              if (!cache) return tryCache();
+              cache.match(route, { ignoreSearch: true }).then(function (res) {
+                if (res) {
+                  window.location.replace(route);
+                } else {
+                  tryCache();
+                }
+              }).catch(tryCache);
+            }
+            tryCache();
           }
           tryNext();
         }).catch(function () {
