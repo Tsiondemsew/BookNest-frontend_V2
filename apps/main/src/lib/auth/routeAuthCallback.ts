@@ -47,7 +47,7 @@ export function resolveAuthCallbackTarget(search: string, hash: string): string 
     return `/verify${search}${hash}`;
   }
 
-  // PKCE (?code=) without intent — verify page detects recovery vs signup after token exchange
+  // PKCE (?code=) without intent — verify page detects invite vs reader signup after token exchange
   if (params.get('code')) {
     return `/verify${search}${hash}`;
   }

@@ -3,19 +3,20 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { resolveAuthCallbackTarget } from '@/lib/auth/routeAuthCallback';
 
 /**
- * Supabase may still use /auth/verify in redirect URLs — forward to /verify with tokens.
+ * Supabase may still use /auth/verify in redirect URLs — forward to the correct auth page.
  */
 export default function AuthVerifyRedirectPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const suffix =
-      typeof window !== 'undefined'
-        ? window.location.hash || window.location.search
-        : '';
-    router.replace(`/verify${suffix}`);
+    if (typeof window === 'undefined') return;
+
+    const search = window.location.search;
+    const hash = window.location.hash;
+    router.replace(resolveAuthCallbackTarget(search, hash));
   }, [router]);
 
   return (

@@ -4,7 +4,7 @@ import {
   isValidCbeAccount,
   isValidTelebirrPhone,
   normalizeDigits,
-  normalizeEthiopianMobile,
+  normalizeTelebirrPhone,
 } from '@repo/validation';
 
 export type WithdrawalFormValues = {
@@ -71,7 +71,7 @@ export function buildPayoutDetailsPayload(values: WithdrawalFormValues) {
   const accountName = values.accountName.trim();
 
   if (values.paymentMethod === 'telebirr') {
-    const phone = normalizeEthiopianMobile(values.telebirrPhone) ?? values.telebirrPhone.trim();
+    const phone = normalizeTelebirrPhone(values.telebirrPhone) ?? values.telebirrPhone.trim();
     return {
       payment_method: 'telebirr' as const,
       account_name: accountName,

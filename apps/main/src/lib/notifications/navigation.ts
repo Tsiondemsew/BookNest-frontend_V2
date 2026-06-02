@@ -88,6 +88,10 @@ export function getNotificationHref(notification: AppNotification): string | nul
     return '/community';
   }
 
+  if (notification.type === 'withdrawal') {
+    return '/studio/earnings';
+  }
+
   const stored = notification.url?.trim();
   if (stored) {
     return normalizePath(stored);

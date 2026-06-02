@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { authApi } from '@/lib/api/client';
 import { parseAuthTokensFromUrl } from '@/lib/auth/parseAuthTokens';
+import { redirectIfInviteRegistration } from '@/lib/auth/inviteAuthRouting';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 
@@ -20,7 +21,13 @@ function VerifyEmailContent() {
     const run = async () => {
       try {
         const search = window.location.search;
+        const hash = window.location.hash;
         const intent = new URLSearchParams(search).get('intent');
+
+        if (intent === 'invite') {
+          router.replace(`/register/invite${search}${hash}`);
+          return;
+        }
 
         const parsed = await parseAuthTokensFromUrl(async (code) => {
           const supabase = getSupabaseClient();
@@ -38,8 +45,28 @@ function VerifyEmailContent() {
           parsed.type === 'recovery';
 
         if (isRecovery) {
-          const suffix = window.location.hash || window.location.search;
-          router.replace(`/reset-password${suffix}`);
+          router.replace(`/reset-password${hash || search}`);
+          return;
+        }
+
+        const isInviteLink =
+          intent === 'invite' ||
+          parsed.type === 'invite';
+
+        if (isInviteLink) {
+          router.replace(`/register/invite${search}${hash}`);
+          return;
+        }
+
+        if (
+          await redirectIfInviteRegistration(
+            parsed.accessToken,
+            parsed.refreshToken,
+            router.replace.bind(router),
+            search,
+            hash
+          )
+        ) {
           return;
         }
 

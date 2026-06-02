@@ -9,6 +9,7 @@ const AUTH_LANDING_PATHS = new Set([
   '/verify',
   '/reset-password',
   '/auth/callback',
+  '/register/invite',
 ]);
 
 /**

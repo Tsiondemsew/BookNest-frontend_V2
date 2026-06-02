@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bell, CheckCheck, Loader2, MessageCircle, UserPlus, X } from 'lucide-react';
+import { Bell, CheckCheck, Loader2, MessageCircle, UserPlus, Wallet, X } from 'lucide-react';
 import { notificationsApi } from '@/lib/api/client';
 import { getNotificationHref } from '@/lib/notifications/navigation';
 import { formatRelativeTime } from '@/features/community/utils/timeFormat';
@@ -16,6 +16,9 @@ function NotificationIcon({ type }: { type: AppNotification['type'] }) {
   }
   if (type === 'follow') {
     return <UserPlus size={16} className="text-[#2C3E50]" />;
+  }
+  if (type === 'withdrawal') {
+    return <Wallet size={16} className="text-[#2D6A4F]" />;
   }
   return <Bell size={16} className="text-[#4A5568]" />;
 }

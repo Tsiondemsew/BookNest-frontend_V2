@@ -6,8 +6,8 @@ import { Loader2 } from 'lucide-react';
 import { resolveAuthCallbackTarget } from '@/lib/auth/routeAuthCallback';
 
 /**
- * Single entry for Supabase auth email links (verify + password reset).
- * Backend sets redirectTo to /auth/callback?intent=verify|recovery
+ * Single entry for Supabase auth email links (verify, password reset, invite).
+ * Backend sets redirectTo to /auth/callback?intent=… or /register/invite for invites.
  */
 export default function AuthCallbackPage() {
   const router = useRouter();

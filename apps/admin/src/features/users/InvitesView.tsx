@@ -19,11 +19,7 @@ export function InvitesView() {
     setError(null);
     try {
       await adminApi.inviteUser({ email, role });
-      setMessage(
-        `Invite sent to ${email}. They will open a registration form on BookNest to set their password and ${
-          role === 'author' ? 'pen name' : 'company name'
-        }, then go straight to Studio.`
-      );
+      setMessage(`Invite sent to ${email.trim()}.`);
       setEmail('');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Invite failed');
@@ -41,15 +37,13 @@ export function InvitesView() {
         <div>
           <h1 className="text-2xl font-semibold text-[#1A2A3A]">Invite registration</h1>
           <p className="text-sm text-[#4A5568]">
-            Register authors and publishers via email invite.
+            Send email invites for author and publisher accounts.
           </p>
         </div>
       </div>
 
       <p className="mt-4 text-sm text-[#4A5568] rounded-xl border border-[#E8E2D9] bg-[#FDFBF7] px-4 py-3">
-        Readers sign up on the main app — no invite needed. Invited users receive an email that opens
-        a registration form on BookNest where they set a password and their{' '}
-        {role === 'author' ? 'pen name' : 'company name'} before entering Studio.
+        Readers sign up on the main app. Invited users complete registration from the link in their email.
       </p>
 
       <AdminCard className="mt-6 p-6">

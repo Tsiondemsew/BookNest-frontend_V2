@@ -1,4 +1,4 @@
-export type NotificationType = 'follow' | 'message' | 'post';
+export type NotificationType = 'follow' | 'message' | 'post' | 'withdrawal';
 
 export interface NotificationActor {
   id: string;

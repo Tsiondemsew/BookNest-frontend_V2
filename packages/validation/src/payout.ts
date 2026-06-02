@@ -11,38 +11,17 @@ export const PAYOUT_METHODS: Array<{
   { id: 'telebirr', label: 'Telebirr (Ethio Telecom)', shortLabel: 'Telebirr' },
 ];
 
-/** CBE account numbers are numeric; commonly 13 digits (some legacy 10–12). */
-export const CBE_ACCOUNT_PATTERN = /^\d{10,13}$/;
+/** CBE: 13 digits, must start with 1000 */
+export const CBE_ACCOUNT_PATTERN = /^1000\d{9}$/;
 
-/** Bank of Abyssinia accounts are typically 13 digits. */
-export const ABYSSINIA_ACCOUNT_PATTERN = /^\d{13}$/;
+/** Bank of Abyssinia: 8 or 9 digits */
+export const ABYSSINIA_ACCOUNT_PATTERN = /^\d{8}$|^\d{9}$/;
 
-/** Ethio Telecom mobile used for Telebirr — 09 + 8 digits (10 total). */
-export const TELEBIRR_PHONE_PATTERN = /^09\d{8}$/;
+/** Telebirr / Ethio Telecom mobile */
+export const TELEBIRR_INPUT_PATTERN = /^(09|2519|\+2519|\+2517)\d{8}$/;
 
 export function normalizeDigits(value: string): string {
   return value.replace(/\D/g, '');
-}
-
-/**
- * Normalize Ethiopian mobile to 09XXXXXXXX.
- * Accepts: 0912345678, +251912345678, 251912345678
- */
-export function normalizeEthiopianMobile(value: string): string | null {
-  const digits = normalizeDigits(value);
-  if (!digits) return null;
-
-  if (digits.length === 10 && digits.startsWith('09')) {
-    return digits;
-  }
-  if (digits.length === 12 && digits.startsWith('2519')) {
-    return `0${digits.slice(3)}`;
-  }
-  if (digits.length === 9 && digits.startsWith('9')) {
-    return `0${digits}`;
-  }
-
-  return null;
 }
 
 export function isValidCbeAccount(value: string): boolean {
@@ -56,8 +35,20 @@ export function isValidAbyssiniaAccount(value: string): boolean {
 }
 
 export function isValidTelebirrPhone(value: string): boolean {
-  const normalized = normalizeEthiopianMobile(value);
-  return normalized !== null && TELEBIRR_PHONE_PATTERN.test(normalized);
+  return TELEBIRR_INPUT_PATTERN.test(value.trim());
+}
+
+/** Store Telebirr numbers in local 09… or 07… format. */
+export function normalizeTelebirrPhone(value: string): string | null {
+  const trimmed = value.trim();
+  if (!TELEBIRR_INPUT_PATTERN.test(trimmed)) return null;
+
+  const digits = normalizeDigits(trimmed);
+  if (digits.length === 10 && digits.startsWith('09')) return digits;
+  if (digits.length === 12 && digits.startsWith('2519')) return `0${digits.slice(3)}`;
+  if (digits.length === 12 && digits.startsWith('2517')) return `0${digits.slice(3)}`;
+
+  return null;
 }
 
 export type PayoutDetailsInput = {
@@ -95,7 +86,7 @@ export function validatePayoutDetails(input: PayoutDetailsInput): PayoutValidati
     if (!isValidCbeAccount(raw)) {
       return {
         ok: false,
-        message: 'CBE account must be 10–13 digits (numbers only).',
+        message: 'CBE account must be 13 digits and start with 1000.',
       };
     }
     return {
@@ -113,7 +104,7 @@ export function validatePayoutDetails(input: PayoutDetailsInput): PayoutValidati
     if (!isValidAbyssiniaAccount(raw)) {
       return {
         ok: false,
-        message: 'Bank of Abyssinia account must be exactly 13 digits.',
+        message: 'Bank of Abyssinia account must be 8 or 9 digits.',
       };
     }
     return {
@@ -127,11 +118,11 @@ export function validatePayoutDetails(input: PayoutDetailsInput): PayoutValidati
   }
 
   const phoneRaw = input.telebirr_phone ?? input.mobile_money ?? '';
-  const normalized = normalizeEthiopianMobile(phoneRaw);
-  if (!normalized || !TELEBIRR_PHONE_PATTERN.test(normalized)) {
+  const normalized = normalizeTelebirrPhone(phoneRaw);
+  if (!normalized) {
     return {
       ok: false,
-      message: 'Telebirr number must be a valid Ethio Telecom mobile (e.g. 0912345678).',
+      message: 'Telebirr number must be a valid Ethiopian mobile (e.g. 0912345678).',
     };
   }
 
