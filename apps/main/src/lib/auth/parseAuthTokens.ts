@@ -34,7 +34,7 @@ export async function parseAuthTokensFromUrl(
       return {
         accessToken: session.access_token,
         refreshToken: session.refresh_token ?? null,
-        type: search.get('type') || 'recovery',
+        type: search.get('type') || search.get('intent') || null,
       };
     }
   }

@@ -53,10 +53,15 @@ function ResetPasswordContent() {
         if (!parsed?.accessToken) {
           setLinkError('Invalid or expired reset link. Please request a new one.');
           setTokens(null);
-        } else if (parsed.type === 'signup' || parsed.type === 'email') {
+        } else if (
+          parsed.type === 'signup' ||
+          parsed.type === 'email' ||
+          parsed.type === 'verify'
+        ) {
           setLinkError('This is an email verification link, not a password reset link.');
           setTokens(null);
         } else {
+          // recovery, intent=recovery, or PKCE reset links without an explicit type
           setTokens({
             accessToken: parsed.accessToken,
             refreshToken: parsed.refreshToken,

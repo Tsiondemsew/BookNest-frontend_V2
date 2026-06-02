@@ -4,6 +4,15 @@ import { create } from 'zustand';
 import type { SessionUser } from '@repo/types';
 import { authApi } from '@/lib/api/client';
 
+function loginErrorMessage(err: unknown): string {
+  if (err && typeof err === 'object' && 'message' in err) {
+    const message = String((err as { message: string }).message);
+    if (message && message !== 'Request failed') return message;
+  }
+  if (err instanceof Error && err.message) return err.message;
+  return 'Login failed. Check your email, password, and that this account is an active admin.';
+}
+
 interface AdminAuthState {
   user: SessionUser | null;
   isInitializing: boolean;
@@ -31,7 +40,7 @@ export const useAdminAuthStore = create<AdminAuthState>((set) => ({
       set({ user, isAuthenticated: true, error: null });
       return { success: true };
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Login failed';
+      const message = loginErrorMessage(err);
       set({ error: message });
       return { success: false, error: message };
     }

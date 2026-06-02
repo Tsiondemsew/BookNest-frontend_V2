@@ -33,7 +33,11 @@ export default function AdminLoginPage() {
       >
         <h1 className="text-2xl font-semibold text-zinc-900">BookNest Admin</h1>
         <p className="mt-1 text-sm text-zinc-500">Sign in with your admin account.</p>
-        {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+        {error && (
+          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {error}
+          </div>
+        )}
         <div className="mt-6 space-y-4">
           <input
             type="email"
@@ -58,6 +62,18 @@ export default function AdminLoginPage() {
           >
             {loading ? 'Signing in…' : 'Sign in'}
           </button>
+          <p className="text-center text-xs text-zinc-500">
+            Forgot password? Use{' '}
+            <a
+              href={`${process.env.NEXT_PUBLIC_MAIN_APP_URL || 'https://book-nest-frontend-v2-main.vercel.app'}/forgot-password`}
+              className="text-zinc-700 underline hover:text-zinc-900"
+              target="_blank"
+              rel="noreferrer"
+            >
+              password reset on the main app
+            </a>
+            , then sign in here again.
+          </p>
         </div>
       </form>
     </div>

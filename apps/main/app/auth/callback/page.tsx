@@ -3,9 +3,11 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { resolveAuthCallbackTarget } from '@/lib/auth/routeAuthCallback';
 
 /**
- * OAuth / magic-link callback alias — route tokens to verify or reset-password.
+ * Single entry for Supabase auth email links (verify + password reset).
+ * Backend sets redirectTo to /auth/callback?intent=verify|recovery
  */
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -13,15 +15,10 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const hash = window.location.hash;
     const search = window.location.search;
-
-    if (hash.includes('type=recovery') || search.includes('type=recovery')) {
-      router.replace(`/reset-password${hash || search}`);
-      return;
-    }
-
-    router.replace(`/verify${hash || search}`);
+    const hash = window.location.hash;
+    const target = resolveAuthCallbackTarget(search, hash);
+    router.replace(target);
   }, [router]);
 
   return (
