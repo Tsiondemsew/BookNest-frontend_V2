@@ -16,7 +16,7 @@ import { ExitReviewPrompt } from '@/features/reviews/components/ExitReviewPrompt
 import { BookReviewModal } from '@/features/reviews/components/BookReviewModal';
 import { LibraryBookCard } from '@/features/library/components/LibraryBookCard';
 import { reviewsApi } from '@/lib/api/client';
-import { saveLibraryCache, getLibraryCache } from '@/lib/offline/libraryCache';
+import { saveLibraryCache, getLibraryCache, getLibraryCacheAsync } from '@/lib/offline/libraryCache';
 import { mergeLibraryWithOffline } from '@/lib/offline/libraryMerge';
 import { getAllOfflineBooks } from '@/lib/db/schema';
 import { OfflinePageNotice } from '@/components/OfflinePageNotice';
@@ -43,7 +43,7 @@ const fetchLibrary = async (): Promise<LibraryItem[]> => {
   const offlineBooks = await getAllOfflineBooks();
 
   if (!navigator.onLine) {
-    const cached = getLibraryCache();
+    const cached = await getLibraryCacheAsync();
     const merged = mergeLibraryWithOffline(cached, offlineBooks);
     if (merged.length > 0) return merged;
     throw new Error('OFFLINE_NO_LIBRARY');
@@ -54,7 +54,7 @@ const fetchLibrary = async (): Promise<LibraryItem[]> => {
     saveLibraryCache(response.data);
     return response.data;
   } catch {
-    const cached = getLibraryCache();
+    const cached = await getLibraryCacheAsync();
     const merged = mergeLibraryWithOffline(cached, offlineBooks);
     if (merged.length > 0) return merged;
     throw new Error('LIBRARY_FETCH_FAILED');

@@ -74,7 +74,7 @@ export const endpoints = {
     initialize: '/api/checkout',
     verify: '/api/checkout/verify',
   },
-    chat: {
+  chat: {
     list: '/api/chat',
     direct: '/api/chat/direct',
     groups: '/api/chat/groups',
@@ -131,6 +131,9 @@ export const endpoints = {
     list: '/api/progress',
     forFormat: (bookFormatId: string) => `/api/progress/${bookFormatId}`,
     sync: '/api/progress/sync',
+  },
+  sync: {
+    offline: '/api/sync/offline',
   },
   books: {
     list: '/api/books',

@@ -33,6 +33,12 @@ export * from './follow';
 export { createFollowApi } from './follow';
 export { createNotificationsApi } from './notifications';
 export { createProgressApi } from './progress';
+export { createSyncApi } from './sync';
+export type {
+  OfflineBatchProgressItem,
+  OfflineBatchActivity,
+  OfflineBatchResponse,
+} from './sync';
 export { createAnalyticsApi } from './analytics';
 
 // Re-export types

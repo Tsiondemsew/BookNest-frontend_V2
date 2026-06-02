@@ -9,6 +9,7 @@ import {
 } from '@/lib/db/authSession';
 import { getAuthFieldErrors, getFriendlyAuthMessage } from '@/lib/auth/mapAuthError';
 import { canUseOfflineSession } from '@/lib/offline/offlineAccess';
+import { isAppInstalled } from '@/lib/pwa/isInstalledPwa';
 import type { SessionUser } from '@repo/types';
 import { ValidationError } from '@repo/api-client';
 
@@ -89,8 +90,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: null,
       });
 
-      // Show install prompt at most once per login session
-      if (typeof window !== 'undefined') {
+      // Show install prompt at most once per login session (never re-prompt if already installed)
+      if (typeof window !== 'undefined' && !isAppInstalled()) {
         sessionStorage.removeItem('booknest:installPrompt:seen');
       }
 
@@ -165,7 +166,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: null,
       });
 
-      if (typeof window !== 'undefined') {
+      if (typeof window !== 'undefined' && !isAppInstalled()) {
         sessionStorage.removeItem('booknest:installPrompt:seen');
       }
     }

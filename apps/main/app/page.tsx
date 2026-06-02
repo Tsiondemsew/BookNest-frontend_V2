@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import GuestLayout from './(main)/GuestLayout';
 import { useState, useEffect } from 'react';
+import { isAppInstalled, markAppInstalled } from '@/lib/pwa/isInstalledPwa';
 import {
   BookOpen,
   Download,
@@ -49,15 +50,26 @@ const steps = [
 
 export default function PublicLandingPage() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [installed, setInstalled] = useState(false);
 
   useEffect(() => {
+    setInstalled(isAppInstalled());
+
+    if (isAppInstalled()) return;
+
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
     };
 
+    const onInstalled = () => setInstalled(true);
+
     window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    window.addEventListener('appinstalled', onInstalled);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+      window.removeEventListener('appinstalled', onInstalled);
+    };
   }, []);
 
   const handleInstall = async () => {
@@ -68,6 +80,8 @@ export default function PublicLandingPage() {
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') {
+      markAppInstalled();
+      setInstalled(true);
       setDeferredPrompt(null);
     }
   };
@@ -134,14 +148,16 @@ export default function PublicLandingPage() {
                     Browse marketplace
                     <ChevronRight className="w-3.5 h-3.5" />
                   </Link>
-                  <button
-                    type="button"
-                    onClick={handleInstall}
-                    className="text-sm font-medium text-[#4A5568] hover:text-[#B85C38] inline-flex items-center gap-1.5 transition-colors"
-                  >
-                    <Download className="w-4 h-4" />
-                    Install app
-                  </button>
+                  {!installed && (
+                    <button
+                      type="button"
+                      onClick={handleInstall}
+                      className="text-sm font-medium text-[#4A5568] hover:text-[#B85C38] inline-flex items-center gap-1.5 transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      Install app
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -227,6 +243,7 @@ export default function PublicLandingPage() {
         </section>
 
         {/* PWA strip */}
+        {!installed && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
           <div className="rounded-2xl border border-[#E8E2D9] bg-gradient-to-br from-white to-[#FDFBF7] p-6 sm:p-8 lg:p-10 flex flex-col lg:flex-row items-center gap-6 lg:gap-10">
             <div className="w-14 h-14 rounded-2xl bg-[#2C3E50]/8 flex items-center justify-center flex-shrink-0">
@@ -249,6 +266,7 @@ export default function PublicLandingPage() {
             </button>
           </div>
         </section>
+        )}
 
         {/* CTA */}
         <section className="relative overflow-hidden bg-[#1A2A3A] text-white py-16 sm:py-20">
@@ -297,13 +315,15 @@ export default function PublicLandingPage() {
               <Link href="/register" className="hover:text-[#B85C38] transition-colors">
                 Create account
               </Link>
-              <button
-                type="button"
-                onClick={handleInstall}
-                className="hover:text-[#B85C38] transition-colors"
-              >
-                Install app
-              </button>
+              {!installed && (
+                <button
+                  type="button"
+                  onClick={handleInstall}
+                  className="hover:text-[#B85C38] transition-colors"
+                >
+                  Install app
+                </button>
+              )}
             </div>
           </div>
         </footer>

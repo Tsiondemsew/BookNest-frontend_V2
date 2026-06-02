@@ -159,19 +159,11 @@ export async function syncProgressToBackend(): Promise<void> {
 }
 
 export function initOfflineSync(): void {
-  window.addEventListener('online', () => {
-    syncProgressToBackend();
-    const { user, isAuthenticated } = useAuthStore.getState();
-    if (isAuthenticated && user) {
-      mergeProgressFromServer(user.id);
-    }
-  });
-
   setInterval(() => {
-    if (navigator.onLine) syncProgressToBackend();
+    if (navigator.onLine) {
+      void import('@/lib/offline/offlineQueue').then(({ processOfflineQueue }) =>
+        processOfflineQueue()
+      );
+    }
   }, 5 * 60 * 1000);
-
-  if (navigator.onLine) {
-    setTimeout(() => syncProgressToBackend(), 3000);
-  }
 }

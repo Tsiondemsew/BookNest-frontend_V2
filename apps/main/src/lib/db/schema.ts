@@ -15,8 +15,8 @@ export interface ReadingProgress {
 
 export interface OfflineQueueItem {
   id: string;
-  action: 'UPDATE_PROGRESS' | 'CREATE_REVIEW';
-  payload: any;
+  action: 'UPDATE_PROGRESS' | 'CREATE_REVIEW' | 'RECORD_ACTIVITY';
+  payload: Record<string, unknown>;
   createdAt: string;
   retries: number;
 }
@@ -67,6 +67,10 @@ interface BookNestDB extends DBSchema {
     key: string;
     value: OfflineCover;
   };
+  'library_cache': {
+    key: string;
+    value: { key: string; savedAt: string; items: import('@repo/types').LibraryItem[] };
+  };
 }
 
 let dbInstance: IDBPDatabase<BookNestDB> | null = null;
@@ -74,7 +78,7 @@ let dbInstance: IDBPDatabase<BookNestDB> | null = null;
 export async function getDB(): Promise<IDBPDatabase<BookNestDB>> {
   if (dbInstance) return dbInstance;
   
-  dbInstance = await openDB<BookNestDB>('BookNestDB', 3, {
+  dbInstance = await openDB<BookNestDB>('BookNestDB', 4, {
     async upgrade(db, oldVersion) {
       // Version 1 stores
       if (!db.objectStoreNames.contains('reading_progress')) {
@@ -97,6 +101,10 @@ export async function getDB(): Promise<IDBPDatabase<BookNestDB>> {
 
       if (oldVersion < 3 && !db.objectStoreNames.contains('offline_covers')) {
         db.createObjectStore('offline_covers', { keyPath: 'bookFormatId' });
+      }
+
+      if (oldVersion < 4 && !db.objectStoreNames.contains('library_cache')) {
+        db.createObjectStore('library_cache', { keyPath: 'key' });
       }
     },
   });
@@ -212,4 +220,25 @@ export async function getOfflineCover(bookFormatId: string): Promise<Blob | null
   const db = await getDB();
   const row = await db.get('offline_covers', bookFormatId);
   return row?.coverBlob ?? null;
+}
+
+const LIBRARY_CACHE_KEY = 'current';
+
+export async function saveLibraryCacheToDb(
+  items: import('@repo/types').LibraryItem[]
+): Promise<void> {
+  const db = await getDB();
+  await db.put('library_cache', {
+    key: LIBRARY_CACHE_KEY,
+    savedAt: new Date().toISOString(),
+    items,
+  });
+}
+
+export async function getLibraryCacheFromDb(): Promise<
+  import('@repo/types').LibraryItem[] | null
+> {
+  const db = await getDB();
+  const row = await db.get('library_cache', LIBRARY_CACHE_KEY);
+  return row?.items?.length ? row.items : null;
 }

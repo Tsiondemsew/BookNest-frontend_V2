@@ -11,3 +11,17 @@ export function isInstalledPwa(): boolean {
 
   return standaloneMq || iosStandalone;
 }
+
+const INSTALLED_KEY = 'booknest:installed';
+
+/** User installed the PWA (standalone session or prior install event). */
+export function isAppInstalled(): boolean {
+  if (typeof window === 'undefined') return false;
+  if (isInstalledPwa()) return true;
+  return localStorage.getItem(INSTALLED_KEY) === '1';
+}
+
+export function markAppInstalled(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(INSTALLED_KEY, '1');
+}

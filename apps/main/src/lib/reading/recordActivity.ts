@@ -1,4 +1,5 @@
 import { gamificationApi } from '@/lib/api/client';
+import { isOfflineQueueProcessing } from '@/lib/offline/offlineSyncState';
 
 type ActivityDelta = {
   pages?: number;
@@ -83,6 +84,22 @@ function notifyRecorded() {
   listeners.forEach((cb) => cb());
 }
 
+export function peekPendingActivity(): ActivityDelta | null {
+  hydratePendingFromStorage();
+  if (!pending.pages && !pending.minutes && !pending.seconds) return null;
+  return {
+    pages: pending.pages || 0,
+    minutes: pending.minutes || 0,
+    seconds: pending.seconds || 0,
+  };
+}
+
+export function clearPendingActivity(): void {
+  pending = { pages: 0, minutes: 0, seconds: 0 };
+  persistPendingToStorage();
+  setSyncStatus('synced');
+}
+
 export function queueReadingActivity(delta: ActivityDelta) {
   hydratePendingFromStorage();
   pending.pages = (pending.pages || 0) + (delta.pages || 0);
@@ -120,6 +137,16 @@ export async function flushReadingActivity(): Promise<void> {
     persistPendingToStorage();
 
     if (!navigator.onLine) {
+      pending.pages += pages;
+      pending.minutes += minutes;
+      pending.seconds += seconds;
+      persistPendingToStorage();
+      setSyncStatus('pending');
+      flushPromise = null;
+      return;
+    }
+
+    if (isOfflineQueueProcessing()) {
       pending.pages += pages;
       pending.minutes += minutes;
       pending.seconds += seconds;
@@ -180,8 +207,5 @@ if (typeof window !== 'undefined') {
     } else if (document.visibilityState === 'visible' && navigator.onLine) {
       void flushReadingActivity();
     }
-  });
-  window.addEventListener('online', () => {
-    void flushReadingActivity();
   });
 }

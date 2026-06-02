@@ -20,6 +20,7 @@ import {
   createGamificationApi,
   createNotificationsApi,
   createFollowApi,
+  createSyncApi,
 } from '@repo/api-client';
 import { apiConfig } from './config';
 import { useAuthStore } from '@/stores/authStore';
@@ -72,6 +73,7 @@ export const sellerFinanceApi = createSellerFinanceApi(apiClient);
 export const gamificationApi = createGamificationApi(apiClient);
 export const notificationsApi = createNotificationsApi(apiClient);
 export const followApi = createFollowApi(apiClient);
+export const syncApi = createSyncApi(apiClient);
 
 // Re-export types for convenience
 
