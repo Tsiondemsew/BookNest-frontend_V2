@@ -50,13 +50,7 @@ export default function StudioDashboard() {
       color: '#B85C38',
       bgColor: '#B85C3810',
     },
-    {
-      label: t('studioDashboard.thisMonth'),
-      value: analyticsLoading ? '...' : `${monthlyEarnings} ETB`,
-      icon: Clock,
-      color: '#8E735B',
-      bgColor: '#8E735B10',
-    },
+    
   ];
 
   return (
