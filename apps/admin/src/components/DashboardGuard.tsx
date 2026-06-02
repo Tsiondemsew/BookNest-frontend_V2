@@ -7,11 +7,7 @@ import { AdminShell } from '@/components/AdminShell';
 
 export function DashboardGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { isAuthenticated, isInitializing, fetchMe } = useAdminAuthStore();
-
-  useEffect(() => {
-    void fetchMe();
-  }, [fetchMe]);
+  const { isAuthenticated, isInitializing } = useAdminAuthStore();
 
   useEffect(() => {
     if (!isInitializing && !isAuthenticated) {

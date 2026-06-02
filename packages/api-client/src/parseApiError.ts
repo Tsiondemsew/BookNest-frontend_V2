@@ -36,6 +36,10 @@ export function parseApiErrorBody(parsedBody: unknown): ParsedApiError {
     };
   }
 
+  if (typeof nested === 'string' && nested.trim()) {
+    return { message: nested, code: 'INTERNAL_ERROR' };
+  }
+
   if (typeof body.message === 'string') {
     return { message: body.message, code: 'INTERNAL_ERROR' };
   }
