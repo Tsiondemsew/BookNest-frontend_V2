@@ -2,6 +2,7 @@ export const endpoints = {
   auth: {
     login: '/api/auth/login',
     adminLogin: '/api/auth/admin/login',
+    refresh: '/api/auth/refresh',
     register: '/api/auth/register',
     logout: '/api/auth/logout',
     me: '/api/auth/me',
@@ -10,6 +11,8 @@ export const endpoints = {
     favoriteGenres: '/api/users/favorite-genres',
     forgotPassword: '/api/auth/forgot-password',
     resetPassword: '/api/auth/reset-password',
+    invitePreview: '/api/auth/invite/preview',
+    inviteComplete: '/api/auth/invite/complete',
     confirmEmail: '/api/auth/confirm-email',
   },
   wishlist: {
@@ -79,11 +82,15 @@ export const endpoints = {
     messages: (chatId: string) => `/api/chat/${chatId}/messages`,
     members: (chatId: string) => `/api/chat/${chatId}/members`,
     member: (chatId: string, memberId: string) => `/api/chat/${chatId}/members/${memberId}`,
+    groupMembers: (chatId: string) => `/api/chat/groups/${chatId}/members`,
+    groupMember: (chatId: string, memberId: string) =>
+      `/api/chat/groups/${chatId}/members/${memberId}`,
     groupInvite: (chatId: string) => `/api/chat/groups/${chatId}/invite`,
     leaveGroup: (chatId: string) => `/api/chat/groups/${chatId}/leave`,
     deleteGroup: (chatId: string) => `/api/chat/groups/${chatId}`,
     deleteDirectChat: (chatId: string) => `/api/chat/direct/${chatId}`,
     join: (token: string) => `/api/chat/join/${token}`,
+    joinPreview: (token: string) => `/api/chat/join/${token}/preview`,
     deleteMessageForMe: (messageId: string) => `/api/chat/messages/${messageId}/me`,
     deleteMessageForEveryone: (messageId: string) => `/api/chat/messages/${messageId}/everyone`,
     editMessage: (messageId: string) => `/api/chat/messages/${messageId}`,

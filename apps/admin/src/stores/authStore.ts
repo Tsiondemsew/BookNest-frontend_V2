@@ -3,8 +3,12 @@
 import { create } from 'zustand';
 import type { SessionUser } from '@repo/types';
 import { authApi } from '@/lib/api/client';
-import { clearSession, getSession, isSessionValid, saveSession } from '@/lib/db/authSession';
-import { clearAdminAccessToken, setAdminAccessToken } from '@/lib/auth/adminToken';
+import { clearSession, getSession, saveSession } from '@/lib/db/authSession';
+import {
+  clearAdminAccessToken,
+  setAdminTokens,
+} from '@/lib/auth/adminToken';
+import { refreshAdminSessionIfNeeded } from '@/lib/auth/refreshAdminSession';
 import { getFriendlyAuthMessage } from '@/lib/auth/mapAuthError';
 
 type AdminLoginData = {
@@ -13,6 +17,7 @@ type AdminLoginData = {
   expiresAt: string;
   rememberMe?: boolean;
   accessToken?: string;
+  refreshToken?: string;
 };
 
 interface AdminAuthState {
@@ -53,7 +58,7 @@ export const useAdminAuthStore = create<AdminAuthState>((set) => ({
       }
 
       if (session.accessToken) {
-        setAdminAccessToken(session.accessToken);
+        setAdminTokens(session.accessToken, session.refreshToken);
       }
 
       await saveSession({
@@ -95,6 +100,22 @@ export const useAdminAuthStore = create<AdminAuthState>((set) => ({
     set({ isInitializing: true });
 
     try {
+      const refreshed = await refreshAdminSessionIfNeeded();
+      if (!refreshed) {
+        const cached = await getSession();
+        if (!cached?.user || cached.user.role !== 'admin') {
+          await clearSession();
+          clearAdminAccessToken();
+          set({ user: null, isAuthenticated: false, isInitializing: false });
+          return;
+        }
+        // Cached profile but no valid tokens — must sign in again
+        await clearSession();
+        clearAdminAccessToken();
+        set({ user: null, isAuthenticated: false, isInitializing: false });
+        return;
+      }
+
       const response = await authApi.me();
       const session = response?.data;
 
@@ -121,16 +142,6 @@ export const useAdminAuthStore = create<AdminAuthState>((set) => ({
       clearAdminAccessToken();
       set({ user: null, isAuthenticated: false, isInitializing: false });
     } catch {
-      const cached = await getSession();
-      if (cached?.user?.role === 'admin' && (await isSessionValid())) {
-        set({
-          user: cached.user,
-          isAuthenticated: true,
-          isInitializing: false,
-        });
-        return;
-      }
-
       await clearSession();
       clearAdminAccessToken();
       set({ user: null, isAuthenticated: false, isInitializing: false });

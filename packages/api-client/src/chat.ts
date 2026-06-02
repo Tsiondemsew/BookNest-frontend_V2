@@ -74,11 +74,22 @@ export function createChatApi(client: ApiClient) {
         {}
       ),
 
+    previewGroupInvite: (token: string) =>
+      client.get<{
+        success: boolean;
+        data: {
+          id: string;
+          name?: string;
+          memberCount: number;
+          alreadyMember: boolean;
+        };
+      }>(endpoints.chat.joinPreview(token)),
+
     addGroupMember: (chatId: string, memberId: string) =>
-      client.post<{ success: boolean }>(endpoints.chat.members(chatId), { memberId }),
+      client.post<{ success: boolean }>(endpoints.chat.groupMembers(chatId), { memberId }),
 
     removeGroupMember: (chatId: string, memberId: string) =>
-      client.delete<{ success: boolean }>(endpoints.chat.member(chatId, memberId)),
+      client.delete<{ success: boolean }>(endpoints.chat.groupMember(chatId, memberId)),
 
     leaveGroup: (chatId: string) =>
       client.delete<{ success: boolean }>(endpoints.chat.leaveGroup(chatId)),

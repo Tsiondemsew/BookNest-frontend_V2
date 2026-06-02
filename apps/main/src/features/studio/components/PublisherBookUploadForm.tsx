@@ -14,6 +14,7 @@ import { useToast, AlertDialog } from '@/components/feedback';
 import { ConflictError } from '@repo/api-client';
 import type { Genre } from '@repo/types';
 import { Upload, X, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
 import * as pdfjsLib from 'pdfjs-dist';
 
 const bookUploadSchema = z.object({
@@ -46,8 +47,8 @@ export function PublisherBookUploadForm({ bookId }: { bookId?: string } = {}) {
   const isApprovedEdit = isEditMode && editBook?.status === 'approved';
   const existingPdf = editBook?.formats?.find((f) => f.format_type === 'PDF');
   const existingAudio = editBook?.formats?.find((f) => f.format_type === 'Audio');
-  const showRegularPdfUploader = !(isApprovedEdit && existingPdf);
-  const showRegularAudioUploader = !(isApprovedEdit && existingAudio);
+  const showRegularPdfUploader = !isEditMode || !existingPdf || isApprovedEdit;
+  const showRegularAudioUploader = !isEditMode || !existingAudio || isApprovedEdit;
 
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
@@ -386,6 +387,24 @@ export function PublisherBookUploadForm({ bookId }: { bookId?: string } = {}) {
         <p className="text-[#4A5568] text-sm mt-1">
           {isEditMode ? 'Update your book details and formats' : `Publisher: ${user?.publicName}`}
         </p>
+        {isEditMode && bookId && editBook && (
+          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3">
+            <Link
+              href={`/studio/books/${bookId}`}
+              className="text-sm font-medium text-[#B85C38] hover:text-[#8E735B] hover:underline"
+            >
+              View book preview
+            </Link>
+            {editBook.status === 'approved' && (
+              <Link
+                href={`/market/${bookId}`}
+                className="text-sm font-medium text-[#B85C38] hover:text-[#8E735B] hover:underline"
+              >
+                Open in marketplace
+              </Link>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Success Message */}
@@ -563,14 +582,16 @@ export function PublisherBookUploadForm({ bookId }: { bookId?: string } = {}) {
 
         {isApprovedEdit && existingPdf && (
           <p className="text-sm text-[#4A5568] bg-[#F5F1EB] rounded-lg px-3 py-2">
-            PDF: {existingPdf.price} ETB · {existingPdf.page_count} pages ·{' '}
-            {existingPdf.is_active === false ? 'Pending approval' : 'Active'}
+            Current PDF: {existingPdf.price} ETB · {existingPdf.page_count} pages ·{' '}
+            {existingPdf.is_active === false ? 'Pending approval' : 'Active'}. Upload a new PDF
+            below to replace the file (changes require admin review).
           </p>
         )}
         {isApprovedEdit && existingAudio && (
           <p className="text-sm text-[#4A5568] bg-[#F5F1EB] rounded-lg px-3 py-2">
-            Audio: {existingAudio.price} ETB ·{' '}
-            {existingAudio.is_active === false ? 'Pending approval' : 'Active'}
+            Current audio: {existingAudio.price} ETB ·{' '}
+            {existingAudio.is_active === false ? 'Pending approval' : 'Active'}. Upload a new
+            audio file below to replace it (changes require admin review).
           </p>
         )}
         {isApprovedEdit && bookId && !existingPdf && (

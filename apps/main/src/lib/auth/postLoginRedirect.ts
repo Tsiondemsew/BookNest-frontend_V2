@@ -1,6 +1,9 @@
 import type { SessionUser } from '@repo/types';
 import { authApi } from '@/lib/api/client';
-import { DEFAULT_AUTHENTICATED_HOME, getDefaultHomeForRole } from '@/lib/routes/defaultRoutes';
+import {
+  DEFAULT_AUTHENTICATED_HOME,
+  getDefaultHomeForRole,
+} from '@/lib/routes/defaultRoutes';
 
 /**
  * Where to send the user after a successful login.
@@ -10,12 +13,25 @@ export function getPostLoginPath(
   user: SessionUser,
   options: {
     needsGenreOnboarding?: boolean;
+    needsProfileSetup?: boolean;
     redirectTo?: string;
   } = {}
 ): string {
   const requested = options.redirectTo || DEFAULT_AUTHENTICATED_HOME;
   const redirectTo =
     requested === DEFAULT_AUTHENTICATED_HOME ? getDefaultHomeForRole(user.role) : requested;
+
+  if (
+    (user.role === 'author' || user.role === 'publisher') &&
+    options.needsProfileSetup
+  ) {
+    const params = new URLSearchParams();
+    if (redirectTo && redirectTo !== DEFAULT_AUTHENTICATED_HOME) {
+      params.set('redirect', redirectTo);
+    }
+    const query = params.toString();
+    return query ? `/onboarding/profile?${query}` : '/onboarding/profile';
+  }
 
   if (user.role === 'reader' && options.needsGenreOnboarding) {
     const params = new URLSearchParams();
@@ -36,6 +52,21 @@ export async function resolvePostLoginPath(
 ): Promise<string> {
   const resolved =
     redirectTo === DEFAULT_AUTHENTICATED_HOME ? getDefaultHomeForRole(user.role) : redirectTo;
+
+  if (user.role === 'author' || user.role === 'publisher') {
+    try {
+      const me = await authApi.me();
+      if (me.data?.needsProfileSetup) {
+        return getPostLoginPath(user, {
+          needsProfileSetup: true,
+          redirectTo: resolved,
+        });
+      }
+    } catch {
+      return resolved;
+    }
+    return resolved;
+  }
 
   if (user.role !== 'reader') {
     return resolved;

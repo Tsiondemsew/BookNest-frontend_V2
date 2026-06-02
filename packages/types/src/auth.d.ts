@@ -33,6 +33,7 @@ export interface LoginResponse {
     data: AuthSession & {
         rememberMe?: boolean;
         needsGenreOnboarding?: boolean;
+        needsProfileSetup?: boolean;
     };
 }
 export interface ConfirmEmailRequest {
@@ -102,6 +103,9 @@ export interface LogoutResponse {
 }
 export interface MeResponse {
     success: boolean;
-    data: AuthSession;
+    data: (AuthSession & {
+        needsGenreOnboarding?: boolean;
+        needsProfileSetup?: boolean;
+    }) | null;
 }
 //# sourceMappingURL=auth.d.ts.map

@@ -76,6 +76,31 @@ export const resetPasswordFormSchema = z
     }
   );
 
+const profileNameSchema = z
+  .string()
+  .trim()
+  .min(2, 'Must be at least 2 characters')
+  .max(80, 'Must be less than 80 characters');
+
+export const inviteRegistrationFormSchema = z
+  .object({
+    password: passwordSchema,
+    confirmPassword: z.string().min(1, 'Please confirm your password'),
+    pen_name: profileNameSchema.optional(),
+    company_name: profileNameSchema.optional(),
+    full_name: z.string().trim().max(120).optional(),
+  })
+  .refine(
+    (data: { password: string; confirmPassword: string }) =>
+      data.password === data.confirmPassword,
+    {
+      message: 'Passwords do not match',
+      path: ['confirmPassword'],
+    }
+  );
+
+export type InviteRegistrationFormInput = z.infer<typeof inviteRegistrationFormSchema>;
+
 export const resendVerificationSchema = z.object({
   email: emailSchema,
 });

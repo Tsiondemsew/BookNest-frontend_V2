@@ -13,6 +13,15 @@ export function resolveAuthCallbackTarget(search: string, hash: string): string 
       : null;
   const hashType = hashParams?.get('type');
 
+  const isInvite =
+    intent === 'invite' ||
+    type === 'invite' ||
+    hashType === 'invite';
+
+  if (isInvite) {
+    return `/register/invite${search}${hash}`;
+  }
+
   const isRecovery =
     intent === 'recovery' ||
     type === 'recovery' ||

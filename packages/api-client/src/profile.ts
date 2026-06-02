@@ -12,6 +12,7 @@ export function createProfileApi(client: ApiClient) {
       display_name?: string;
       pen_name?: string;
       company_name?: string;
+      full_name?: string;
       bio?: string;
       location?: string;
       website_url?: string;

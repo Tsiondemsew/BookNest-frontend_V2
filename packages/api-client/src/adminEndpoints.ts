@@ -1,9 +1,12 @@
 export const adminEndpoints = {
   dashboard: '/api/admin/dashboard',
+  analytics: '/api/admin/analytics',
   users: '/api/admin/users',
+  user: (id: string) => `/api/admin/users/${id}`,
   userStatus: (id: string) => `/api/admin/users/${id}/status`,
   invites: '/api/admin/invites',
   books: '/api/admin/books',
+  book: (id: string) => `/api/admin/books/${id}`,
   bookReview: (id: string) => `/api/admin/books/${id}/review`,
   reports: '/api/admin/reports',
   reportUpdate: (id: string) => `/api/admin/reports/${id}`,

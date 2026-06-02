@@ -177,6 +177,12 @@ export function MyBooksList() {
                     </button>
                   )}
                   <Link
+                    href={`/studio/books/${book.id}`}
+                    className="text-sm text-[#4A5568] hover:text-[#1A2A3A] transition-colors"
+                  >
+                    {t('studioDashboard.view')}
+                  </Link>
+                  <Link
                     href={`/studio/books/${book.id}/edit`}
                     className="text-sm text-[#4A5568] hover:text-[#1A2A3A] transition-colors flex items-center gap-1"
                   >

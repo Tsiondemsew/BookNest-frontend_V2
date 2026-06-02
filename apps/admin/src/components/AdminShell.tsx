@@ -10,6 +10,7 @@ import {
   Wallet,
   UserPlus,
   LogOut,
+  BookOpenCheck,
 } from 'lucide-react';
 import { useAdminAuthStore } from '@/stores/authStore';
 
@@ -33,13 +34,20 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="min-h-dvh flex bg-zinc-100">
-      <aside className="w-56 shrink-0 border-r border-zinc-200 bg-white flex flex-col">
-        <div className="px-4 py-5 border-b border-zinc-200">
-          <p className="text-xs uppercase tracking-widest text-zinc-500">BookNest</p>
-          <h1 className="text-lg font-semibold text-zinc-900">Admin</h1>
+    <div className="min-h-dvh flex bg-[#FDFBF7]">
+      <aside className="w-60 shrink-0 h-dvh sticky top-0 border-r border-[#E8E2D9] bg-white flex flex-col overflow-hidden">
+        <div className="px-4 py-5 border-b border-[#E8E2D9]">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-lg bg-[#2C3E50]/10 flex items-center justify-center">
+              <BookOpenCheck className="w-5 h-5 text-[#B85C38]" />
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-widest text-[#4A5568]">BookNest</p>
+              <h1 className="text-base font-semibold text-[#1A2A3A]">Admin</h1>
+            </div>
+          </div>
         </div>
-        <nav className="flex-1 p-3 space-y-1">
+        <nav className="flex-1 p-3 space-y-1 overflow-hidden">
           {nav.map(({ href, label, icon: Icon }) => {
             const active =
               href === '/dashboard'
@@ -49,10 +57,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                   active
-                    ? 'bg-zinc-900 text-white'
-                    : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900'
+                    ? 'bg-[#2C3E50] text-white'
+                    : 'text-[#4A5568] hover:bg-[#B85C38]/5 hover:text-[#1A2A3A]'
                 }`}
               >
                 <Icon size={18} />
@@ -61,19 +69,19 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-        <div className="p-3 border-t border-zinc-200">
-          <p className="text-xs text-zinc-500 truncate mb-2">{user?.email}</p>
+        <div className="p-3 border-t border-[#E8E2D9]">
+          <p className="text-xs text-[#4A5568] truncate mb-2">{user?.email}</p>
           <button
             type="button"
             onClick={() => void handleLogout()}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50"
+            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-[#4A5568] hover:bg-[#FDFBF7]"
           >
             <LogOut size={16} />
             Sign out
           </button>
         </div>
       </aside>
-      <main className="flex-1 min-w-0 p-6 md:p-8">{children}</main>
+      <main className="flex-1 min-w-0 min-h-0 overflow-y-auto p-6 md:p-8">{children}</main>
     </div>
   );
 }

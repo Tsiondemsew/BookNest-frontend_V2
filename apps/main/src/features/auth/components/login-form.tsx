@@ -91,6 +91,7 @@ export function LoginForm() {
 
     await completeAuthContinuation(router, searchParams, session, {
       needsGenreOnboarding: result.needsGenreOnboarding,
+      needsProfileSetup: result.needsProfileSetup,
     });
   };
 

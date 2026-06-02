@@ -29,6 +29,7 @@ interface AuthState {
     error?: string;
     fieldErrors?: Record<string, string>;
     needsGenreOnboarding?: boolean;
+    needsProfileSetup?: boolean;
   }>;
   register: (
     email: string,
@@ -96,6 +97,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return {
         success: true,
         needsGenreOnboarding: response.data.needsGenreOnboarding,
+        needsProfileSetup: response.data.needsProfileSetup,
       };
     } catch (error: unknown) {
       const friendlyMessage = getFriendlyAuthMessage(error);

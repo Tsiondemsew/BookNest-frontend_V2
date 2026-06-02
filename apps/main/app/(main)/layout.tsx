@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import GuestLayout from './GuestLayout';
 import DashboardLayout from './DashboardLayout';
+import { authApi } from '@/lib/api/client';
 import { resolvePostLoginPath } from '@/lib/auth/postLoginRedirect';
 import { DEFAULT_AUTHENTICATED_HOME } from '@/lib/routes/defaultRoutes';
 import {
@@ -91,6 +92,21 @@ export default function MainLayout({
           router.push(`/login?redirect=${encodeURIComponent(pathname || '/')}`);
         }
         return;
+      }
+
+      if (
+        isAuthenticated &&
+        user &&
+        routeMeta.isProtectedRoute &&
+        (user.role === 'author' || user.role === 'publisher')
+      ) {
+        void authApi.me().then((res) => {
+          if (res.data?.needsProfileSetup) {
+            router.push(
+              `/onboarding/profile?redirect=${encodeURIComponent(pathname || '/')}`
+            );
+          }
+        });
       }
     }
   }, [isAuthenticated, isInitializing, isOfflineMode, pathname, routeMeta, router, user]);

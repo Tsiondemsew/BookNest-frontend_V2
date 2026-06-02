@@ -424,6 +424,7 @@ export const en = {
     statusApproved: 'Approved',
     statusRejected: 'Rejected',
     submit: 'Submit',
+    view: 'View',
     edit: 'Edit',
     delete: 'Delete',
     submittedForReview: 'Book submitted for review',

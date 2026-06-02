@@ -79,11 +79,21 @@ export function readPendingActionFromSearchParams(
 /**
  * After login/register: run pending cart/checkout action, else genre onboarding, else redirect.
  */
+function appendOnboardingQuery(
+  basePath: string,
+  redirect: string,
+  action: PendingAuthAction | null,
+  bookFormatIds: string[]
+): string {
+  if (!action && bookFormatIds.length === 0) return basePath;
+  return appendPendingActionQuery(basePath, { redirect, action, bookFormatIds });
+}
+
 export async function completeAuthContinuation(
   router: AppRouterInstance,
   searchParams: URLSearchParams,
   user: SessionUser,
-  options?: { needsGenreOnboarding?: boolean }
+  options?: { needsGenreOnboarding?: boolean; needsProfileSetup?: boolean }
 ): Promise<void> {
   const { action, bookFormatIds, redirect } = readPendingActionFromSearchParams(searchParams);
 
@@ -91,26 +101,36 @@ export async function completeAuthContinuation(
   if (handled) return;
 
   let destination: string;
-  if (options?.needsGenreOnboarding !== undefined) {
+  if (
+    options?.needsGenreOnboarding !== undefined ||
+    options?.needsProfileSetup !== undefined
+  ) {
     destination = getPostLoginPath(user, {
       needsGenreOnboarding: options.needsGenreOnboarding,
+      needsProfileSetup: options.needsProfileSetup,
       redirectTo: redirect,
     });
-    if (destination.includes('/onboarding/genres') && (action || bookFormatIds.length)) {
-      destination = appendPendingActionQuery('/onboarding/genres', {
+    if (destination.includes('/onboarding/profile')) {
+      destination = appendOnboardingQuery(
+        '/onboarding/profile',
         redirect,
         action,
-        bookFormatIds,
-      });
+        bookFormatIds
+      );
+    } else if (destination.includes('/onboarding/genres')) {
+      destination = appendOnboardingQuery('/onboarding/genres', redirect, action, bookFormatIds);
     }
   } else {
     destination = await resolvePostLoginPath(user, redirect);
-    if (destination.includes('/onboarding/genres') && (action || bookFormatIds.length)) {
-      destination = appendPendingActionQuery('/onboarding/genres', {
+    if (destination.includes('/onboarding/profile')) {
+      destination = appendOnboardingQuery(
+        '/onboarding/profile',
         redirect,
         action,
-        bookFormatIds,
-      });
+        bookFormatIds
+      );
+    } else if (destination.includes('/onboarding/genres')) {
+      destination = appendOnboardingQuery('/onboarding/genres', redirect, action, bookFormatIds);
     }
   }
 

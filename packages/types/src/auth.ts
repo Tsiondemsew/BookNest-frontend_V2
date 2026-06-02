@@ -42,6 +42,7 @@ export interface LoginResponse {
   data: AuthSession & {
     rememberMe?: boolean;
     needsGenreOnboarding?: boolean;
+    needsProfileSetup?: boolean;
   };
 }
 
@@ -105,6 +106,24 @@ export interface ResetPasswordResponse {
   message?: string;
 }
 
+export interface InvitePreviewResponse {
+  success: boolean;
+  data: {
+    email: string;
+    role: 'author' | 'publisher';
+    display_name?: string | null;
+  };
+}
+
+export interface CompleteInviteRequest {
+  access_token: string;
+  refresh_token?: string;
+  password: string;
+  pen_name?: string;
+  company_name?: string;
+  full_name?: string;
+}
+
 // ✅ FIXED: Add the 'data' wrapper
 export interface RegisterResponse {
   success: boolean;
@@ -124,5 +143,8 @@ export interface LogoutResponse {
 // ✅ FIXED: Add the 'data' wrapper
 export interface MeResponse {
   success: boolean;
-  data: AuthSession;
+  data: (AuthSession & {
+    needsGenreOnboarding?: boolean;
+    needsProfileSetup?: boolean;
+  }) | null;
 }
